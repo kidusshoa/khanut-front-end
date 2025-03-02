@@ -1,12 +1,10 @@
-import CustomerPage from "@/app/components/customerNavbar";
-import React from "react";
+import Navbar from "./../../components/customerNavbar";
 
-const customerPage = () => {
+export default function CustomerPage() {
   return (
-    <div>
-      <CustomerPage />
+    <div className="min-h-screen bg-gray-100">
+      <Navbar />
+      <MainContent />
     </div>
   );
-};
-
-export default customerPage;
+}
