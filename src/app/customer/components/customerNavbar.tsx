@@ -27,7 +27,7 @@ export default function Navbar() {
           </a>
         </li>
         <li>
-          <a href="#" className="hover:text-gray-300">
+          <a href="/favorites" className="hover:text-gray-300">
             Favorites
           </a>
         </li>
