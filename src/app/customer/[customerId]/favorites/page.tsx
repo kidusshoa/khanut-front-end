@@ -1,3 +1,4 @@
+"use client";
 import { useState } from "react";
 import { FaHeart, FaMapMarkerAlt, FaStar } from "react-icons/fa";
 
