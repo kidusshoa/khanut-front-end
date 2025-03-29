@@ -5,6 +5,8 @@ import { useEffect,useState } from "react";
 import Link from "next/link"
 import { FaPlus } from "react-icons/fa"
 import React from "react"
+import LogoCarousel from "./components/infinitecorusal";
+import BusinessList from "./components/bussiness";
 
 
 
@@ -121,7 +123,7 @@ export default function Home() {
           </div>
         </nav>
 
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3 mb-24">
           {/* Main Content - Left and Center */}
           <BusinessCarousel/>
          
@@ -158,145 +160,10 @@ export default function Home() {
            
           </div>
         </div>
+        <LogoCarousel />
+        <BusinessList/>
 
-        {/* Bottom Products Section */}
-        {/* <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-         
-          <div className="rounded-3xl bg-white p-6 shadow-sm">
-            <div className="mb-4 flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-semibold">More Products</h3>
-                <p className="text-sm text-gray-500">460 plus items.</p>
-              </div>
-              <button className="rounded-full bg-white p-2 shadow-sm">
-                <Heart className="h-5 w-5 text-orange-500" />
-              </button>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="rounded-lg bg-gray-100 p-2">
-                <Image
-                  src="/placeholder.svg?height=80&width=80"
-                  alt="Product 1"
-                  width={80}
-                  height={80}
-                  className="h-full w-full object-contain"
-                />
-              </div>
-              <div className="rounded-lg bg-gray-100 p-2">
-                <Image
-                  src="/placeholder.svg?height=80&width=80"
-                  alt="Product 2"
-                  width={80}
-                  height={80}
-                  className="h-full w-full object-contain"
-                />
-              </div>
-              <div className="rounded-lg bg-gray-100 p-2">
-                <Image
-                  src="/placeholder.svg?height=80&width=80"
-                  alt="Product 3"
-                  width={80}
-                  height={80}
-                  className="h-full w-full object-contain"
-                />
-              </div>
-            </div>
-          </div>
 
-          
-          <div className="rounded-3xl bg-white p-6 shadow-sm">
-            <div className="mb-4 flex justify-center">
-              <div className="flex -space-x-4">
-                <div className="h-12 w-12 overflow-hidden rounded-full border-2 border-white">
-                  <Image
-                    src="/placeholder.svg?height=48&width=48"
-                    alt="User 1"
-                    width={48}
-                    height={48}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <div className="h-12 w-12 overflow-hidden rounded-full border-2 border-white">
-                  <Image
-                    src="/placeholder.svg?height=48&width=48"
-                    alt="User 2"
-                    width={48}
-                    height={48}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-                <div className="h-12 w-12 overflow-hidden rounded-full border-2 border-white">
-                  <Image
-                    src="/placeholder.svg?height=48&width=48"
-                    alt="User 3"
-                    width={48}
-                    height={48}
-                    className="h-full w-full object-cover"
-                  />
-                </div>
-              </div>
-            </div>
-            <div className="mb-4 flex justify-center">
-              <div className="rounded-full bg-blue-500 px-6 py-4 text-center text-white">
-                <div className="text-2xl font-bold">5m+</div>
-                <div className="text-sm">Downloads</div>
-              </div>
-            </div>
-            <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
-              <span className="text-yellow-400">★</span>
-              <span>4.6 reviews</span>
-            </div>
-          </div>
-
-          
-          <div className="relative rounded-3xl bg-white p-6 shadow-sm">
-            <div className="mb-2 inline-flex items-center rounded-full bg-orange-100 px-3 py-1 text-sm text-orange-600">
-              <Heart className="mr-1 h-3 w-3" /> Popular
-            </div>
-            <h3 className="mb-4 text-lg font-semibold">
-              Listening Has
-              <br />
-              Been Released
-            </h3>
-            <div className="flex items-center justify-between">
-              <div className="flex gap-2">
-                <Image
-                  src="/placeholder.svg?height=60&width=60"
-                  alt="Earbuds"
-                  width={60}
-                  height={60}
-                  className="h-15 w-15 object-contain"
-                />
-              </div>
-              <div className="flex items-center gap-1 text-sm text-gray-600">
-                <span className="text-yellow-400">★</span>
-                <span>4.7</span>
-              </div>
-            </div>
-            <button className="absolute bottom-4 right-4 rounded-full bg-white p-2 shadow-md">
-              <ArrowUpRight className="h-4 w-4" />
-            </button>
-          </div>
-
-          
-          <div className="rounded-3xl bg-white p-6 shadow-sm">
-            <h3 className="text-lg font-semibold">
-              Light Grey Surface
-              <br />
-              Headphone
-            </h3>
-            <p className="mb-4 text-sm text-gray-600">Boosted with bass</p>
-            <div className="h-32 w-full">
-              <Image
-                src="/placeholder.svg?height=128&width=200"
-                alt="Grey Headphones"
-                width={200}
-                height={128}
-                className="h-full w-full object-contain"
-              />
-            </div>
-          </div>
-        </div> */}
       </div>
     </div>
   )
