@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 
-export default async function DashboardLayout({
+export default async function CustomerLayout({
   children,
 }: {
   children: ReactNode;
