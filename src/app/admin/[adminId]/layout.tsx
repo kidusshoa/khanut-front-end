@@ -29,7 +29,7 @@ export default function AdminLayout({
     {
       name: "Dashboard",
       icon: FaTachometerAlt,
-      path: `/admin/${adminId}/dashboard`,
+      path: `/admin/${adminId}/`,
     },
     {
       name: "Businesses",

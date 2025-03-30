@@ -6,3 +6,8 @@ type Business = {
   rating: number;
   image: string;
 };
+
+type moderation = {
+  id: string;
+  action: string;
+};

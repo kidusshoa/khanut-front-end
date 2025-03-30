@@ -2,6 +2,7 @@
 import { useState, Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { FaUserCircle } from "react-icons/fa";
+import { toast } from "react-hot-toast";
 
 const users = [
   {
@@ -20,30 +21,6 @@ const users = [
     location: "Haramaya",
     joinedAt: "2024-04-01",
   },
-  {
-    id: 3,
-    name: "Kidus Birhanu",
-    email: "kidus@example.com",
-    phone: "+251912345678",
-    location: "Addis Ababa",
-    joinedAt: "2024-03-15",
-  },
-  {
-    id: 4,
-    name: "Kidus Birhanu",
-    email: "kidus@example.com",
-    phone: "+251912345678",
-    location: "Addis Ababa",
-    joinedAt: "2024-03-15",
-  },
-  {
-    id: 5,
-    name: "Kidus Birhanu",
-    email: "kidus@example.com",
-    phone: "+251912345678",
-    location: "Addis Ababa",
-    joinedAt: "2024-03-15",
-  },
 ];
 
 export default function ManageUsers() {
@@ -51,6 +28,32 @@ export default function ManageUsers() {
     null
   );
   const [reason, setReason] = useState("");
+
+  const handleAction = async (action: "delete" | "ban" | "warn") => {
+    if (!selectedUser || !reason.trim()) {
+      toast.error("Please provide a reason.");
+      return;
+    }
+
+    const confirmed = confirm(`Are you sure you want to ${action} this user?`);
+    if (!confirmed) return;
+
+    try {
+      // Simulate API call
+      await new Promise((res) => setTimeout(res, 1000));
+      toast.success(`User ${action}ed successfully ✅`);
+      console.log("Audit Log:", {
+        userId: selectedUser.id,
+        action,
+        reason,
+        timestamp: new Date().toISOString(),
+      });
+      setSelectedUser(null);
+      setReason("");
+    } catch (error) {
+      toast.error(`Failed to ${action} user.`);
+    }
+  };
 
   return (
     <div className="max-w-4xl mx-auto py-8">
@@ -134,13 +137,22 @@ export default function ManageUsers() {
                   </div>
 
                   <div className="mt-4 flex justify-between gap-2">
-                    <button className="bg-red-100 text-red-700 px-3 py-2 rounded hover:bg-red-200">
+                    <button
+                      className="bg-red-100 text-red-700 px-3 py-2 rounded hover:bg-red-200"
+                      onClick={() => handleAction("delete")}
+                    >
                       Delete
                     </button>
-                    <button className="bg-yellow-100 text-yellow-700 px-3 py-2 rounded hover:bg-yellow-200">
+                    <button
+                      className="bg-yellow-100 text-yellow-700 px-3 py-2 rounded hover:bg-yellow-200"
+                      onClick={() => handleAction("warn")}
+                    >
                       Warn
                     </button>
-                    <button className="bg-gray-100 text-gray-700 px-3 py-2 rounded hover:bg-gray-200">
+                    <button
+                      className="bg-gray-100 text-gray-700 px-3 py-2 rounded hover:bg-gray-200"
+                      onClick={() => handleAction("ban")}
+                    >
                       Ban
                     </button>
                   </div>
