@@ -34,7 +34,7 @@ export default function AdminLayout({
     {
       name: "Businesses",
       icon: FaBuilding,
-      path: `/admin/${adminId}/businesses`,
+      path: `/admin/${adminId}/businesses/list`,
     },
     { name: "Users", icon: FaUsers, path: `/admin/${adminId}/users` },
     { name: "Reviews", icon: FaComments, path: `/admin/${adminId}/reviews` },
