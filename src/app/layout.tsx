@@ -16,6 +16,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Khanut",
   description: "Khanut local business finder",
+  icons: {
+    icon: "/logo.png",
+  },
 };
 
 export default function RootLayout({

@@ -1,36 +1,42 @@
 "use client";
-import { useState, Fragment } from "react";
+import { useEffect, useState, Fragment } from "react";
+import axios from "axios";
 import { Dialog, Transition } from "@headlessui/react";
 import { FaUserCircle } from "react-icons/fa";
 import { toast } from "react-hot-toast";
 
-const users = [
-  {
-    id: 1,
-    name: "Kidus Birhanu",
-    email: "kidus@example.com",
-    phone: "+251912345678",
-    location: "Addis Ababa",
-    joinedAt: "2024-03-15",
-  },
-  {
-    id: 2,
-    name: "Mekdes Assefa",
-    email: "mekdes@example.com",
-    phone: "+251911223344",
-    location: "Haramaya",
-    joinedAt: "2024-04-01",
-  },
-];
+const accessToken = process.env.NEXT_PUBLIC_ACCESS_TOKEN || "your_token_here";
+
+interface User {
+  _id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  location?: string;
+  createdAt: string;
+}
 
 export default function ManageUsers() {
-  const [selectedUser, setSelectedUser] = useState<(typeof users)[0] | null>(
-    null
-  );
+  const [users, setUsers] = useState<User[]>([]);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [reason, setReason] = useState("");
 
-  const handleAction = async (action: "delete" | "ban" | "warn") => {
-    if (!selectedUser || !reason.trim()) {
+  const fetchUsers = async () => {
+    try {
+      const res = await axios.get("http://localhost:4000/api/admin/users", {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      setUsers(res.data);
+    } catch (err) {
+      toast.error("Failed to load users");
+      console.error(err);
+    }
+  };
+
+  const handleAction = async (action: "warn" | "delete") => {
+    if (!selectedUser || (action === "warn" && !reason.trim())) {
       toast.error("Please provide a reason.");
       return;
     }
@@ -39,21 +45,40 @@ export default function ManageUsers() {
     if (!confirmed) return;
 
     try {
-      // Simulate API call
-      await new Promise((res) => setTimeout(res, 1000));
+      if (action === "warn") {
+        await axios.post(
+          `http://localhost:4000/api/admin/users/${selectedUser._id}/warn`,
+          { reason },
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+      } else if (action === "delete") {
+        await axios.delete(
+          `http://localhost:4000/api/admin/users/${selectedUser._id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+      }
+
       toast.success(`User ${action}ed successfully ✅`);
-      console.log("Audit Log:", {
-        userId: selectedUser.id,
-        action,
-        reason,
-        timestamp: new Date().toISOString(),
-      });
       setSelectedUser(null);
       setReason("");
-    } catch (error) {
+      fetchUsers();
+    } catch (err) {
       toast.error(`Failed to ${action} user.`);
+      console.error(err);
     }
   };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   return (
     <div className="max-w-4xl mx-auto py-8">
@@ -62,7 +87,7 @@ export default function ManageUsers() {
         <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {users.map((user) => (
             <li
-              key={user.id}
+              key={user._id}
               className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg shadow-sm cursor-pointer hover:bg-blue-50"
               onClick={() => setSelectedUser(user)}
             >
@@ -90,7 +115,7 @@ export default function ManageUsers() {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 bg-gradient-to-br from-blue-100 via-white to-blue-200 backdrop-blur-sm" />
+            <div className="fixed inset-0 bg-black bg-opacity-25 backdrop-blur-sm" />
           </Transition.Child>
 
           <div className="fixed inset-0 overflow-y-auto">
@@ -113,13 +138,8 @@ export default function ManageUsers() {
                       <strong>Email:</strong> {selectedUser?.email}
                     </p>
                     <p>
-                      <strong>Phone:</strong> {selectedUser?.phone}
-                    </p>
-                    <p>
-                      <strong>Location:</strong> {selectedUser?.location}
-                    </p>
-                    <p>
-                      <strong>Joined At:</strong> {selectedUser?.joinedAt}
+                      <strong>Joined At:</strong>{" "}
+                      {new Date(selectedUser?.createdAt || "").toDateString()}
                     </p>
                   </div>
 
@@ -141,19 +161,13 @@ export default function ManageUsers() {
                       className="bg-red-100 text-red-700 px-3 py-2 rounded hover:bg-red-200"
                       onClick={() => handleAction("delete")}
                     >
-                      Delete
+                      Remove
                     </button>
                     <button
                       className="bg-yellow-100 text-yellow-700 px-3 py-2 rounded hover:bg-yellow-200"
                       onClick={() => handleAction("warn")}
                     >
                       Warn
-                    </button>
-                    <button
-                      className="bg-gray-100 text-gray-700 px-3 py-2 rounded hover:bg-gray-200"
-                      onClick={() => handleAction("ban")}
-                    >
-                      Ban
                     </button>
                   </div>
 
