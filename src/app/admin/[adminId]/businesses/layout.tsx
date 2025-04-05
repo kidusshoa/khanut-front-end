@@ -16,13 +16,13 @@ export default function BusinessLayout({
       <div className="flex gap-6 mb-6 border-b pb-2">
         <Link
           href={`/admin/${adminId}/businesses/approval`}
-          className="text-blue-600 hover:underline"
+          className="text-black bg-orange-100 p-2 rounded-lg hover:bg-orange-200"
         >
           Pending Approvals
         </Link>
         <Link
           href={`/admin/${adminId}/businesses/list`}
-          className="text-blue-600 hover:underline"
+          className="text-black  bg-orange-100 p-2 rounded-lg hover:bg-orange-200"
         >
           Approved Businesses
         </Link>

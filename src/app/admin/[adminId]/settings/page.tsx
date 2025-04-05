@@ -86,10 +86,10 @@ export default function SettingsPage() {
   return (
     <div className="max-w-3xl mx-auto py-8 px-4">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-blue-700">Admin Settings</h2>
+        <h2 className="text-2xl font-bold text-orange-500">Admin Settings</h2>
         <button
           onClick={() => setIsAddAdminOpen(true)}
-          className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          className="flex items-center gap-2 bg-orange-600 text-white px-4 py-2 rounded hover:bg-orange-700"
         >
           <FaUserPlus /> Add Admin
         </button>
@@ -180,7 +180,7 @@ export default function SettingsPage() {
         <div className="text-right">
           <button
             type="submit"
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded shadow hover:bg-blue-700 disabled:opacity-50"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded shadow hover:bg-orange-700 disabled:opacity-50"
             disabled={saving}
           >
             <FaSave /> {saving ? "Saving..." : "Save Settings"}
@@ -218,7 +218,7 @@ export default function SettingsPage() {
                 leaveTo="opacity-0 scale-95"
               >
                 <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-lg bg-white p-6 shadow-xl transition-all">
-                  <Dialog.Title className="text-lg font-bold text-blue-700 mb-4">
+                  <Dialog.Title className="text-lg font-bold text-orange-700 mb-4">
                     Add New Admin
                   </Dialog.Title>
                   <div className="space-y-3">
@@ -253,7 +253,7 @@ export default function SettingsPage() {
                   <div className="mt-6 text-right">
                     <button
                       onClick={handleAddAdmin}
-                      className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                      className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"
                     >
                       Add Admin
                     </button>

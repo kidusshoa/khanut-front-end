@@ -15,7 +15,7 @@ export default function AdminDashboard() {
             className="bg-white p-6 rounded-lg shadow text-center"
           >
             <p className="text-sm text-gray-500">{stat.label}</p>
-            <p className="text-2xl font-bold text-blue-600">{stat.value}</p>
+            <p className="text-2xl font-bold text-orange-600">{stat.value}</p>
           </div>
         ))}
       </div>

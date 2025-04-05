@@ -1,105 +1,224 @@
-"use client";
+'use client'
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import { useRouter } from 'next/navigation';
+import Cookies from 'js-cookie';
 
-import { useState } from "react";
-import { FaStar } from "react-icons/fa";
-import { toast } from "react-hot-toast";
+interface Review {
+  _id: string;
+  businessId: {
+    _id: string;
+    name: string;
+  };
+  authorId: {
+    _id: string;
+    email: string;
+    name: string;
+  };
+  rating: number;
+  comment: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
-const reviews = [
-  {
-    id: 1,
-    author: "Kidus Birhanu",
-    business: "Tech Gurus",
-    rating: 4,
-    comment: "Great service and fast repair!",
-    date: "2024-03-15",
-    status: "pending",
-  },
-  {
-    id: 2,
-    author: "Mekdes Assefa",
-    business: "Local Bites",
-    rating: 5,
-    comment: "Delicious food, loved it!",
-    date: "2024-04-01",
-    status: "pending",
-  },
-];
+interface ApiResponse {
+  reviews: Review[];
+  total: number;
+  currentPage: number;
+  totalPages: number;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
+}
 
-export default function ReviewModeration() {
-  const [moderatedReviews, setModeratedReviews] = useState(reviews);
+export default function PendingReviewsPage() {
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    total: 0,
+    limit: 5
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
-  const handleModeration = (id: number, action: string) => {
-    const actionText = action === "approve" ? "approved" : "rejected";
-    const confirmed = confirm(
-      `Are you sure you want to ${action} this review?`
-    );
-    if (!confirmed) return;
+  const fetchPendingReviews = async (page: number = 1) => {
+    try {
+      const accessToken = Cookies.get('client-token');
+      
+      if (!accessToken) {
+        router.push('/login');
+        return;
+      }
 
-    setModeratedReviews((prev) =>
-      prev.map((review) =>
-        review.id === id ? { ...review, status: action } : review
-      )
-    );
-    toast.success(`Review ${actionText} ✅`);
+      const response = await axios.get<ApiResponse>(
+        `https://khanut.onrender.com/api/admin/reviews/pending?page=${page}&limit=${pagination.limit}`, 
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      setReviews(response.data.reviews);
+      setPagination({
+        currentPage: response.data.currentPage,
+        totalPages: response.data.totalPages,
+        total: response.data.total,
+        limit: pagination.limit
+      });
+    } catch (error) {
+      console.error("Fetch error:", error);
+      setError("Failed to load pending reviews");
+      
+      if (axios.isAxiosError(error) && error.response?.status === 401) {
+        Cookies.remove('client-token');
+        Cookies.remove('user-role');
+        router.push('/login');
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
-  return (
-    <div className="max-w-5xl mx-auto py-8">
-      <h2 className="text-2xl font-bold mb-6 text-blue-700">
-        Review Moderation
-      </h2>
-      <div className="space-y-4">
-        {moderatedReviews
-          .filter((r) => r.status === "pending")
-          .map((review) => (
-            <div
-              key={review.id}
-              className="bg-white p-4 rounded shadow border border-gray-200"
-            >
-              <div className="flex justify-between items-center mb-2">
-                <div>
-                  <p className="font-semibold text-gray-800">
-                    {review.author} on{" "}
-                    <span className="text-blue-600">{review.business}</span>
-                  </p>
-                  <p className="text-sm text-gray-500">{review.date}</p>
-                </div>
-                <div className="flex items-center">
-                  {[...Array(5)].map((_, i) => (
-                    <FaStar
-                      key={i}
-                      className={`${
-                        i < review.rating ? "text-yellow-400" : "text-gray-300"
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
-              <p className="text-gray-700 mb-3">{review.comment}</p>
-              <div className="flex gap-3">
-                <button
-                  className="bg-green-100 text-green-700 px-3 py-1 rounded hover:bg-green-200"
-                  onClick={() => handleModeration(review.id, "approve")}
-                >
-                  Approve
-                </button>
-                <button
-                  className="bg-red-100 text-red-700 px-3 py-1 rounded hover:bg-red-200"
-                  onClick={() => handleModeration(review.id, "reject")}
-                >
-                  Reject
-                </button>
-              </div>
-            </div>
-          ))}
+  const handleApprove = async (reviewId: string) => {
+    try {
+      const accessToken = Cookies.get('client-token');
+      await axios.patch(
+        `https://khanut.onrender.com/api/admin/reviews/${reviewId}/approve`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+    
+      fetchPendingReviews(pagination.currentPage);
+    } catch (error) {
+      console.error("Approve error:", error);
+      setError("Failed to approve review");
+    }
+  };
 
-        {moderatedReviews.filter((r) => r.status === "pending").length ===
-          0 && (
-          <p className="text-center text-gray-500">
-            No reviews pending moderation.
-          </p>
-        )}
-      </div>
+  const handleReject = async (reviewId: string) => {
+    try {
+      const accessToken = Cookies.get('client-token');
+      await axios.patch(
+        `https://khanut.onrender.com/api/admin/reviews/${reviewId}/reject`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+     
+      fetchPendingReviews(pagination.currentPage);
+    } catch (error) {
+      console.error("Reject error:", error);
+      setError("Failed to reject review");
+    }
+  };
+
+  useEffect(() => {
+    fetchPendingReviews();
+  }, []);
+
+  if (loading) {
+    return <div className="p-4">Loading pending reviews...</div>;
+  }
+
+  if (error) {
+    return <div className="p-4 text-red-500">{error}</div>;
+  }
+
+  return (
+    <div className="mb-6">
+      <h2 className="text-xl text-orange-500 font-bold">Pending Reviews</h2>
+      <p className="text-gray-600 mb-4">
+        Reviews waiting for approval or rejection.
+      </p>
+
+      {reviews.length === 0 ? (
+        <div className="p-4 bg-gray-100 rounded">
+          No pending reviews found.
+        </div>
+      ) : (
+        <div>
+          <table className="min-w-full bg-white rounded shadow mb-4">
+            <thead className="bg-orange-100">
+              <tr>
+                <th className="p-3 text-left">Business</th>
+                <th className="p-3 text-left">Customer</th>
+                <th className="p-3 text-left">Rating</th>
+                <th className="p-3 text-left">Comment</th>
+                <th className="p-3 text-left">Date</th>
+                <th className="p-3 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {reviews.map((review) => (
+                <tr key={review._id} className="border-b hover:bg-gray-50">
+                  <td className="p-3">{review.businessId.name}</td>
+                  <td className="p-3">
+                    {review.authorId.name} ({review.authorId.email})
+                  </td>
+                  <td className="p-3">{review.rating}/5</td>
+                  <td className="p-3 text-sm">{review.comment}</td>
+                  <td className="p-3">
+                    {new Date(review.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="p-3 space-x-2">
+                    <button
+                      onClick={() => handleApprove(review._id)}
+                      className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                    >
+                      Approve
+                    </button>
+                    <button
+                      onClick={() => handleReject(review._id)}
+                      className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
+                    >
+                      Reject
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* Pagination controls */}
+          {/* <div className="flex justify-between items-center">
+            <button
+              onClick={() => fetchPendingReviews(pagination.currentPage - 1)}
+              disabled={!pagination.hasPrevPage}
+              className={`px-4 py-2 rounded ${
+                pagination.hasPrevPage
+                  ? 'bg-orange-500 text-white hover:bg-orange-600'
+                  : 'bg-gray-300 cursor-not-allowed'
+              }`}
+            >
+              Previous
+            </button>
+            <span>
+              Page {pagination.currentPage} of {pagination.totalPages}
+            </span>
+            <button
+              onClick={() => fetchPendingReviews(pagination.currentPage + 1)}
+              disabled={!pagination.hasNextPage}
+              className={`px-4 py-2 rounded ${
+                pagination.hasNextPage
+                  ? 'bg-orange-500 text-white hover:bg-orange-600'
+                  : 'bg-gray-300 cursor-not-allowed'
+              }`}
+            >
+              Next
+            </button>
+          </div> */}
+        </div>
+      )}
     </div>
   );
 }

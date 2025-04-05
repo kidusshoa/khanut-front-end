@@ -1,6 +1,7 @@
 "use client"
 
 import type React from "react"
+import axios from "axios"
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
@@ -98,19 +99,25 @@ export default function SignUpForm({ onClick }: any) {
         ...formData,
         role,
         ...(role === "merchant" && { businessData })
+        
       }
+      const response=await axios.post("https://khanut.onrender.com/api/auth/register",{
+        name : formData.name,
+        email :formData.email,
+        role : "admin",
+        password : formData.password
+
+      }
+      )
+
   
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      
+     if (response.status==201){
+      router.push("/")
+
+     }
   
-      // Here you would send userData to your API
-      // const response = await fetch('/api/register', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(userData),
-      // })
-  
-      router.push("/login")
+      
     } catch (error) {
       console.error("Registration error:", error)
       setErrors({
@@ -135,7 +142,7 @@ export default function SignUpForm({ onClick }: any) {
     businessType: string
   }
 
-  const [role, setRole] = useState<string>("user") // Default to "user"
+  const [role, setRole] = useState<string>("user") 
   const [businessData, setBusinessData] = useState<BusinessData>({
     businessName: "",
     businessAddress: "",

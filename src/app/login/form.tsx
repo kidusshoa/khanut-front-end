@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Eye, EyeOff, Loader2 } from "lucide-react"
 import SignUpForm from "./sign_up"
+import axios from "axios"
 
 interface FormData {
   email: string
@@ -55,7 +56,6 @@ export default function LoginForm({ onClick }: any) {
       [name]:value,
     })
 
-    // Clear error when user types
     if (errors[name as keyof FormData]) {
       setErrors({
         ...errors,
@@ -72,26 +72,36 @@ export default function LoginForm({ onClick }: any) {
     setIsLoading(true)
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      const { data } = await axios.post('/api/login', {
+        email: formData.email,
+        password: formData.password
+        
+      })
 
-      // Here you would typically make an API call to authenticate the user
-      // const response = await fetch('/api/login', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(formData),
-      // })
+      
+      switch (data.user?.role) {
+        case 'admin':
+          router.push('/admin/dashboard')
+          break
+        case 'merchant':
+          router.push('/merchant/dashboard')
+          break
+        default:
+          router.push('/dashboard')
+      }
 
-      // if (!response.ok) throw new Error('Login failed')
-
-     
-      router.push("/dashboard")
     } catch (error) {
       console.error("Login error:", error)
-      setErrors({
-        ...errors,
-        password: "Invalid email or password",
-      })
+      
+      if (axios.isAxiosError(error)) {
+        setErrors({
+          password: error.response?.data?.message || "Invalid email or password",
+        })
+      } else {
+        setErrors({
+          password: "An unexpected error occurred",
+        })
+      }
     } finally {
       setIsLoading(false)
     }
