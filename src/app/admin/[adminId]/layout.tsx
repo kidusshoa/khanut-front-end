@@ -46,23 +46,23 @@ export default function AdminLayout({
     <div className="flex min-h-screen">
       {/* Sidebar */}
       <aside
-        className={`fixed md:static z-50 top-0 left-0 md:h-screen h-full w-64 bg-blue-800 text-white p-4 space-y-4 transform transition-transform duration-300 ease-in-out ${
+        className={`fixed md:static z-50 top-0 left-0 md:h-screen h-full w-64 bg-white text-black  p-4 space-y-4 transform transition-transform duration-300 ease-in-out ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
       >
         <div className="flex justify-between items-center md:hidden">
-          <h2 className="text-xl font-bold">Admin Panel</h2>
+          <h2 className="text-xl  font-bold">Admin Panel</h2>
           <button onClick={() => setSidebarOpen(false)}>
             <FaTimes size={20} />
           </button>
         </div>
-        <h2 className="text-xl font-bold mb-6 hidden md:block">Admin Panel</h2>
+        <h2 className="text-xl text-orange-500 font-bold mb-6 hidden md:block">Admin Panel</h2>
         {navItems.map(({ name, icon: Icon, path }) => (
           <Link
             key={name}
             href={path}
-            className={`flex items-center p-2 rounded hover:bg-blue-600 ${
-              pathname === path ? "bg-blue-700" : ""
+            className={`flex items-center p-2 rounded hover:bg-orange-400 ${
+              pathname === path ? "bg-orange-500 text-white" : ""
             }`}
             onClick={() => setSidebarOpen(false)}
           >
@@ -74,7 +74,7 @@ export default function AdminLayout({
       {/* Content with topbar */}
       <div className="flex-1 flex flex-col">
         {/* Mobile topbar */}
-        <div className="md:hidden bg-blue-800 text-white p-4 flex items-center justify-between">
+        <div className="md:hidden bg-orange-800 text-white p-4 flex items-center justify-between">
           <h1 className="text-lg font-semibold">Admin Dashboard</h1>
           <button onClick={() => setSidebarOpen(true)}>
             <FaBars size={24} />
