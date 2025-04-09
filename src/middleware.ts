@@ -1,34 +1,70 @@
-import { withAuth } from "next-auth/middleware";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
-export default withAuth(
-  function middleware(req) {
-    const token = req.nextauth.token;
-    const path = req.nextUrl.pathname;
+export async function middleware(request: NextRequest) {
+  const path = request.nextUrl.pathname;
 
-    if (token?.role === "admin" && !path.startsWith("/admin")) {
-      return NextResponse.redirect(new URL("/admin/dashboard", req.url));
+  // Public paths that don't need redirection
+  const publicPaths = ["/login", "/register", "/"];
+
+  // If it's the root path (/), check for authentication
+  if (path === "/") {
+    const accessToken = request.cookies.get("access-token")?.value;
+    const userRole = request.cookies.get("user-role")?.value;
+
+    if (accessToken && userRole) {
+      // Redirect based on role
+      switch (userRole) {
+        case "admin":
+          return NextResponse.redirect(
+            new URL("/admin/dashboard", request.url)
+          );
+        case "business":
+          return NextResponse.redirect(
+            new URL("/business/dashboard", request.url)
+          );
+        case "customer":
+          return NextResponse.redirect(
+            new URL("/customer/dashboard", request.url)
+          );
+        default:
+          return NextResponse.next();
+      }
     }
-
-    if (token?.role === "business" && !path.startsWith("/business")) {
-      return NextResponse.redirect(new URL("/business/dashboard", req.url));
-    }
-
-    if (token?.role === "customer" && !path.startsWith("/customer")) {
-      return NextResponse.redirect(new URL("/customer/dashboard", req.url));
-    }
-
-    return NextResponse.next();
-  },
-  {
-    callbacks: {
-      authorized: ({ token }) => !!token,
-    },
   }
-);
+
+  // For other paths, continue with existing logic
+  if (publicPaths.includes(path)) {
+    return NextResponse.next();
+  }
+
+  const accessToken = request.cookies.get("access-token")?.value;
+
+  if (!accessToken) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  // Role-based access control
+  const userRole = request.cookies.get("user-role")?.value;
+
+  if (path.startsWith("/admin") && userRole !== "admin") {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  if (path.startsWith("/business") && userRole !== "business") {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  if (path.startsWith("/customer") && userRole !== "customer") {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: [
+    "/",
     "/dashboard/:path*",
     "/admin/:path*",
     "/business/:path*",
