@@ -1,13 +1,33 @@
-type Business = {
-  id: number;
-  name: string;
-  category: string;
-  location: string;
-  rating: number;
-  image: string;
+import { DefaultSession } from "next-auth";
+
+declare module "next-auth" {
+  interface Session extends DefaultSession {
+    user: {
+      id: string;
+      role: Role;
+    } & DefaultSession["user"];
+    accessToken: string;
+    refreshToken: string;
+  }
+
+  interface User {
+    id: string;
+    role: Role;
+    accessToken: string;
+    refreshToken: string;
+  }
+}
+
+export type Role = "admin" | "business" | "customer";
+
+export type AuthResponse = {
+  accessToken: string;
+  refreshToken: string;
+  role: Role;
+  userId: string;
 };
 
-type moderation = {
-  id: string;
-  action: string;
+export type ApiError = {
+  message: string;
+  status: number;
 };
