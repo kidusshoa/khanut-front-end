@@ -6,11 +6,18 @@ import { Loader2 } from "lucide-react";
 import { TwoFactorInput, twoFactorSchema } from "@/lib/validations/auth";
 import { authService } from "@/services/auth";
 import { useAuthStore } from "@/store/authStore";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function TwoFactorVerification() {
+  const router = useRouter();
   const tempEmail = useAuthStore((state) => state.tempEmail);
   const setUser = useAuthStore((state) => state.setUser);
   const setAccessToken = useAuthStore((state) => state.setAccessToken);
+
+  const [resendCount, setResendCount] = useState(0);
+  const [resendDisabled, setResendDisabled] = useState(false);
+  const [countdown, setCountdown] = useState(30);
 
   const {
     register,
@@ -21,16 +28,47 @@ export default function TwoFactorVerification() {
     resolver: zodResolver(twoFactorSchema),
   });
 
+  const handleResend = async () => {
+    if (resendCount >= 3) {
+      router.push("/register");
+      return;
+    }
+
+    if (!tempEmail) {
+      router.push("/register");
+      return;
+    }
+
+    try {
+      await authService.resendCode(tempEmail);
+      setResendCount((prev) => prev + 1);
+      setResendDisabled(true);
+
+      let count = 30;
+      const timer = setInterval(() => {
+        count--;
+        setCountdown(count);
+        if (count === 0) {
+          setResendDisabled(false);
+          clearInterval(timer);
+        }
+      }, 1000);
+    } catch (error) {
+      console.error("Failed to resend code:", error);
+    }
+  };
+
   const onSubmit = async (data: TwoFactorInput) => {
-    if (!tempEmail) return;
+    if (!tempEmail) {
+      router.push("/register");
+      return;
+    }
 
     try {
       const response = await authService.verify2FA(tempEmail, data.code);
       setUser(response.user);
       setAccessToken(response.accessToken);
-      // Redirect based on user role
-      window.location.href =
-        response.user.role === "business" ? "/business/register" : "/dashboard";
+      router.push("/business/register");
     } catch (error) {
       setError("code", {
         type: "manual",
@@ -66,18 +104,32 @@ export default function TwoFactorVerification() {
           )}
         </div>
 
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50"
-        >
-          {isSubmitting ? (
-            <Loader2 className="animate-spin h-5 w-5" />
-          ) : (
-            "Verify Code"
-          )}
-        </button>
+        <div>
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50"
+          >
+            {isSubmitting ? (
+              <Loader2 className="animate-spin h-5 w-5" />
+            ) : (
+              "Verify Code"
+            )}
+          </button>
+        </div>
       </form>
+
+      <div className="text-center mt-4">
+        <button
+          onClick={handleResend}
+          disabled={resendDisabled || resendCount >= 3}
+          className="text-orange-600 hover:text-orange-500 disabled:opacity-50"
+        >
+          {resendDisabled
+            ? `Resend code in ${countdown}s`
+            : `Resend code (${3 - resendCount} attempts remaining)`}
+        </button>
+      </div>
     </div>
   );
 }

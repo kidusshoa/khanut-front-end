@@ -5,7 +5,15 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
   // Public paths that don't need redirection
-  const publicPaths = ["/login", "/register", "/"];
+  const publicPaths = ["/login", "/register", "/verify", "/"];
+
+  // Allow access to business registration only after verification
+  if (path === "/business/register") {
+    const isVerified = request.cookies.get("is-verified")?.value;
+    if (!isVerified) {
+      return NextResponse.redirect(new URL("/register", request.url));
+    }
+  }
 
   // If it's the root path (/), check for authentication
   if (path === "/") {

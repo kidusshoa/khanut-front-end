@@ -10,7 +10,7 @@ import {
   businessRegistrationSchema,
 } from "@/lib/validations/auth";
 import { useAuthStore } from "@/store/authStore";
-import { businessService } from "./../services/business";
+import { businessService } from "@/services/business";
 
 export default function BusinessRegistrationForm() {
   const router = useRouter();
@@ -28,7 +28,7 @@ export default function BusinessRegistrationForm() {
     defaultValues: {
       email: user?.email,
       location: {
-        coordinates: [0, 0], // Default coordinates
+        coordinates: [0, 0],
       },
     },
   });
@@ -51,16 +51,6 @@ export default function BusinessRegistrationForm() {
       };
       reader.readAsDataURL(file);
     }
-  };
-
-  const handleCoordinatesChange = (
-    e: React.ChangeEvent<HTMLInputElement>,
-    index: number
-  ) => {
-    const value = parseFloat(e.target.value);
-    setValue(`location.coordinates.${index}`, value, {
-      shouldValidate: true,
-    });
   };
 
   const onSubmit = async (data: BusinessRegistrationInput) => {
@@ -103,7 +93,9 @@ export default function BusinessRegistrationForm() {
           } shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm`}
         />
         {errors.name && (
-          <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+          <p className="mt-1 text-sm text-red-600">
+            {errors.name.message?.toString()}
+          </p>
         )}
       </div>
 
@@ -137,7 +129,9 @@ export default function BusinessRegistrationForm() {
           } shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm`}
         />
         {errors.phone && (
-          <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
+          <p className="mt-1 text-sm text-red-600">
+            {errors.phone.message?.toString()}
+          </p>
         )}
       </div>
 
@@ -157,98 +151,9 @@ export default function BusinessRegistrationForm() {
         />
         {errors.description && (
           <p className="mt-1 text-sm text-red-600">
-            {errors.description.message}
+            {errors.description.message?.toString()}
           </p>
         )}
-      </div>
-
-      <div>
-        <label
-          htmlFor="category"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Business Category
-        </label>
-        <select
-          {...register("category")}
-          className={`mt-1 block w-full rounded-md border ${
-            errors.category ? "border-red-500" : "border-gray-300"
-          } shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm`}
-        >
-          <option value="">Select a category</option>
-          <option value="restaurant">Restaurant</option>
-          <option value="retail">Retail</option>
-          <option value="service">Service</option>
-          <option value="other">Other</option>
-        </select>
-        {errors.category && (
-          <p className="mt-1 text-sm text-red-600">{errors.category.message}</p>
-        )}
-      </div>
-
-      <div>
-        <label
-          htmlFor="city"
-          className="block text-sm font-medium text-gray-700"
-        >
-          City
-        </label>
-        <input
-          {...register("city")}
-          type="text"
-          className={`mt-1 block w-full rounded-md border ${
-            errors.city ? "border-red-500" : "border-gray-300"
-          } shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm`}
-        />
-        {errors.city && (
-          <p className="mt-1 text-sm text-red-600">{errors.city.message}</p>
-        )}
-      </div>
-
-      <div className="space-y-4">
-        <label className="block text-sm font-medium text-gray-700">
-          Business Location Coordinates
-        </label>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm text-gray-600">Longitude</label>
-            <input
-              type="number"
-              step="any"
-              placeholder="-180 to 180"
-              onChange={(e) => handleCoordinatesChange(e, 0)}
-              className={`mt-1 block w-full rounded-md border ${
-                errors.location?.coordinates?.[0]
-                  ? "border-red-500"
-                  : "border-gray-300"
-              } shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm`}
-            />
-            {errors.location?.coordinates?.[0] && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.location.coordinates[0].message}
-              </p>
-            )}
-          </div>
-          <div>
-            <label className="block text-sm text-gray-600">Latitude</label>
-            <input
-              type="number"
-              step="any"
-              placeholder="-90 to 90"
-              onChange={(e) => handleCoordinatesChange(e, 1)}
-              className={`mt-1 block w-full rounded-md border ${
-                errors.location?.coordinates?.[1]
-                  ? "border-red-500"
-                  : "border-gray-300"
-              } shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm`}
-            />
-            {errors.location?.coordinates?.[1] && (
-              <p className="mt-1 text-sm text-red-600">
-                {errors.location.coordinates[1].message}
-              </p>
-            )}
-          </div>
-        </div>
       </div>
 
       <div>
@@ -280,14 +185,14 @@ export default function BusinessRegistrationForm() {
         </div>
         {errors.profilePicture && (
           <p className="mt-1 text-sm text-red-600">
-            {errors.profilePicture.message}
+            {errors.profilePicture.message?.toString()}
           </p>
         )}
       </div>
 
       {errors.root && (
         <p className="text-sm text-red-600 text-center">
-          {errors.root.message}
+          {errors.root.message?.toString()}
         </p>
       )}
 
