@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Building2, User } from "lucide-react";
+import { User, Building2 } from "lucide-react";
 
 export default function RegisterChoice() {
   const router = useRouter();

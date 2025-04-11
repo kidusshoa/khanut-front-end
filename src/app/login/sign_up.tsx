@@ -93,7 +93,7 @@ export default function SignUpForm({ onClick }: any) {
         {
           name: formData.name,
           email: formData.email,
-          role: "business",
+          role: role, // This will now send "business" instead of "merchant"
           password: formData.password,
         }
       );
@@ -124,7 +124,7 @@ export default function SignUpForm({ onClick }: any) {
     businessType: string;
   }
 
-  const [role, setRole] = useState<string>("user");
+  const [role, setRole] = useState<string>("customer");
   const [businessData, setBusinessData] = useState<BusinessData>({
     businessName: "",
     businessAddress: "",
@@ -293,11 +293,11 @@ export default function SignUpForm({ onClick }: any) {
               onChange={(e) => setRole(e.target.value)}
               className="w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-orange-500 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-opacity-50"
             >
-              <option value="user">User</option>
-              <option value="merchant">Business Owner</option>
+              <option value="customer">Customer</option>
+              <option value="business">Business Owner</option>
             </select>
           </div>
-          {role === "merchant" && (
+          {role === "business" && (
             <div className="space-y-4">
               <div>
                 <label

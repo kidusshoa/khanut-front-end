@@ -1,70 +1,61 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 
 export async function middleware(request: NextRequest) {
+  const token = await getToken({ req: request });
   const path = request.nextUrl.pathname;
 
-  // Public paths that don't need redirection
-  const publicPaths = ["/login", "/register", "/verify", "/"];
-
-  // Allow access to business registration only after verification
-  if (path === "/business/register") {
-    const isVerified = request.cookies.get("is-verified")?.value;
-    if (!isVerified) {
-      return NextResponse.redirect(new URL("/register", request.url));
-    }
-  }
-
-  // If it's the root path (/), check for authentication
-  if (path === "/") {
-    const accessToken = request.cookies.get("access-token")?.value;
-    const userRole = request.cookies.get("user-role")?.value;
-
-    if (accessToken && userRole) {
-      // Redirect based on role
-      switch (userRole) {
-        case "admin":
-          return NextResponse.redirect(
-            new URL("/admin/dashboard", request.url)
-          );
-        case "business":
-          return NextResponse.redirect(
-            new URL("/business/dashboard", request.url)
-          );
-        case "customer":
-          return NextResponse.redirect(
-            new URL("/customer/dashboard", request.url)
-          );
-        default:
-          return NextResponse.next();
-      }
-    }
-  }
-
-  // For other paths, continue with existing logic
-  if (publicPaths.includes(path)) {
+  // Public routes that should always be accessible
+  if (
+    path === "/login" ||
+    path === "/register" ||
+    path === "/verify" ||
+    path.startsWith("/_next") ||
+    path.startsWith("/api")
+  ) {
     return NextResponse.next();
   }
 
-  const accessToken = request.cookies.get("access-token")?.value;
-
-  if (!accessToken) {
+  // Check if user is authenticated
+  if (!token) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Role-based access control
-  const userRole = request.cookies.get("user-role")?.value;
-
-  if (path.startsWith("/admin") && userRole !== "admin") {
+  // Handle role-specific routes
+  if (path.startsWith("/customer/") && token.role !== "customer") {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (path.startsWith("/business") && userRole !== "business") {
+  if (path.startsWith("/business/") && token.role !== "business") {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  if (path.startsWith("/customer") && userRole !== "customer") {
+  if (path.startsWith("/admin/") && token.role !== "admin") {
     return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  // Handle business owner specific routes
+  if (token.role === "business") {
+    const businessStatus = token.businessStatus;
+
+    if (!businessStatus && !path.includes("/business/register")) {
+      return NextResponse.redirect(
+        new URL(`/business/register/${token.id}`, request.url)
+      );
+    }
+
+    if (businessStatus === "pending" && !path.includes("/business/pending")) {
+      return NextResponse.redirect(new URL("/business/pending", request.url));
+    }
+
+    if (businessStatus === "rejected" && !path.includes("/business/rejected")) {
+      return NextResponse.redirect(new URL("/business/rejected", request.url));
+    }
+
+    if (businessStatus !== "approved" && path.includes("/business/dashboard")) {
+      return NextResponse.redirect(new URL("/business/pending", request.url));
+    }
   }
 
   return NextResponse.next();
@@ -72,10 +63,13 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/",
-    "/dashboard/:path*",
-    "/admin/:path*",
-    "/business/:path*",
-    "/customer/:path*",
+    /*
+     * Match all paths except:
+     * 1. Root path (/)
+     * 2. API routes (/api)
+     * 3. Static files (_next/static, _next/image, favicon.ico)
+     * 4. Auth-related routes (login, register)
+     */
+    "/((?!api|_next/static|_next/image|favicon.ico|login|register|$).*)",
   ],
 };

@@ -4,20 +4,15 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
+import {
+  CustomerRegistrationInput,
+  customerRegistrationSchema,
+} from "@/lib/validations/customer";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import axios from "axios";
-import Cookies from "js-cookie";
-import * as z from "zod";
 
-const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(1, "Password is required"),
-});
-
-type LoginInput = z.infer<typeof loginSchema>;
-
-export default function LoginPage() {
+export default function CustomerRegistrationPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -26,38 +21,30 @@ export default function LoginPage() {
     handleSubmit,
     formState: { errors },
     setError,
-  } = useForm<LoginInput>({
-    resolver: zodResolver(loginSchema),
+  } = useForm<CustomerRegistrationInput>({
+    resolver: zodResolver(customerRegistrationSchema),
   });
 
-  const onSubmit = async (data: LoginInput) => {
+  const onSubmit = async (data: CustomerRegistrationInput) => {
     setIsSubmitting(true);
     try {
       const response = await axios.post(
-        "https://khanut.onrender.com/api/auth/login",
+        "https://khanut.onrender.com/api/auth/register",
         {
+          name: data.name,
           email: data.email,
           password: data.password,
+          role: "customer",
         }
       );
 
-      if (response.data.token) {
-        Cookies.set("client-token", response.data.token);
-        Cookies.set("user-role", response.data.role);
-
-        // Redirect based on user role
-        if (response.data.role === "customer") {
-          router.push(`/customer/${response.data.userId}/home`);
-        } else if (response.data.role === "business") {
-          router.push(`/business/${response.data.userId}/dashboard`);
-        } else if (response.data.role === "admin") {
-          router.push(`/admin/${response.data.userId}/dashboard`);
-        }
+      if (response.status === 201) {
+        router.push("/verify");
       }
     } catch (error: any) {
-      setError("root", {
+      setError("email", {
         type: "manual",
-        message: "Invalid email or password",
+        message: "This email may already be in use",
       });
     } finally {
       setIsSubmitting(false);
@@ -68,15 +55,15 @@ export default function LoginPage() {
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-          Sign in to your account
+          Create your customer account
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
           Or{" "}
           <Link
-            href="/register"
+            href="/login"
             className="font-medium text-orange-600 hover:text-orange-500"
           >
-            create a new account
+            sign in to your existing account
           </Link>
         </p>
       </div>
@@ -84,6 +71,29 @@ export default function LoginPage() {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+            <div>
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Full Name
+              </label>
+              <div className="mt-1">
+                <input
+                  {...register("name")}
+                  type="text"
+                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm ${
+                    errors.name ? "border-red-300" : "border-gray-300"
+                  }`}
+                />
+                {errors.name && (
+                  <p className="mt-2 text-sm text-red-600">
+                    {errors.name.message}
+                  </p>
+                )}
+              </div>
+            </div>
+
             <div>
               <label
                 htmlFor="email"
@@ -130,11 +140,30 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {errors.root && (
-              <p className="text-sm text-red-600 text-center">
-                {errors.root.message}
-              </p>
-            )}
+            <div>
+              <label
+                htmlFor="confirmPassword"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Confirm Password
+              </label>
+              <div className="mt-1">
+                <input
+                  {...register("confirmPassword")}
+                  type="password"
+                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm ${
+                    errors.confirmPassword
+                      ? "border-red-300"
+                      : "border-gray-300"
+                  }`}
+                />
+                {errors.confirmPassword && (
+                  <p className="mt-2 text-sm text-red-600">
+                    {errors.confirmPassword.message}
+                  </p>
+                )}
+              </div>
+            </div>
 
             <div>
               <button
@@ -145,7 +174,7 @@ export default function LoginPage() {
                 {isSubmitting ? (
                   <Loader2 className="h-5 w-5 animate-spin" />
                 ) : (
-                  "Sign in"
+                  "Create Account"
                 )}
               </button>
             </div>
