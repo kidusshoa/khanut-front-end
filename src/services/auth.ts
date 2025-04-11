@@ -23,6 +23,13 @@ export const authService = {
     return response.data;
   },
 
+  async resendCode(email: string) {
+    const response = await axios.post(`${API_URL}/auth/resend-code`, {
+      email,
+    });
+    return response.data;
+  },
+
   async logout() {
     const response = await axios.post(`${API_URL}/auth/logout`);
     return response.data;
