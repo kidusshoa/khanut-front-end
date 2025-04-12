@@ -4,11 +4,10 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
+import { signIn, useSession } from "next-auth/react"; // Add useSession
 import { Loader2 } from "lucide-react";
-import Link from "next/link";
-import axios from "axios";
-import Cookies from "js-cookie";
 import * as z from "zod";
+import Link from "next/link";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -20,12 +19,13 @@ type LoginInput = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { data: session } = useSession();
 
   const {
     register,
     handleSubmit,
-    formState: { errors },
     setError,
+    formState: { errors },
   } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
   });
@@ -33,31 +33,51 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginInput) => {
     setIsSubmitting(true);
     try {
-      const response = await axios.post(
-        "https://khanut.onrender.com/api/auth/login",
-        {
-          email: data.email,
-          password: data.password,
-        }
-      );
+      const result = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      });
 
-      if (response.data.token) {
-        Cookies.set("client-token", response.data.token);
-        Cookies.set("user-role", response.data.role);
-
-        // Redirect based on user role
-        if (response.data.role === "customer") {
-          router.push(`/customer/${response.data.userId}/home`);
-        } else if (response.data.role === "business") {
-          router.push(`/business/${response.data.userId}/dashboard`);
-        } else if (response.data.role === "admin") {
-          router.push(`/admin/${response.data.userId}/dashboard`);
-        }
+      if (result?.error) {
+        setError("root", {
+          type: "manual",
+          message: "Invalid email or password",
+        });
+        return;
       }
-    } catch (error: any) {
+
+      // Wait for session to be updated
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Get updated session
+      const role = session?.user?.role;
+      const userId = session?.user?.id;
+
+      if (!role || !userId) {
+        router.push("/");
+        return;
+      }
+
+      // Role-based redirect
+      switch (role) {
+        case "admin":
+          router.push(`/admin/${userId}/`);
+          break;
+        case "business":
+          router.push(`/business/${userId}/`);
+          break;
+        case "customer":
+          router.push(`/customer/${userId}/`);
+          break;
+        default:
+          router.push("/");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
       setError("root", {
         type: "manual",
-        message: "Invalid email or password",
+        message: "An unexpected error occurred",
       });
     } finally {
       setIsSubmitting(false);
@@ -83,7 +103,7 @@ export default function LoginPage() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div>
               <label
                 htmlFor="email"
@@ -95,12 +115,10 @@ export default function LoginPage() {
                 <input
                   {...register("email")}
                   type="email"
-                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm ${
-                    errors.email ? "border-red-300" : "border-gray-300"
-                  }`}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
                 />
                 {errors.email && (
-                  <p className="mt-2 text-sm text-red-600">
+                  <p className="mt-1 text-sm text-red-600">
                     {errors.email.message}
                   </p>
                 )}
@@ -118,12 +136,10 @@ export default function LoginPage() {
                 <input
                   {...register("password")}
                   type="password"
-                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm ${
-                    errors.password ? "border-red-300" : "border-gray-300"
-                  }`}
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
                 />
                 {errors.password && (
-                  <p className="mt-2 text-sm text-red-600">
+                  <p className="mt-1 text-sm text-red-600">
                     {errors.password.message}
                   </p>
                 )}
@@ -131,9 +147,7 @@ export default function LoginPage() {
             </div>
 
             {errors.root && (
-              <p className="text-sm text-red-600 text-center">
-                {errors.root.message}
-              </p>
+              <p className="text-sm text-red-600">{errors.root.message}</p>
             )}
 
             <div>
