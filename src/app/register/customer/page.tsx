@@ -15,6 +15,8 @@ import axios from "axios";
 export default function CustomerRegistrationPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [tempEmail, setTempEmail] = useState<string | null>(null);
+  const [tempRole, setTempRole] = useState<string | null>(null);
 
   const {
     register,
@@ -39,7 +41,9 @@ export default function CustomerRegistrationPage() {
       );
 
       if (response.status === 201) {
-        router.push("/verify");
+        setTempEmail(data.email);
+        setTempRole("customer");
+        router.push("/verify/customer");
       }
     } catch (error: any) {
       setError("email", {

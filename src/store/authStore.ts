@@ -1,26 +1,27 @@
 import { create } from "zustand";
+import type { Role, AuthUserData } from "@/types/global";
 
-interface AuthState {
-  user: any;
+interface AuthStore {
   tempEmail: string | null;
-  tempRole: string | null;
+  tempRole: Role | null;
+  user: AuthUserData | null;
   accessToken: string | null;
-  setUser: (user: any) => void;
   setTempEmail: (email: string) => void;
-  setTempRole: (role: string) => void;
+  setTempRole: (role: Role) => void;
+  setUser: (user: AuthUserData) => void;
   setAccessToken: (token: string) => void;
   reset: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
-  user: null,
+export const useAuthStore = create<AuthStore>((set) => ({
   tempEmail: null,
   tempRole: null,
+  user: null,
   accessToken: null,
-  setUser: (user) => set({ user }),
   setTempEmail: (email) => set({ tempEmail: email }),
   setTempRole: (role) => set({ tempRole: role }),
+  setUser: (user) => set({ user }),
   setAccessToken: (token) => set({ accessToken: token }),
   reset: () =>
-    set({ user: null, tempEmail: null, tempRole: null, accessToken: null }),
+    set({ tempEmail: null, tempRole: null, user: null, accessToken: null }),
 }));

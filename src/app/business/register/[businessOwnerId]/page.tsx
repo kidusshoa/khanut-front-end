@@ -9,8 +9,6 @@ import {
   BusinessRegistrationInput,
   businessRegistrationSchema,
 } from "@/lib/validations/business";
-import { useAuthStore } from "@/store/authStore";
-import axios from "axios";
 
 export default function BusinessRegistrationPage({
   params: { businessOwnerId },
@@ -32,20 +30,31 @@ export default function BusinessRegistrationPage({
   const onSubmit = async (data: BusinessRegistrationInput) => {
     setIsSubmitting(true);
     try {
-      const response = await axios.post("/api/business/register", {
-        ...data,
-        businessOwnerId,
+      const formData = new FormData();
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined) {
+          formData.append(key, value);
+        }
       });
+      formData.append("businessOwnerId", businessOwnerId);
 
-      if (response.status === 201) {
-        router.push("/business/pending");
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/business/register`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Business registration failed");
       }
+
+      router.push("/business/pending");
     } catch (error: any) {
       setError("root", {
         type: "manual",
-        message:
-          error.response?.data?.message ||
-          "Registration failed. Please try again.",
+        message: "Registration failed. Please try again.",
       });
     } finally {
       setIsSubmitting(false);

@@ -59,13 +59,37 @@ export default function LoginPage() {
         return;
       }
 
-      // Role-based redirect
+      // Role-based redirect with business approval check
       switch (role) {
         case "admin":
           router.push(`/admin/${userId}/`);
           break;
         case "business":
-          router.push(`/business/${userId}/`);
+          // Check business approval status
+          try {
+            const response = await fetch(
+              `${process.env.NEXT_PUBLIC_API_URL}/business/status`,
+              {
+                headers: {
+                  Authorization: `Bearer ${session?.accessToken}`,
+                },
+              }
+            );
+
+            if (!response.ok) {
+              throw new Error("Failed to check business status");
+            }
+
+            const { status } = await response.json();
+            if (status === "approved") {
+              router.push("/business/dashboard");
+            } else {
+              router.push("/business/pending");
+            }
+          } catch (error) {
+            console.error("Error checking business status:", error);
+            router.push("/business/pending");
+          }
           break;
         case "customer":
           router.push(`/customer/${userId}/`);

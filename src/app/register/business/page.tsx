@@ -2,78 +2,66 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
-import axios from "axios";
+import Link from "next/link";
+import { Eye, EyeOff } from "lucide-react";
+import { useAuthStore } from "@/store/authStore";
 
 export default function BusinessRegistration() {
   const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [errors, setErrors] = useState<any>({});
-
+  const [error, setError] = useState("");
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
-    confirmPassword: "",
-    businessName: "",
-    businessAddress: "",
-    businessType: "",
-    acceptTerms: false,
   });
 
-  const validateForm = () => {
-    const newErrors: any = {};
-
-    if (!formData.name) newErrors.name = "Name is required";
-    if (!formData.email) newErrors.email = "Email is required";
-    if (!formData.password) newErrors.password = "Password is required";
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = "Please confirm your password";
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
-    }
-    if (!formData.businessName) newErrors.businessName = "Business name is required";
-    if (!formData.businessAddress) newErrors.businessAddress = "Business address is required";
-    if (!formData.businessType) newErrors.businessType = "Business type is required";
-    if (!formData.acceptTerms) {
-      newErrors.acceptTerms = "You must accept the terms and conditions";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    setIsSubmitting(true);
+    setError("");
 
-    setIsLoading(true);
     try {
-      const response = await axios.post(
-        "https://khanut.onrender.com/api/auth/register",
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
         {
-          name: formData.name,
-          email: formData.email,
-          role: "business",
-          password: formData.password,
-          businessName: formData.businessName,
-          businessAddress: formData.businessAddress,
-          businessType: formData.businessType,
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            ...formData,
+            role: "business",
+          }),
         }
       );
 
-      if (response.status === 201) {
-        router.push("/verify");
+      if (!response.ok) {
+        throw new Error("Registration failed");
       }
+
+      const data = await response.json();
+
+      // Store the email in auth store for verification
+      useAuthStore.getState().setTempEmail(formData.email);
+      useAuthStore.getState().setTempRole("business");
+
+      // Redirect to the business verification page
+      router.push("/verify/business");
     } catch (error) {
       console.error("Registration error:", error);
-      setErrors({
-        email: "This email may already be in use",
-      });
+      setError("Registration failed. Please try again.");
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -84,14 +72,99 @@ export default function BusinessRegistration() {
           Create Business Account
         </h2>
         <p className="mt-2 text-center text-sm text-gray-600">
-          Sign up as a business owner
+          Already have an account?{" "}
+          <Link
+            href="/login"
+            className="font-medium text-orange-600 hover:text-orange-500"
+          >
+            Sign in
+          </Link>
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Form fields here - similar to your existing form but with business fields */}
+            {error && (
+              <div className="text-red-600 text-sm text-center">{error}</div>
+            )}
+
+            <div>
+              <label
+                htmlFor="name"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Full Name
+              </label>
+              <input
+                id="name"
+                name="name"
+                type="text"
+                required
+                value={formData.name}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-orange-500 focus:outline-none focus:ring-orange-500 sm:text-sm"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Email address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                value={formData.email}
+                onChange={handleChange}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-orange-500 focus:outline-none focus:ring-orange-500 sm:text-sm"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={formData.password}
+                  onChange={handleChange}
+                  className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-orange-500 focus:outline-none focus:ring-orange-500 sm:text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3"
+                >
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5 text-gray-400" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-gray-400" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50"
+              >
+                {isSubmitting ? "Creating Account..." : "Create Account"}
+              </button>
+            </div>
           </form>
         </div>
       </div>
