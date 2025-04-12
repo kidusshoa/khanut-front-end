@@ -1,8 +1,7 @@
 import axios from "axios";
 import { LoginInput, RegisterInput } from "@/lib/validations/auth";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://khanut.onrender.com/api";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export const authService = {
   async register(data: RegisterInput) {

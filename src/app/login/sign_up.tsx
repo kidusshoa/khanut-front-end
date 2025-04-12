@@ -89,11 +89,11 @@ export default function SignUpForm({ onClick }: any) {
     setIsLoading(true);
     try {
       const response = await axios.post(
-        "https://khanut.onrender.com/api/auth/register",
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/register`,
         {
           name: formData.name,
           email: formData.email,
-          role: role, // This will now send "business" instead of "merchant"
+          role: role,
           password: formData.password,
         }
       );
