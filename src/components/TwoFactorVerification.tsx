@@ -12,6 +12,7 @@ import { useRouter } from "next/navigation";
 export default function TwoFactorVerification() {
   const router = useRouter();
   const tempEmail = useAuthStore((state) => state.tempEmail);
+  const userRole = useAuthStore((state) => state.tempRole);
   const setUser = useAuthStore((state) => state.setUser);
   const setAccessToken = useAuthStore((state) => state.setAccessToken);
 
@@ -68,7 +69,15 @@ export default function TwoFactorVerification() {
       const response = await authService.verify2FA(tempEmail, data.code);
       setUser(response.user);
       setAccessToken(response.accessToken);
-      router.push("/business/register");
+
+      // Route based on role
+      if (response.user.role === "business") {
+        router.push("/business/register");
+      } else if (response.user.role === "customer") {
+        router.push("/login"); // Redirect customers to login page
+      } else {
+        router.push("/dashboard");
+      }
     } catch (error) {
       setError("code", {
         type: "manual",

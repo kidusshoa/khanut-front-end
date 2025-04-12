@@ -2,22 +2,34 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Clock } from "lucide-react";
+import { useAuthStore } from "@/store/authStore";
 
-export default function PendingApproval() {
+export default function PendingApprovalPage() {
   const router = useRouter();
+  const { user } = useAuthStore();
 
   useEffect(() => {
-    // Check approval status periodically
     const checkStatus = async () => {
       try {
-        const response = await fetch("/api/business/status");
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/business/status`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to check status");
+        }
+
         const data = await response.json();
-        if (data.approved) {
+        if (data.status === "approved") {
           router.push("/business/dashboard");
         }
       } catch (error) {
-        console.error("Failed to check status:", error);
+        console.error("Error checking status:", error);
       }
     };
 
@@ -30,12 +42,11 @@ export default function PendingApproval() {
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
           <div className="text-center">
-            <Clock className="mx-auto h-12 w-12 text-orange-500" />
-            <h2 className="mt-4 text-xl font-bold text-gray-900">
-              Business Account Pending Approval
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Application Under Review
             </h2>
-            <p className="mt-2 text-sm text-gray-600">
-              Your business account is currently under review. We'll notify you
+            <p className="text-gray-600">
+              Your business registration is pending approval. We'll notify you
               once it's approved.
             </p>
           </div>

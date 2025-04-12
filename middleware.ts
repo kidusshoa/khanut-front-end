@@ -1,21 +1,19 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
-  const path = request.nextUrl.pathname
-  const publicPaths = ['/login']
+  const path = request.nextUrl.pathname;
+  const publicPaths = ["/login"];
 
   if (publicPaths.includes(path)) {
-    return NextResponse.next()
+    return NextResponse.next();
   }
 
- 
-  const accessToken = request.cookies.get('access-token')?.value
- console.log(accessToken)
-  if (!accessToken ) {
-    return NextResponse.redirect(new URL('/login', request.nextUrl))
+  const accessToken = request.cookies.get("access-token")?.value;
+  console.log(accessToken);
+  if (!accessToken) {
+    return NextResponse.redirect(new URL("/login", request.nextUrl));
   }
-
 }
 
 export const config = {
@@ -26,6 +24,6 @@ export const config = {
      * - Static files
      * - Public routes
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|login|register).*)',
-  ]
-}
+    "/((?!api|_next/static|_next/image|favicon.ico|login|register).*)",
+  ],
+};

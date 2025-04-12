@@ -1,33 +1,38 @@
 import { DefaultSession } from "next-auth";
 
+export type Role = "admin" | "business" | "customer";
+
+// Base interface for authentication-related data
+export interface AuthUserData {
+  id: string;
+  role: Role;
+  tempEmail?: string | null;
+  tempRole?: Role | null;
+}
+
+// API Response type
+export interface AuthResponse extends AuthUserData {
+  accessToken: string;
+  refreshToken: string;
+  userId: string;
+}
+
+// Extend the built-in Session type
 declare module "next-auth" {
   interface Session extends DefaultSession {
-    user: {
-      id: string;
-      role: Role;
-    } & DefaultSession["user"];
+    user: AuthUserData & DefaultSession["user"];
     accessToken: string;
     refreshToken: string;
   }
 
-  interface User {
-    id: string;
-    role: Role;
+  // Extend the built-in User type
+  interface User extends AuthUserData {
     accessToken: string;
     refreshToken: string;
   }
 }
 
-export type Role = "admin" | "business" | "customer";
-
-export type AuthResponse = {
-  accessToken: string;
-  refreshToken: string;
-  role: Role;
-  userId: string;
-};
-
-export type ApiError = {
+export interface ApiError {
   message: string;
   status: number;
-};
+}

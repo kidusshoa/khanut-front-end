@@ -6,14 +6,12 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { LoginInput, loginSchema } from "@/lib/validations/auth";
-import { useAuthStore } from "@/store/authStore";
-import { authService } from "@/services/auth";
+import axios from "axios";
 import Link from "next/link";
 
 export default function LoginForm() {
   const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
-  const { setUser, setAccessToken } = useAuthStore();
 
   const {
     register,
@@ -26,20 +24,22 @@ export default function LoginForm() {
 
   const onSubmit = async (data: LoginInput) => {
     try {
-      const response = await authService.login(data);
-      setUser(response.user);
-      setAccessToken(response.accessToken);
+      const response = await axios.post("/api/login", {
+        email: data.email,
+        password: data.password,
+      });
 
-      // Redirect based on user role
-      switch (response.user.role) {
-        case "admin":
-          router.push(`/admin/${response.user.id}/dashboard`);
-          break;
-        case "business":
-          router.push("/business/dashboard");
-          break;
-        default:
-          router.push("/customer/dashboard");
+      if (response.data.success) {
+        const { user } = response.data;
+
+        // Redirect based on user role
+        if (user.role === "customer") {
+          router.push(`/customer/${user.id}/home`);
+        } else if (user.role === "business") {
+          router.push(`/business/${user.id}/dashboard`);
+        } else if (user.role === "admin") {
+          router.push(`/admin/${user.id}/dashboard`);
+        }
       }
     } catch (error: any) {
       setError("root", {

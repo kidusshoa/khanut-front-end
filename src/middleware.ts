@@ -1,81 +1,61 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getToken } from "next-auth/jwt";
 
 export async function middleware(request: NextRequest) {
+  const token = await getToken({ req: request });
   const path = request.nextUrl.pathname;
 
-  // Public paths that don't need redirection
+  // Public paths that don't require authentication
   const publicPaths = ["/login", "/register", "/verify", "/"];
 
-  // Allow access to business registration only after verification
-  if (path === "/business/register") {
-    const isVerified = request.cookies.get("is-verified")?.value;
-    if (!isVerified) {
-      return NextResponse.redirect(new URL("/register", request.url));
-    }
-  }
-
-  // If it's the root path (/), check for authentication
-  if (path === "/") {
-    const accessToken = request.cookies.get("access-token")?.value;
-    const userRole = request.cookies.get("user-role")?.value;
-
-    if (accessToken && userRole) {
-      // Redirect based on role
-      switch (userRole) {
-        case "admin":
-          return NextResponse.redirect(
-            new URL("/admin/dashboard", request.url)
-          );
-        case "business":
-          return NextResponse.redirect(
-            new URL("/business/dashboard", request.url)
-          );
-        case "customer":
-          return NextResponse.redirect(
-            new URL("/customer/dashboard", request.url)
-          );
-        default:
-          return NextResponse.next();
-      }
-    }
-  }
-
-  // For other paths, continue with existing logic
-  if (publicPaths.includes(path)) {
+  // Check if the path starts with any of the public paths
+  if (publicPaths.some((publicPath) => path.startsWith(publicPath))) {
     return NextResponse.next();
   }
 
-  const accessToken = request.cookies.get("access-token")?.value;
-
-  if (!accessToken) {
+  // Check if user is authenticated
+  if (!token) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
-  // Role-based access control
-  const userRole = request.cookies.get("user-role")?.value;
+  // Business route protection
+  if (path.startsWith("/business")) {
+    if (token.role !== "business") {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
 
-  if (path.startsWith("/admin") && userRole !== "admin") {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
+    // Special handling for business dashboard
+    if (path === "/business/dashboard") {
+      try {
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/business/status`,
+          {
+            headers: {
+              Authorization: `Bearer ${token.accessToken}`,
+            },
+          }
+        );
 
-  if (path.startsWith("/business") && userRole !== "business") {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
+        if (!response.ok) {
+          throw new Error("Failed to check business status");
+        }
 
-  if (path.startsWith("/customer") && userRole !== "customer") {
-    return NextResponse.redirect(new URL("/login", request.url));
+        const { status } = await response.json();
+        if (status !== "approved") {
+          return NextResponse.redirect(
+            new URL("/business/pending", request.url)
+          );
+        }
+      } catch (error) {
+        return NextResponse.redirect(new URL("/business/pending", request.url));
+      }
+    }
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: [
-    "/",
-    "/dashboard/:path*",
-    "/admin/:path*",
-    "/business/:path*",
-    "/customer/:path*",
-  ],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
 };

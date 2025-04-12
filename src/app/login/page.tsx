@@ -1,28 +1,195 @@
-'use client'
-import LoginForm from "./form"
-import type { Metadata } from "next"
-import React from "react"
-import SignUpForm from "./sign_up"
+"use client";
 
-// export const metadata: Metadata = {
-//   title: "Login | Your App Name",
-//   description: "Login to your account",
-// }
+import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useRouter } from "next/navigation";
+import { signIn, useSession } from "next-auth/react"; // Add useSession
+import { Loader2 } from "lucide-react";
+import * as z from "zod";
+import Link from "next/link";
+
+const loginSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(1, "Password is required"),
+});
+
+type LoginInput = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
-    const [isSignIn,setIsSignIn]=React.useState(false)
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { data: session } = useSession();
+
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors },
+  } = useForm<LoginInput>({
+    resolver: zodResolver(loginSchema),
+  });
+
+  const onSubmit = async (data: LoginInput) => {
+    setIsSubmitting(true);
+    try {
+      const result = await signIn("credentials", {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setError("root", {
+          type: "manual",
+          message: "Invalid email or password",
+        });
+        return;
+      }
+
+      // Wait for session to be updated
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
+      // Get updated session
+      const role = session?.user?.role;
+      const userId = session?.user?.id;
+
+      if (!role || !userId) {
+        router.push("/");
+        return;
+      }
+
+      // Role-based redirect with business approval check
+      switch (role) {
+        case "admin":
+          router.push(`/admin/${userId}/`);
+          break;
+        case "business":
+          // Check business approval status
+          try {
+            const response = await fetch(
+              `${process.env.NEXT_PUBLIC_API_URL}/business/status`,
+              {
+                headers: {
+                  Authorization: `Bearer ${session?.accessToken}`,
+                },
+              }
+            );
+
+            if (!response.ok) {
+              throw new Error("Failed to check business status");
+            }
+
+            const { status } = await response.json();
+            if (status === "approved") {
+              router.push("/business/dashboard");
+            } else {
+              router.push("/business/pending");
+            }
+          } catch (error) {
+            console.error("Error checking business status:", error);
+            router.push("/business/pending");
+          }
+          break;
+        case "customer":
+          router.push(`/customer/${userId}/`);
+          break;
+        default:
+          router.push("/");
+      }
+    } catch (error) {
+      console.error("Login error:", error);
+      setError("root", {
+        type: "manual",
+        message: "An unexpected error occurred",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">Welcome back</h1>
-          <p className="mt-2 text-sm text-gray-600">Please sign in to your account</p>
+    <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+          Sign in to your account
+        </h2>
+        <p className="mt-2 text-center text-sm text-gray-600">
+          Or{" "}
+          <Link
+            href="/register"
+            className="font-medium text-orange-600 hover:text-orange-500"
+          >
+            create a new account
+          </Link>
+        </p>
+      </div>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Email address
+              </label>
+              <div className="mt-1">
+                <input
+                  {...register("email")}
+                  type="email"
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                />
+                {errors.email && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.email.message}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label
+                htmlFor="password"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Password
+              </label>
+              <div className="mt-1">
+                <input
+                  {...register("password")}
+                  type="password"
+                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                />
+                {errors.password && (
+                  <p className="mt-1 text-sm text-red-600">
+                    {errors.password.message}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            {errors.root && (
+              <p className="text-sm text-red-600">{errors.root.message}</p>
+            )}
+
+            <div>
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 disabled:opacity-50"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                ) : (
+                  "Sign in"
+                )}
+              </button>
+            </div>
+          </form>
         </div>
-        {isSignIn? <SignUpForm onClick={()=>setIsSignIn(false)}/>:
-        <LoginForm onClick={()=>setIsSignIn(true)}/>}
-        
       </div>
     </div>
-  )
+  );
 }
-

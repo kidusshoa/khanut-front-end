@@ -1,11 +1,22 @@
 import axios from "axios";
-import { catchServerActionError } from "@/lib/util";
 import { NextAuthOptions, User } from "next-auth";
 import { JWT } from "next-auth/jwt";
 import { getServerSession } from "next-auth/next";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { getSession } from "next-auth/react";
-import type { AuthResponse } from "@/types/global";
+import type { AuthResponse, Role } from "@/types/global";
+
+// Extend JWT type to match our auth data structure
+declare module "next-auth/jwt" {
+  interface JWT {
+    id: string;
+    role: Role;
+    accessToken: string;
+    refreshToken: string;
+    tempEmail?: string | null;
+    tempRole?: Role | null;
+  }
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -15,7 +26,7 @@ export const authOptions: NextAuthOptions = {
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials): Promise<any> {
+      async authorize(credentials): Promise<User | null> {
         if (!credentials?.email || !credentials?.password) {
           throw new Error("Email and password required");
         }
@@ -33,12 +44,17 @@ export const authOptions: NextAuthOptions = {
             throw new Error("Invalid credentials");
           }
 
-          return {
+          // Convert AuthResponse to User
+          const user: User = {
             id: data.userId,
             role: data.role,
             accessToken: data.accessToken,
             refreshToken: data.refreshToken,
+            tempEmail: data.tempEmail,
+            tempRole: data.tempRole,
           };
+
+          return user;
         } catch (error) {
           if (axios.isAxiosError(error)) {
             throw new Error(
@@ -54,10 +70,13 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
+        // Update token with user data
         token.id = user.id;
         token.role = user.role;
         token.accessToken = user.accessToken;
         token.refreshToken = user.refreshToken;
+        token.tempEmail = user.tempEmail;
+        token.tempRole = user.tempRole;
       }
       return token;
     },
@@ -69,6 +88,8 @@ export const authOptions: NextAuthOptions = {
           ...session.user,
           id: token.id,
           role: token.role,
+          tempEmail: token.tempEmail,
+          tempRole: token.tempRole,
         },
         accessToken: token.accessToken,
         refreshToken: token.refreshToken,
@@ -90,8 +111,7 @@ export const authOptions: NextAuthOptions = {
 };
 
 export async function getServerAuthSession() {
-  const session = await getServerSession(authOptions);
-  return session;
+  return await getServerSession(authOptions);
 }
 
 export async function getAccessToken(): Promise<string> {
@@ -100,15 +120,4 @@ export async function getAccessToken(): Promise<string> {
     throw new Error("No access token available");
   }
   return session.accessToken;
-}
-
-export async function getUserProfile() {
-  const session = await getSession();
-  if (!session?.user) {
-    return null;
-  }
-  return {
-    id: session.user.id,
-    role: session.user.role,
-  };
 }

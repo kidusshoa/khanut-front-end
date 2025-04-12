@@ -2,31 +2,61 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import Cookies from "js-cookie";
 
 export default function LandingPage() {
   const router = useRouter();
+  const { data: session } = useSession();
 
   useEffect(() => {
-    // Check for access token and role
-    const accessToken = Cookies.get("access-token");
-    const userRole = Cookies.get("user-role");
+    const checkUserStatus = async () => {
+      if (!session?.user) return;
 
-    if (accessToken && userRole) {
-      switch (userRole) {
+      const role = session.user.role;
+      const userId = session.user.id;
+
+      if (!role || !userId) return;
+
+      switch (role) {
         case "admin":
           router.push("/admin/dashboard");
           break;
         case "business":
-          router.push("/business/dashboard");
+          try {
+            const response = await fetch(
+              `${process.env.NEXT_PUBLIC_API_URL}/business/status`,
+              {
+                headers: {
+                  Authorization: `Bearer ${session.accessToken}`,
+                },
+              }
+            );
+
+            if (!response.ok) {
+              throw new Error("Failed to check business status");
+            }
+
+            const { status } = await response.json();
+            if (status === "approved") {
+              router.push("/business/dashboard");
+            } else {
+              router.push("/business/pending");
+            }
+          } catch (error) {
+            console.error("Error checking business status:", error);
+            router.push("/business/pending");
+          }
           break;
         case "customer":
           router.push("/customer/dashboard");
           break;
       }
-    }
-  }, [router]);
+    };
+
+    checkUserStatus();
+  }, [session, router]);
 
   return (
     <div className="min-h-screen bg-gray-50">

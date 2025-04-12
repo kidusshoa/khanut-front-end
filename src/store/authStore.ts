@@ -1,43 +1,27 @@
-import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
+import { create } from "zustand";
+import type { Role, AuthUserData } from "@/types/global";
 
-interface User {
-  id: string
-  name: string
-  email: string
-  role: 'customer' | 'business'
+interface AuthStore {
+  tempEmail: string | null;
+  tempRole: Role | null;
+  user: AuthUserData | null;
+  accessToken: string | null;
+  setTempEmail: (email: string) => void;
+  setTempRole: (role: Role) => void;
+  setUser: (user: AuthUserData) => void;
+  setAccessToken: (token: string) => void;
+  reset: () => void;
 }
 
-interface AuthState {
-  user: User | null
-  accessToken: string | null
-  isAuthenticated: boolean
-  tempEmail: string | null
-  setTempEmail: (email: string) => void
-  setUser: (user: User) => void
-  setAccessToken: (token: string) => void
-  logout: () => void
-}
-
-export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      accessToken: null,
-      isAuthenticated: false,
-      tempEmail: null,
-      setTempEmail: (email) => set({ tempEmail: email }),
-      setUser: (user) => set({ user, isAuthenticated: true }),
-      setAccessToken: (token) => set({ accessToken: token }),
-      logout: () => set({ user: null, accessToken: null, isAuthenticated: false }),
-    }),
-    {
-      name: 'auth-storage',
-      partialize: (state) => ({ 
-        accessToken: state.accessToken,
-        user: state.user,
-        isAuthenticated: state.isAuthenticated 
-      }),
-    }
-  )
-)
+export const useAuthStore = create<AuthStore>((set) => ({
+  tempEmail: null,
+  tempRole: null,
+  user: null,
+  accessToken: null,
+  setTempEmail: (email) => set({ tempEmail: email }),
+  setTempRole: (role) => set({ tempRole: role }),
+  setUser: (user) => set({ user }),
+  setAccessToken: (token) => set({ accessToken: token }),
+  reset: () =>
+    set({ tempEmail: null, tempRole: null, user: null, accessToken: null }),
+}));
