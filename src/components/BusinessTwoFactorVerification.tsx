@@ -24,13 +24,13 @@ export function BusinessTwoFactorVerification() {
   // Redirect if no session exists
   useEffect(() => {
     if (!session?.user) {
-      router.push("/register/business-owner");
+      router.push("/register/business");
     }
   }, [session, router]);
 
   const onSubmit = async (data: TwoFactorInput) => {
     if (!session?.user) {
-      router.push("/register/business-owner");
+      router.push("/register/business");
       return;
     }
 
@@ -41,7 +41,7 @@ export function BusinessTwoFactorVerification() {
     } & typeof session.user;
 
     if (!user.tempEmail || user.tempRole !== "business") {
-      router.push("/register/business-owner");
+      router.push("/register/business");
       return;
     }
 
