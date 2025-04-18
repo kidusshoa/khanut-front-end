@@ -1,92 +1,356 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import Cookies from "js-cookie";
 import {
-  FaTachometerAlt,
-  FaBuilding,
-  FaUsers,
-  FaComments,
-  FaFileAlt,
-  FaCog,
-  FaBars,
-  FaTimes,
-} from "react-icons/fa";
+  LayoutDashboard,
+  Building2,
+  Users,
+  MessageSquare,
+  FileBarChart,
+  Settings,
+  Menu,
+  X,
+  Bell,
+  Search,
+  User,
+  ChevronRight,
+  LogOut,
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { AuthProvider, useAuth } from "@/components/AuthProvider";
 
-export default function AdminLayout({
+// Wrapper component that uses AuthProvider
+export default function AdminLayoutWrapper({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  return (
+    <AuthProvider>
+      <AdminLayout>{children}</AdminLayout>
+    </AuthProvider>
+  );
+}
+
+// Main layout component
+function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { isAuthenticated, token, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Handle hydration issues and authentication check
+  useEffect(() => {
+    setMounted(true);
+
+    // Check if authenticated
+    if (!isAuthenticated && !token) {
+      router.push("/login");
+    }
+  }, [isAuthenticated, token, router]);
 
   const pathParts = pathname.split("/");
   const adminId = pathParts[2] || "defaultAdminId";
 
+  // Get current page name for breadcrumbs
+  const getCurrentPageName = () => {
+    const path = pathname.split("/");
+    if (path.length <= 3) return "Dashboard";
+    return path[3].charAt(0).toUpperCase() + path[3].slice(1);
+  };
+
   const navItems = [
     {
       name: "Dashboard",
-      icon: FaTachometerAlt,
+      icon: LayoutDashboard,
       path: `/admin/${adminId}/`,
     },
     {
       name: "Businesses",
-      icon: FaBuilding,
+      icon: Building2,
       path: `/admin/${adminId}/businesses/list`,
     },
-    { name: "Users", icon: FaUsers, path: `/admin/${adminId}/users` },
-    { name: "Reviews", icon: FaComments, path: `/admin/${adminId}/reviews` },
-    { name: "Reports", icon: FaFileAlt, path: `/admin/${adminId}/reports` },
-    { name: "Settings", icon: FaCog, path: `/admin/${adminId}/settings` },
+    { name: "Users", icon: Users, path: `/admin/${adminId}/users` },
+    { name: "Reviews", icon: MessageSquare, path: `/admin/${adminId}/reviews` },
+    { name: "Reports", icon: FileBarChart, path: `/admin/${adminId}/reports` },
+    { name: "Settings", icon: Settings, path: `/admin/${adminId}/settings` },
   ];
 
+  if (!mounted) {
+    return null; // Prevent hydration issues
+  }
+
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen bg-gray-50">
+      {/* Overlay for mobile */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-40 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
       {/* Sidebar */}
-      <aside
-        className={`fixed md:static z-50 top-0 left-0 md:h-screen h-full w-64 bg-white text-black  p-4 space-y-4 transform transition-transform duration-300 ease-in-out ${
+      <motion.aside
+        className={`fixed md:sticky top-0 left-0 z-50 h-screen w-72 bg-white shadow-lg border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
+        initial={false}
       >
-        <div className="flex justify-between items-center md:hidden">
-          <h2 className="text-xl  font-bold">Admin Panel</h2>
-          <button onClick={() => setSidebarOpen(false)}>
-            <FaTimes size={20} />
+        <div className="flex items-center justify-between p-4 border-b">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-md bg-orange-500 flex items-center justify-center text-white font-bold">
+              K
+            </div>
+            <h2 className="text-xl font-bold bg-gradient-to-r from-orange-500 to-orange-700 bg-clip-text text-transparent">
+              Khanut Admin
+            </h2>
+          </div>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="p-1 rounded-full hover:bg-gray-100 md:hidden"
+          >
+            <X size={20} />
           </button>
         </div>
-        <h2 className="text-xl text-orange-500 font-bold mb-6 hidden md:block">Admin Panel</h2>
-        {navItems.map(({ name, icon: Icon, path }) => (
-          <Link
-            key={name}
-            href={path}
-            className={`flex items-center p-2 rounded hover:bg-orange-400 ${
-              pathname === path ? "bg-orange-500 text-white" : ""
-            }`}
-            onClick={() => setSidebarOpen(false)}
-          >
-            <Icon className="mr-3" /> {name}
-          </Link>
-        ))}
-      </aside>
+
+        <div className="p-4">
+          <div className="relative">
+            <Search
+              className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+              size={16}
+            />
+            <Input
+              placeholder="Search..."
+              className="pl-9 bg-gray-50 border-gray-200 focus:border-orange-500 focus:ring-1 focus:ring-orange-500"
+            />
+          </div>
+        </div>
+
+        <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+          {navItems.map(({ name, icon: Icon, path }) => {
+            const isActive =
+              pathname === path || pathname.startsWith(path + "/");
+            return (
+              <Link
+                key={name}
+                href={path}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 group ${
+                  isActive
+                    ? "bg-orange-50 text-orange-600"
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
+                onClick={(e) => {
+                  // Close sidebar on mobile
+                  setSidebarOpen(false);
+
+                  // If not authenticated, prevent default navigation and redirect to login
+                  if (!isAuthenticated && !token) {
+                    e.preventDefault();
+                    router.push("/login");
+                  }
+                }}
+              >
+                <Icon
+                  size={20}
+                  className={`${
+                    isActive
+                      ? "text-orange-500"
+                      : "text-gray-500 group-hover:text-gray-700"
+                  }`}
+                />
+                <span
+                  className={`font-medium ${isActive ? "font-semibold" : ""}`}
+                >
+                  {name}
+                </span>
+                {isActive && (
+                  <motion.div
+                    layoutId="sidebar-indicator"
+                    className="absolute right-0 w-1 h-8 bg-orange-500 rounded-l-full"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                  />
+                )}
+              </Link>
+            );
+          })}
+        </nav>
+
+        <div className="p-4 border-t border-gray-200">
+          <div className="flex items-center gap-3 p-2 rounded-md hover:bg-gray-100 cursor-pointer">
+            <div className="h-9 w-9 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
+              <User size={18} />
+            </div>
+            <div className="flex-1">
+              <p className="font-medium text-sm">Admin User</p>
+              <p className="text-xs text-gray-500">admin@khanut.com</p>
+            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <ChevronRight size={16} />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </motion.aside>
 
       {/* Content with topbar */}
-      <div className="flex-1 flex flex-col">
-        {/* Mobile topbar */}
-        <div className="md:hidden bg-orange-800 text-white p-4 flex items-center justify-between">
-          <h1 className="text-lg font-semibold">Admin Dashboard</h1>
-          <button onClick={() => setSidebarOpen(true)}>
-            <FaBars size={24} />
-          </button>
-        </div>
+      <div className="flex-1 flex flex-col min-h-screen">
+        {/* Header */}
+        <header className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
+          <div className="flex items-center justify-between p-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setSidebarOpen(true)}
+                className="p-2 rounded-md hover:bg-gray-100 md:hidden"
+              >
+                <Menu size={20} />
+              </button>
 
-        <main className="flex-1 bg-gray-100 p-6">
-          <header className="text-lg font-semibold mb-4 hidden md:block">
-            Admin Dashboard
-          </header>
-          {children}
-        </main>
+              {/* Breadcrumbs */}
+              <nav className="hidden md:flex items-center text-sm">
+                <Link
+                  href={`/admin/${adminId}/`}
+                  className="text-gray-500 hover:text-orange-600"
+                  onClick={(e) => {
+                    // If not authenticated, prevent default navigation and redirect to login
+                    if (!isAuthenticated && !token) {
+                      e.preventDefault();
+                      router.push("/login");
+                    }
+                  }}
+                >
+                  Admin
+                </Link>
+                <ChevronRight size={16} className="mx-1 text-gray-400" />
+                <span className="font-medium text-gray-900">
+                  {getCurrentPageName()}
+                </span>
+              </nav>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative">
+                    <Bell size={20} />
+                    <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-orange-500"></span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-80">
+                  <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <div className="max-h-80 overflow-y-auto">
+                    <div className="p-3 hover:bg-gray-50 cursor-pointer border-b">
+                      <p className="font-medium text-sm">
+                        New business registration
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Tech Gurus has registered and awaits approval
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">2 hours ago</p>
+                    </div>
+                    <div className="p-3 hover:bg-gray-50 cursor-pointer">
+                      <p className="font-medium text-sm">
+                        New review submitted
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        A review for Local Bites requires moderation
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">5 hours ago</p>
+                    </div>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <div className="p-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full justify-center text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                    >
+                      View all notifications
+                    </Button>
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              <div className="h-6 w-px bg-gray-200"></div>
+
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="gap-2">
+                    <div className="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600">
+                      <User size={16} />
+                    </div>
+                    <span className="hidden md:inline font-medium">Admin</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem>
+                    <User className="mr-2 h-4 w-4" />
+                    <span>Profile</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <Settings className="mr-2 h-4 w-4" />
+                    <span>Settings</span>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={logout}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Log out</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+        </header>
+
+        <main className="flex-1 p-6">{children}</main>
+
+        <footer className="border-t border-gray-200 p-4 text-center text-sm text-gray-500">
+          © {new Date().getFullYear()} Khanut Admin Panel. All rights reserved.
+        </footer>
       </div>
     </div>
   );

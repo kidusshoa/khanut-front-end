@@ -4,10 +4,12 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { signIn, useSession } from "next-auth/react"; // Add useSession
+import { signIn, useSession } from "next-auth/react";
 import { Loader2 } from "lucide-react";
 import * as z from "zod";
 import Link from "next/link";
+import Cookies from "js-cookie";
+import axios from "axios";
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -33,75 +35,92 @@ export default function LoginPage() {
   const onSubmit = async (data: LoginInput) => {
     setIsSubmitting(true);
     try {
-      const result = await signIn("credentials", {
-        email: data.email,
-        password: data.password,
-        redirect: false,
-      });
+      // First, try direct API login to get the token
+      const apiResponse = await axios.post(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
+        {
+          email: data.email,
+          password: data.password,
+        }
+      );
 
-      if (result?.error) {
+      // If API login is successful, store the token in cookies
+      if (apiResponse.data && apiResponse.data.accessToken) {
+        // Store tokens in cookies
+        Cookies.set("client-token", apiResponse.data.accessToken, {
+          expires: 7,
+        });
+        Cookies.set("user-role", apiResponse.data.role, { expires: 7 });
+        Cookies.set("user-id", apiResponse.data.userId, { expires: 7 });
+
+        // Get user info from API response
+        const role = apiResponse.data.role;
+        const userId = apiResponse.data.userId;
+
+        // Also perform NextAuth sign in for session management
+        await signIn("credentials", {
+          email: data.email,
+          password: data.password,
+          redirect: false,
+        });
+
+        if (!role || !userId) {
+          router.push("/");
+          return;
+        }
+
+        // Role-based redirect with business approval check
+        switch (role) {
+          case "admin":
+            router.push(`/admin/${userId}/`);
+            break;
+          case "business":
+            // Check business approval status
+            try {
+              const response = await fetch(
+                `${process.env.NEXT_PUBLIC_API_URL}/business/status`,
+                {
+                  headers: {
+                    Authorization: `Bearer ${apiResponse.data.accessToken}`,
+                  },
+                }
+              );
+
+              if (!response.ok) {
+                throw new Error("Failed to check business status");
+              }
+
+              const { status } = await response.json();
+              if (status === "approved") {
+                router.push(`/business/${userId}/dashboard`);
+              } else {
+                router.push(`/business/${userId}/pending`);
+              }
+            } catch (error) {
+              console.error("Error checking business status:", error);
+              router.push(`/business/${userId}/pending`);
+            }
+            break;
+          case "customer":
+            router.push(`/customer/${userId}/`);
+            break;
+          default:
+            router.push("/");
+        }
+      } else {
+        // Handle API error
         setError("root", {
           type: "manual",
           message: "Invalid email or password",
         });
-        return;
-      }
-
-      // Wait for session to be updated
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Get updated session
-      const role = session?.user?.role;
-      const userId = session?.user?.id;
-
-      if (!role || !userId) {
-        router.push("/");
-        return;
-      }
-
-      // Role-based redirect with business approval check
-      switch (role) {
-        case "admin":
-          router.push(`/admin/${userId}/`);
-          break;
-        case "business":
-          // Check business approval status
-          try {
-            const response = await fetch(
-              `${process.env.NEXT_PUBLIC_API_URL}/business/status`,
-              {
-                headers: {
-                  Authorization: `Bearer ${session?.accessToken}`,
-                },
-              }
-            );
-
-            if (!response.ok) {
-              throw new Error("Failed to check business status");
-            }
-
-            const { status } = await response.json();
-            if (status === "approved") {
-              router.push("/business/dashboard");
-            } else {
-              router.push("/business/pending");
-            }
-          } catch (error) {
-            console.error("Error checking business status:", error);
-            router.push("/business/pending");
-          }
-          break;
-        case "customer":
-          router.push(`/customer/${userId}/`);
-          break;
-        default:
-          router.push("/");
       }
     } catch (error) {
       console.error("Login error:", error);
       setError("root", {
         type: "manual",
-        message: "An unexpected error occurred",
+        message: axios.isAxiosError(error)
+          ? error.response?.data?.message || "Invalid credentials"
+          : "An unexpected error occurred",
       });
     } finally {
       setIsSubmitting(false);
