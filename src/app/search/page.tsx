@@ -2,15 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { 
-  Search, 
-  Filter, 
-  Calendar, 
-  ShoppingBag, 
-  MapPin, 
+import {
+  Search,
+  Filter,
+  Calendar,
+  ShoppingBag,
+  MapPin,
   Star,
   Loader2,
-  X
+  X,
+  Building,
+  Grid,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,15 +20,18 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Badge } from "@/components/ui/badge";
-import { 
+import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ServiceCard } from "@/components/business/ServiceCard";
+import { BusinessCard } from "@/components/business/BusinessCard";
 import { serviceApi } from "@/services/service";
+import { searchApi } from "@/services/search";
 import { toast } from "react-hot-toast";
 
 export default function SearchPage() {
@@ -34,10 +39,14 @@ export default function SearchPage() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
   const initialType = searchParams.get("type") || "all";
-  
+  const initialSearchType = searchParams.get("searchType") || "all";
+
   const [query, setQuery] = useState(initialQuery);
+  const [searchType, setSearchType] = useState<
+    "all" | "businesses" | "services"
+  >(initialSearchType as any);
+  const [businesses, setBusinesses] = useState<any[]>([]);
   const [services, setServices] = useState<any[]>([]);
-  const [filteredServices, setFilteredServices] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState({
     type: initialType,
@@ -47,94 +56,90 @@ export default function SearchPage() {
   });
 
   useEffect(() => {
-    const fetchServices = async () => {
+    const performSearch = async () => {
+      if (!query.trim()) {
+        setBusinesses([]);
+        setServices([]);
+        setIsLoading(false);
+        return;
+      }
+
       try {
         setIsLoading(true);
-        
-        // In a real app, you would call a search API endpoint
-        // For now, we'll just fetch all services and filter client-side
-        const data = await serviceApi.getAllServices();
-        setServices(data);
-        
-        // Apply initial filters
-        applyFilters(data);
+
+        // Prepare filter parameters
+        const filterParams: Record<string, any> = {};
+
+        if (filters.type !== "all") {
+          filterParams.serviceType = filters.type;
+        }
+
+        if (filters.rating > 0) {
+          filterParams.minRating = filters.rating;
+        }
+
+        if (filters.priceRange[0] > 0 || filters.priceRange[1] < 10000) {
+          filterParams.minPrice = filters.priceRange[0];
+          filterParams.maxPrice = filters.priceRange[1];
+        }
+
+        // Determine sort parameters
+        let sort, order;
+        switch (filters.sortBy) {
+          case "price_low":
+            sort = "price";
+            order = "asc";
+            break;
+          case "price_high":
+            sort = "price";
+            order = "desc";
+            break;
+          case "rating":
+            sort = "rating";
+            order = "desc";
+            break;
+          case "newest":
+            sort = "createdAt";
+            order = "desc";
+            break;
+          default:
+            // Default relevance sorting
+            break;
+        }
+
+        // Call the search API
+        const searchResults = await searchApi.searchAll({
+          query,
+          filters: filterParams,
+          sort,
+          order,
+        });
+
+        setBusinesses(searchResults.businesses || []);
+        setServices(searchResults.services || []);
       } catch (error) {
-        console.error("Error fetching services:", error);
-        toast.error("Failed to load services");
+        console.error("Error performing search:", error);
+        toast.error("Failed to perform search");
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchServices();
-  }, [initialQuery, initialType]);
+    performSearch();
+  }, [query, filters, initialQuery, initialType]);
 
-  const applyFilters = (data: any[] = services) => {
-    let filtered = [...data];
-    
-    // Apply search query
-    if (query) {
-      const searchTerms = query.toLowerCase().split(" ");
-      filtered = filtered.filter((service) => {
-        const nameMatch = service.name.toLowerCase().includes(query.toLowerCase());
-        const descriptionMatch = service.description.toLowerCase().includes(query.toLowerCase());
-        const businessMatch = service.businessName?.toLowerCase().includes(query.toLowerCase());
-        
-        return nameMatch || descriptionMatch || businessMatch;
-      });
-    }
-    
-    // Apply service type filter
-    if (filters.type !== "all") {
-      filtered = filtered.filter((service) => service.serviceType === filters.type);
-    }
-    
-    // Apply price range filter
-    filtered = filtered.filter(
-      (service) => 
-        service.price >= filters.priceRange[0] && 
-        service.price <= filters.priceRange[1]
-    );
-    
-    // Apply rating filter
-    if (filters.rating > 0) {
-      filtered = filtered.filter((service) => (service.rating || 0) >= filters.rating);
-    }
-    
-    // Apply sorting
-    switch (filters.sortBy) {
-      case "price_low":
-        filtered.sort((a, b) => a.price - b.price);
-        break;
-      case "price_high":
-        filtered.sort((a, b) => b.price - a.price);
-        break;
-      case "rating":
-        filtered.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        break;
-      case "newest":
-        filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-        break;
-      default:
-        // Default relevance sorting (already handled by search)
-        break;
-    }
-    
-    setFilteredServices(filtered);
-  };
+  // We don't need the applyFilters function anymore as filtering is done on the server
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Update URL with search parameters
     const params = new URLSearchParams();
     if (query) params.set("q", query);
     if (filters.type !== "all") params.set("type", filters.type);
-    
+    if (searchType !== "all") params.set("searchType", searchType);
+
     router.push(`/search?${params.toString()}`);
-    
-    // Apply filters
-    applyFilters();
   };
 
   const handleFilterChange = (key: string, value: any) => {
@@ -146,11 +151,9 @@ export default function SearchPage() {
     const params = new URLSearchParams();
     if (query) params.set("q", query);
     if (filters.type !== "all") params.set("type", filters.type);
-    
+    if (searchType !== "all") params.set("searchType", searchType);
+
     router.push(`/search?${params.toString()}`);
-    
-    // Apply filters
-    applyFilters();
   };
 
   const clearFilters = () => {
@@ -160,11 +163,12 @@ export default function SearchPage() {
       rating: 0,
       sortBy: "relevance",
     });
-    
+
     // Update URL
     const params = new URLSearchParams();
     if (query) params.set("q", query);
-    
+    if (searchType !== "all") params.set("searchType", searchType);
+
     router.push(`/search?${params.toString()}`);
   };
 
@@ -191,14 +195,14 @@ export default function SearchPage() {
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Search Services</h1>
-        
+        <h1 className="text-3xl font-bold text-gray-900 mb-4">Search</h1>
+
         <form onSubmit={handleSearch} className="flex gap-2">
           <div className="relative flex-grow">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <Input
               type="text"
-              placeholder="Search for services..."
+              placeholder="Search for businesses and services..."
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               className="pl-10"
@@ -218,7 +222,7 @@ export default function SearchPage() {
               <SheetHeader>
                 <SheetTitle>Filters</SheetTitle>
               </SheetHeader>
-              
+
               <div className="py-4 space-y-6">
                 <div>
                   <h3 className="text-sm font-medium mb-3">Service Type</h3>
@@ -227,7 +231,9 @@ export default function SearchPage() {
                       <Checkbox
                         id="type-all"
                         checked={filters.type === "all"}
-                        onCheckedChange={() => handleFilterChange("type", "all")}
+                        onCheckedChange={() =>
+                          handleFilterChange("type", "all")
+                        }
                       />
                       <Label htmlFor="type-all" className="ml-2">
                         All Types
@@ -237,9 +243,14 @@ export default function SearchPage() {
                       <Checkbox
                         id="type-appointment"
                         checked={filters.type === "appointment"}
-                        onCheckedChange={() => handleFilterChange("type", "appointment")}
+                        onCheckedChange={() =>
+                          handleFilterChange("type", "appointment")
+                        }
                       />
-                      <Label htmlFor="type-appointment" className="ml-2 flex items-center">
+                      <Label
+                        htmlFor="type-appointment"
+                        className="ml-2 flex items-center"
+                      >
                         <Calendar className="h-4 w-4 mr-1" />
                         Appointments
                       </Label>
@@ -248,9 +259,14 @@ export default function SearchPage() {
                       <Checkbox
                         id="type-product"
                         checked={filters.type === "product"}
-                        onCheckedChange={() => handleFilterChange("type", "product")}
+                        onCheckedChange={() =>
+                          handleFilterChange("type", "product")
+                        }
                       />
-                      <Label htmlFor="type-product" className="ml-2 flex items-center">
+                      <Label
+                        htmlFor="type-product"
+                        className="ml-2 flex items-center"
+                      >
                         <ShoppingBag className="h-4 w-4 mr-1" />
                         Products
                       </Label>
@@ -259,16 +275,21 @@ export default function SearchPage() {
                       <Checkbox
                         id="type-in-person"
                         checked={filters.type === "in_person"}
-                        onCheckedChange={() => handleFilterChange("type", "in_person")}
+                        onCheckedChange={() =>
+                          handleFilterChange("type", "in_person")
+                        }
                       />
-                      <Label htmlFor="type-in-person" className="ml-2 flex items-center">
+                      <Label
+                        htmlFor="type-in-person"
+                        className="ml-2 flex items-center"
+                      >
                         <MapPin className="h-4 w-4 mr-1" />
                         In-Person Services
                       </Label>
                     </div>
                   </div>
                 </div>
-                
+
                 <div>
                   <h3 className="text-sm font-medium mb-3">Price Range</h3>
                   <div className="space-y-4">
@@ -277,7 +298,9 @@ export default function SearchPage() {
                       min={0}
                       max={10000}
                       step={100}
-                      onValueChange={(value) => handleFilterChange("priceRange", value)}
+                      onValueChange={(value) =>
+                        handleFilterChange("priceRange", value)
+                      }
                     />
                     <div className="flex justify-between text-sm text-gray-500">
                       <span>{formatPrice(filters.priceRange[0])}</span>
@@ -285,16 +308,20 @@ export default function SearchPage() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div>
                   <h3 className="text-sm font-medium mb-3">Minimum Rating</h3>
                   <div className="flex items-center space-x-2">
                     {[0, 1, 2, 3, 4, 5].map((rating) => (
                       <Button
                         key={rating}
-                        variant={filters.rating === rating ? "default" : "outline"}
+                        variant={
+                          filters.rating === rating ? "default" : "outline"
+                        }
                         size="sm"
-                        className={filters.rating === rating ? "bg-orange-600" : ""}
+                        className={
+                          filters.rating === rating ? "bg-orange-600" : ""
+                        }
                         onClick={() => handleFilterChange("rating", rating)}
                       >
                         {rating === 0 ? (
@@ -309,7 +336,7 @@ export default function SearchPage() {
                     ))}
                   </div>
                 </div>
-                
+
                 <div>
                   <h3 className="text-sm font-medium mb-3">Sort By</h3>
                   <div className="space-y-2">
@@ -317,7 +344,9 @@ export default function SearchPage() {
                       <Checkbox
                         id="sort-relevance"
                         checked={filters.sortBy === "relevance"}
-                        onCheckedChange={() => handleFilterChange("sortBy", "relevance")}
+                        onCheckedChange={() =>
+                          handleFilterChange("sortBy", "relevance")
+                        }
                       />
                       <Label htmlFor="sort-relevance" className="ml-2">
                         Relevance
@@ -327,7 +356,9 @@ export default function SearchPage() {
                       <Checkbox
                         id="sort-price-low"
                         checked={filters.sortBy === "price_low"}
-                        onCheckedChange={() => handleFilterChange("sortBy", "price_low")}
+                        onCheckedChange={() =>
+                          handleFilterChange("sortBy", "price_low")
+                        }
                       />
                       <Label htmlFor="sort-price-low" className="ml-2">
                         Price: Low to High
@@ -337,7 +368,9 @@ export default function SearchPage() {
                       <Checkbox
                         id="sort-price-high"
                         checked={filters.sortBy === "price_high"}
-                        onCheckedChange={() => handleFilterChange("sortBy", "price_high")}
+                        onCheckedChange={() =>
+                          handleFilterChange("sortBy", "price_high")
+                        }
                       />
                       <Label htmlFor="sort-price-high" className="ml-2">
                         Price: High to Low
@@ -347,7 +380,9 @@ export default function SearchPage() {
                       <Checkbox
                         id="sort-rating"
                         checked={filters.sortBy === "rating"}
-                        onCheckedChange={() => handleFilterChange("sortBy", "rating")}
+                        onCheckedChange={() =>
+                          handleFilterChange("sortBy", "rating")
+                        }
                       />
                       <Label htmlFor="sort-rating" className="ml-2">
                         Highest Rated
@@ -357,7 +392,9 @@ export default function SearchPage() {
                       <Checkbox
                         id="sort-newest"
                         checked={filters.sortBy === "newest"}
-                        onCheckedChange={() => handleFilterChange("sortBy", "newest")}
+                        onCheckedChange={() =>
+                          handleFilterChange("sortBy", "newest")
+                        }
                       />
                       <Label htmlFor="sort-newest" className="ml-2">
                         Newest
@@ -365,7 +402,7 @@ export default function SearchPage() {
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex gap-2 pt-4">
                   <Button
                     variant="outline"
@@ -388,13 +425,16 @@ export default function SearchPage() {
       </div>
 
       {/* Active filters */}
-      {(filters.type !== "all" || filters.rating > 0 || filters.sortBy !== "relevance" || 
-        filters.priceRange[0] > 0 || filters.priceRange[1] < 10000) && (
+      {(filters.type !== "all" ||
+        filters.rating > 0 ||
+        filters.sortBy !== "relevance" ||
+        filters.priceRange[0] > 0 ||
+        filters.priceRange[1] < 10000) && (
         <div className="flex flex-wrap gap-2 mb-6">
           <div className="text-sm text-gray-500 mr-2 flex items-center">
             Active Filters:
           </div>
-          
+
           {filters.type !== "all" && (
             <Badge variant="outline" className="flex items-center gap-1">
               {getServiceTypeIcon(filters.type)}
@@ -414,10 +454,11 @@ export default function SearchPage() {
               </Button>
             </Badge>
           )}
-          
+
           {(filters.priceRange[0] > 0 || filters.priceRange[1] < 10000) && (
             <Badge variant="outline" className="flex items-center gap-1">
-              {formatPrice(filters.priceRange[0])} - {formatPrice(filters.priceRange[1])}
+              {formatPrice(filters.priceRange[0])} -{" "}
+              {formatPrice(filters.priceRange[1])}
               <Button
                 variant="ghost"
                 size="icon"
@@ -431,7 +472,7 @@ export default function SearchPage() {
               </Button>
             </Badge>
           )}
-          
+
           {filters.rating > 0 && (
             <Badge variant="outline" className="flex items-center gap-1">
               {filters.rating}+ <Star className="h-3 w-3 ml-1" />
@@ -448,10 +489,13 @@ export default function SearchPage() {
               </Button>
             </Badge>
           )}
-          
+
           {filters.sortBy !== "relevance" && (
             <Badge variant="outline" className="flex items-center gap-1">
-              Sort: {filters.sortBy.replace("_", " ").replace(/\b\w/g, (l) => l.toUpperCase())}
+              Sort:{" "}
+              {filters.sortBy
+                .replace("_", " ")
+                .replace(/\b\w/g, (l) => l.toUpperCase())}
               <Button
                 variant="ghost"
                 size="icon"
@@ -465,7 +509,7 @@ export default function SearchPage() {
               </Button>
             </Badge>
           )}
-          
+
           <Button
             variant="ghost"
             size="sm"
@@ -477,41 +521,122 @@ export default function SearchPage() {
         </div>
       )}
 
+      {/* Search Type Tabs */}
+      <Tabs
+        defaultValue={searchType}
+        value={searchType}
+        onValueChange={(value) =>
+          setSearchType(value as "all" | "businesses" | "services")
+        }
+        className="mb-6"
+      >
+        <TabsList>
+          <TabsTrigger value="all" className="flex items-center gap-1">
+            <Grid className="h-4 w-4" />
+            <span>All</span>
+          </TabsTrigger>
+          <TabsTrigger value="businesses" className="flex items-center gap-1">
+            <Building className="h-4 w-4" />
+            <span>Businesses</span>
+          </TabsTrigger>
+          <TabsTrigger value="services" className="flex items-center gap-1">
+            <Calendar className="h-4 w-4" />
+            <span>Services</span>
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       {/* Search results */}
       {isLoading ? (
         <div className="flex justify-center items-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
         </div>
-      ) : filteredServices.length > 0 ? (
+      ) : ((searchType === "all" || searchType === "businesses") &&
+          businesses.length > 0) ||
+        ((searchType === "all" || searchType === "services") &&
+          services.length > 0) ? (
         <div>
           <p className="text-sm text-gray-500 mb-4">
-            {filteredServices.length} {filteredServices.length === 1 ? "result" : "results"} found
+            {searchType === "all"
+              ? businesses.length + services.length
+              : searchType === "businesses"
+              ? businesses.length
+              : services.length}
+            {(searchType === "all"
+              ? businesses.length + services.length
+              : searchType === "businesses"
+              ? businesses.length
+              : services.length) === 1
+              ? "result"
+              : "results"}{" "}
+            found
             {query ? ` for "${query}"` : ""}
           </p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredServices.map((service) => (
-              <ServiceCard
-                key={service._id}
-                service={service}
-                onDelete={() => {}}
-                onEdit={() => {}}
-                showActions={false}
-              />
-            ))}
-          </div>
+
+          {/* Businesses Results */}
+          {(searchType === "all" || searchType === "businesses") &&
+            businesses.length > 0 && (
+              <div className="mb-8">
+                {searchType === "all" && (
+                  <h2 className="text-xl font-semibold mb-4">Businesses</h2>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {businesses.map((business) => (
+                    <BusinessCard key={business._id} business={business} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+          {/* Services Results */}
+          {(searchType === "all" || searchType === "services") &&
+            services.length > 0 && (
+              <div>
+                {searchType === "all" && (
+                  <h2 className="text-xl font-semibold mb-4">Services</h2>
+                )}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {services.map((service) => (
+                    <ServiceCard
+                      key={service._id}
+                      service={service}
+                      onDelete={() => {}}
+                      onEdit={() => {}}
+                      showActions={false}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
         </div>
       ) : (
         <div className="text-center py-12 bg-gray-50 rounded-lg">
           <h3 className="text-lg font-medium text-gray-900 mb-2">
-            No services found
+            No results found
           </h3>
           <p className="text-gray-500 mb-6">
             {query
-              ? `No services matching "${query}" with the selected filters.`
-              : "No services match the selected filters."}
+              ? `No ${
+                  searchType === "businesses"
+                    ? "businesses"
+                    : searchType === "services"
+                    ? "services"
+                    : "results"
+                } matching "${query}" with the selected filters.`
+              : `No ${
+                  searchType === "businesses"
+                    ? "businesses"
+                    : searchType === "services"
+                    ? "services"
+                    : "results"
+                } match the selected filters.`}
           </p>
-          <Button onClick={clearFilters} className="bg-orange-600 hover:bg-orange-700">
+          <Button
+            onClick={clearFilters}
+            className="bg-orange-600 hover:bg-orange-700"
+          >
             Clear Filters
           </Button>
         </div>

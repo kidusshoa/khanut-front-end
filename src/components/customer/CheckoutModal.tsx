@@ -4,14 +4,14 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
   DialogTitle,
-  DialogFooter
+  DialogFooter,
 } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -75,7 +75,7 @@ export function CheckoutModal({
   const onSubmit = async (data: any) => {
     try {
       setIsSubmitting(true);
-      
+
       // Create orders for each business
       const orderPromises = Object.entries(itemsByBusiness).map(
         async ([businessId, items]) => {
@@ -90,21 +90,23 @@ export function CheckoutModal({
             paymentMethod: "card", // Default to card payment
             notes: "",
           };
-          
+
           return orderApi.createOrder(orderData);
         }
       );
-      
+
       const orders = await Promise.all(orderPromises);
-      
+
       // Initialize payment for the first order
       // In a real app, you might want to handle multiple orders differently
       if (orders.length > 0) {
-        const paymentResponse = await paymentApi.initializeOrderPayment(orders[0]._id);
-        
+        const paymentResponse = await paymentApi.initializeOrderPayment(
+          orders[0]._id
+        );
+
         // Clear cart after successful order creation
         clearCart();
-        
+
         // Redirect to Chapa payment page
         if (paymentResponse.checkoutUrl) {
           window.location.href = paymentResponse.checkoutUrl;
@@ -113,7 +115,7 @@ export function CheckoutModal({
           router.push(`/customer/${customerId}/orders`);
         }
       }
-      
+
       toast.success("Order placed successfully!");
       onClose();
     } catch (error) {
@@ -148,7 +150,10 @@ export function CheckoutModal({
                     <p className="font-medium">Business ID: {businessId}</p>
                     <ul className="pl-4 space-y-1">
                       {items.map((item) => (
-                        <li key={item.serviceId} className="text-sm flex justify-between">
+                        <li
+                          key={item.serviceId}
+                          className="text-sm flex justify-between"
+                        >
                           <span>
                             {item.name} x {item.quantity}
                           </span>
@@ -159,19 +164,21 @@ export function CheckoutModal({
                   </div>
                 ))}
               </div>
-              
+
               <Separator className="my-2" />
-              
+
               <div className="flex justify-between font-medium">
                 <span>Total</span>
-                <span className="text-orange-600">{formatPrice(getCartTotal())}</span>
+                <span className="text-orange-600">
+                  {formatPrice(getCartTotal())}
+                </span>
               </div>
             </div>
           </div>
 
           <div>
             <h3 className="text-lg font-medium mb-2">Shipping Address</h3>
-            
+
             <div className="space-y-3">
               <div>
                 <Label htmlFor="street">Street Address</Label>
@@ -181,10 +188,12 @@ export function CheckoutModal({
                   placeholder="123 Main St"
                 />
                 {errors.street && (
-                  <p className="text-red-500 text-sm mt-1">{errors.street.message}</p>
+                  <p className="text-red-500 text-sm mt-1">
+                    {errors.street.message}
+                  </p>
                 )}
               </div>
-              
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label htmlFor="city">City</Label>
@@ -194,10 +203,12 @@ export function CheckoutModal({
                     placeholder="Addis Ababa"
                   />
                   {errors.city && (
-                    <p className="text-red-500 text-sm mt-1">{errors.city.message}</p>
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.city.message}
+                    </p>
                   )}
                 </div>
-                
+
                 <div>
                   <Label htmlFor="state">State/Region</Label>
                   <Input
@@ -207,7 +218,7 @@ export function CheckoutModal({
                   />
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label htmlFor="postalCode">Postal Code</Label>
@@ -217,10 +228,12 @@ export function CheckoutModal({
                     placeholder="1000"
                   />
                   {errors.postalCode && (
-                    <p className="text-red-500 text-sm mt-1">{errors.postalCode.message}</p>
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.postalCode.message}
+                    </p>
                   )}
                 </div>
-                
+
                 <div>
                   <Label htmlFor="country">Country</Label>
                   <Input
@@ -229,7 +242,9 @@ export function CheckoutModal({
                     defaultValue="Ethiopia"
                   />
                   {errors.country && (
-                    <p className="text-red-500 text-sm mt-1">{errors.country.message}</p>
+                    <p className="text-red-500 text-sm mt-1">
+                      {errors.country.message}
+                    </p>
                   )}
                 </div>
               </div>
@@ -239,7 +254,8 @@ export function CheckoutModal({
           <div>
             <h3 className="text-lg font-medium mb-2">Payment Method</h3>
             <p className="text-sm text-gray-600 mb-2">
-              You will be redirected to Chapa secure payment gateway to complete your purchase.
+              You will be redirected to Chapa secure payment gateway to complete
+              your purchase.
             </p>
             <div className="bg-gray-50 p-3 rounded-md flex items-center">
               <CreditCard className="h-5 w-5 text-gray-600 mr-2" />
@@ -248,13 +264,17 @@ export function CheckoutModal({
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <button
+              type="button"
+              className={buttonVariants({ variant: "outline" })}
+              onClick={onClose}
+            >
               Cancel
-            </Button>
-            <Button 
-              type="submit" 
+            </button>
+            <button
+              type="submit"
               disabled={isSubmitting}
-              className="bg-orange-600 hover:bg-orange-700"
+              className={`${buttonVariants()} bg-orange-600 hover:bg-orange-700`}
             >
               {isSubmitting ? (
                 <>
@@ -264,7 +284,7 @@ export function CheckoutModal({
               ) : (
                 "Place Order"
               )}
-            </Button>
+            </button>
           </DialogFooter>
         </form>
       </DialogContent>

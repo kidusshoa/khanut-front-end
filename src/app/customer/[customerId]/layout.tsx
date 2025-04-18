@@ -1,4 +1,10 @@
-import { ReactNode } from "react";
+import { ReactNode, Suspense } from "react";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Khanut - Customer Dashboard",
+  description: "Find and book local services in Ethiopia",
+};
 
 export default async function CustomerLayout({
   children,
@@ -6,8 +12,14 @@ export default async function CustomerLayout({
   children: ReactNode;
 }) {
   return (
-    <div className="w-full ">
-      <div className=" w-full h-full">{children}</div>
-    </div>
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center min-h-screen">
+          Loading...
+        </div>
+      }
+    >
+      {children}
+    </Suspense>
   );
 }

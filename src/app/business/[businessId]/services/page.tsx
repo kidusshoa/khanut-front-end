@@ -1,14 +1,41 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { 
+  PlusCircle, 
+  Pencil, 
+  Trash2, 
+  Calendar, 
+  ShoppingBag, 
+  MapPin,
+  Loader2,
+  Eye
+} from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { PlusCircle, Loader2 } from "lucide-react";
-import { ServiceCard } from "@/components/business/ServiceCard";
+import { Badge } from "@/components/ui/badge";
+import { DataTable } from "@/components/ui/data-table/DataTable";
+import { ColumnDef } from "@tanstack/react-table";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 import { serviceApi } from "@/services/service";
 import { AddServiceModal } from "@/components/business/AddServiceModal";
+import { toast } from "react-hot-toast";
+import { format } from "date-fns";
+
+interface Service {
+  _id: string;
+  name: string;
+  description: string;
+  price: number;
+  serviceType: "appointment" | "product" | "in_person";
+  images: string[];
+  duration?: number;
+  inventory?: number;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export default function BusinessServicesPage({
   params: { businessId },
@@ -16,123 +43,294 @@ export default function BusinessServicesPage({
   params: { businessId: string };
 }) {
   const router = useRouter();
-  const { data: session } = useSession();
-  const [isLoading, setIsLoading] = useState(true);
-  const [services, setServices] = useState<any[]>([]);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [selectedService, setSelectedService] = useState<Service | null>(null);
 
-  useEffect(() => {
-    const fetchServices = async () => {
-      try {
-        setIsLoading(true);
-        const data = await serviceApi.getBusinessServices(businessId);
-        setServices(data);
-      } catch (error) {
-        console.error("Error fetching services:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  // Fetch services
+  const { data: services, isLoading, refetch } = useQuery({
+    queryKey: ["services", businessId],
+    queryFn: () => serviceApi.getBusinessServices(businessId),
+  });
 
-    fetchServices();
-  }, [businessId]);
+  const handleAddService = async () => {
+    setSelectedService(null);
+    setIsAddModalOpen(true);
+  };
 
-  const handleAddService = async (newService: any) => {
-    try {
-      setServices((prev) => [...prev, newService]);
-    } catch (error) {
-      console.error("Error adding service:", error);
-    }
+  const handleEditService = (service: Service) => {
+    setSelectedService(service);
+    setIsAddModalOpen(true);
   };
 
   const handleDeleteService = async (serviceId: string) => {
-    try {
-      await serviceApi.deleteService(serviceId);
-      setServices((prev) => prev.filter((service) => service._id !== serviceId));
-    } catch (error) {
-      console.error("Error deleting service:", error);
+    if (confirm("Are you sure you want to delete this service?")) {
+      try {
+        await serviceApi.deleteService(serviceId);
+        toast.success("Service deleted successfully");
+        refetch();
+      } catch (error) {
+        console.error("Error deleting service:", error);
+        toast.error("Failed to delete service");
+      }
     }
   };
 
-  const filteredServices = activeTab === "all" 
-    ? services 
-    : services.filter(service => service.serviceType === activeTab);
+  const handleServiceAdded = () => {
+    refetch();
+    toast.success("Service added successfully");
+  };
 
-  if (!session) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
-      </div>
-    );
-  }
+  const handleServiceUpdated = () => {
+    refetch();
+    toast.success("Service updated successfully");
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "ETB",
+    }).format(price);
+  };
+
+  const getServiceTypeIcon = (type: string) => {
+    switch (type) {
+      case "appointment":
+        return <Calendar className="h-4 w-4 mr-1" />;
+      case "product":
+        return <ShoppingBag className="h-4 w-4 mr-1" />;
+      case "in_person":
+        return <MapPin className="h-4 w-4 mr-1" />;
+      default:
+        return null;
+    }
+  };
+
+  const getServiceTypeLabel = (type: string) => {
+    switch (type) {
+      case "appointment":
+        return "Appointment";
+      case "product":
+        return "Product";
+      case "in_person":
+        return "In-Person";
+      default:
+        return type;
+    }
+  };
+
+  const getServiceTypeColor = (type: string) => {
+    switch (type) {
+      case "appointment":
+        return "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400";
+      case "product":
+        return "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400";
+      case "in_person":
+        return "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400";
+      default:
+        return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400";
+    }
+  };
+
+  // Define table columns
+  const columns: ColumnDef<Service>[] = [
+    {
+      accessorKey: "name",
+      header: "Service",
+      cell: ({ row }) => {
+        const service = row.original;
+        return (
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-md overflow-hidden bg-muted">
+              {service.images && service.images.length > 0 ? (
+                <img
+                  src={service.images[0]}
+                  alt={service.name}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="h-full w-full flex items-center justify-center bg-muted">
+                  {getServiceTypeIcon(service.serviceType)}
+                </div>
+              )}
+            </div>
+            <div>
+              <div className="font-medium">{service.name}</div>
+              <div className="text-sm text-muted-foreground line-clamp-1">
+                {service.description}
+              </div>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      accessorKey: "price",
+      header: "Price",
+      cell: ({ row }) => formatPrice(row.original.price),
+    },
+    {
+      accessorKey: "serviceType",
+      header: "Type",
+      cell: ({ row }) => (
+        <Badge
+          className={getServiceTypeColor(row.original.serviceType)}
+          variant="outline"
+        >
+          <div className="flex items-center">
+            {getServiceTypeIcon(row.original.serviceType)}
+            {getServiceTypeLabel(row.original.serviceType)}
+          </div>
+        </Badge>
+      ),
+    },
+    {
+      accessorKey: "details",
+      header: "Details",
+      cell: ({ row }) => {
+        const service = row.original;
+        if (service.serviceType === "appointment" && service.duration) {
+          return <div className="text-sm">{service.duration} minutes</div>;
+        } else if (service.serviceType === "product" && service.inventory !== undefined) {
+          return (
+            <div className="text-sm">
+              {service.inventory > 0 ? `${service.inventory} in stock` : "Out of stock"}
+            </div>
+          );
+        }
+        return null;
+      },
+    },
+    {
+      accessorKey: "createdAt",
+      header: "Created",
+      cell: ({ row }) => format(new Date(row.original.createdAt), "MMM d, yyyy"),
+    },
+    {
+      id: "actions",
+      cell: ({ row }) => {
+        const service = row.original;
+        return (
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => router.push(`/services/${service._id}`)}
+            >
+              <Eye className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => handleEditService(service)}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-red-500 hover:text-red-600 hover:bg-red-50"
+              onClick={() => handleDeleteService(service._id)}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        );
+      },
+    },
+  ];
+
+  // Filter services based on active tab
+  const filteredServices = services
+    ? activeTab === "all"
+      ? services
+      : services.filter((service) => service.serviceType === activeTab)
+    : [];
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Manage Services</h1>
-        <Button 
-          onClick={() => setIsAddModalOpen(true)}
-          className="bg-orange-600 hover:bg-orange-700"
-        >
-          <PlusCircle className="mr-2 h-4 w-4" />
-          Add Service
-        </Button>
+    <DashboardLayout businessId={businessId}>
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Services</h1>
+            <p className="text-muted-foreground">
+              Manage your business services, products, and appointments.
+            </p>
+          </div>
+          <Button
+            onClick={handleAddService}
+            className="bg-orange-600 hover:bg-orange-700 sm:self-start"
+          >
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Add Service
+          </Button>
+        </div>
+
+        <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="all">All Services</TabsTrigger>
+            <TabsTrigger value="appointment" className="flex items-center gap-1">
+              <Calendar className="h-4 w-4" />
+              <span className="hidden sm:inline">Appointments</span>
+            </TabsTrigger>
+            <TabsTrigger value="product" className="flex items-center gap-1">
+              <ShoppingBag className="h-4 w-4" />
+              <span className="hidden sm:inline">Products</span>
+            </TabsTrigger>
+            <TabsTrigger value="in_person" className="flex items-center gap-1">
+              <MapPin className="h-4 w-4" />
+              <span className="hidden sm:inline">In-Person</span>
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value={activeTab} className="mt-6">
+            {isLoading ? (
+              <div className="flex justify-center items-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+              </div>
+            ) : filteredServices.length > 0 ? (
+              <DataTable
+                columns={columns}
+                data={filteredServices}
+                searchColumn="name"
+                searchPlaceholder="Search services..."
+              />
+            ) : (
+              <div className="text-center py-12 bg-muted/50 rounded-lg">
+                <h3 className="text-lg font-medium text-foreground mb-2">
+                  No services found
+                </h3>
+                <p className="text-muted-foreground mb-6">
+                  {activeTab === "all"
+                    ? "You haven't added any services yet."
+                    : `You haven't added any ${getServiceTypeLabel(
+                        activeTab
+                      ).toLowerCase()} services yet.`}
+                </p>
+                <Button
+                  onClick={handleAddService}
+                  className="bg-orange-600 hover:bg-orange-700"
+                >
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add Your First Service
+                </Button>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
 
-      <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-6">
-          <TabsTrigger value="all">All Services</TabsTrigger>
-          <TabsTrigger value="appointment">Appointments</TabsTrigger>
-          <TabsTrigger value="product">Products</TabsTrigger>
-          <TabsTrigger value="in_person">In-Person Services</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value={activeTab} className="mt-6">
-          {isLoading ? (
-            <div className="flex justify-center items-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
-            </div>
-          ) : filteredServices.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredServices.map((service) => (
-                <ServiceCard
-                  key={service._id}
-                  service={service}
-                  onDelete={() => handleDeleteService(service._id)}
-                  onEdit={() => router.push(`/business/${businessId}/services/${service._id}/edit`)}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12 bg-gray-50 rounded-lg">
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                No services found
-              </h3>
-              <p className="text-gray-500 mb-6">
-                {activeTab === "all"
-                  ? "You haven't added any services yet."
-                  : `You haven't added any ${activeTab} services yet.`}
-              </p>
-              <Button 
-                onClick={() => setIsAddModalOpen(true)}
-                className="bg-orange-600 hover:bg-orange-700"
-              >
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Add Your First Service
-              </Button>
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
-
-      <AddServiceModal
-        isOpen={isAddModalOpen}
-        onClose={() => setIsAddModalOpen(false)}
-        businessId={businessId}
-        onServiceAdded={handleAddService}
-        initialServiceType={activeTab !== "all" ? activeTab as any : undefined}
-      />
-    </div>
+      {isAddModalOpen && (
+        <AddServiceModal
+          isOpen={isAddModalOpen}
+          onClose={() => setIsAddModalOpen(false)}
+          businessId={businessId}
+          onServiceAdded={handleServiceAdded}
+          onServiceUpdated={handleServiceUpdated}
+          initialServiceType={activeTab !== "all" ? activeTab as any : undefined}
+          service={selectedService}
+        />
+      )}
+    </DashboardLayout>
   );
 }

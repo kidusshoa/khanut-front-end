@@ -1,12 +1,12 @@
-import React from "react";
-import SearchResults from "../../components/searchResults";
+"use client";
 
-const searchPage = () => {
-  return (
-    <div className="w-full h-full">
-      <SearchResults />
-    </div>
-  );
-};
+import { useParams } from "next/navigation";
+import SearchResultsContent from "@/components/customer/SearchResultsContent";
 
-export default searchPage;
+export default function SearchResultsPage() {
+  // Use the useParams hook to get the customerId
+  const params = useParams();
+  const customerId = params.customerId as string;
+
+  return <SearchResultsContent customerId={customerId} />;
+}

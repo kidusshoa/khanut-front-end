@@ -1,10 +1,12 @@
-import Navbar from "./../components/customerNavbar";
+"use client";
 
-export default function CustomerPage() {
-  return (
-    <div className="min-h-screen bg-gray-100">
-      <Navbar />
-      {/* <MainContent /> */}
-    </div>
-  );
+import { useParams } from "next/navigation";
+import CustomerDashboardContent from "@/components/customer/CustomerDashboardContent";
+
+export default function CustomerDashboardPage() {
+  // Use the useParams hook to get the customerId
+  const params = useParams();
+  const customerId = params.customerId as string;
+
+  return <CustomerDashboardContent customerId={customerId} />;
 }
