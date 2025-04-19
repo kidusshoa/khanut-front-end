@@ -1,27 +1,18 @@
-import axios from "axios";
-import { BusinessRegistrationInput } from "@/lib/validations/business";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+// Business API service
+import api from "./api";
 
 export const businessService = {
   async register(formData: FormData) {
-    const response = await axios.post(
-      `${API_URL}/business/register`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-        withCredentials: true, // Important for auth
-      }
-    );
+    const response = await api.post(`/businesses/register`, formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
     return response.data;
   },
 
   async checkRegistrationStatus() {
-    const response = await axios.get(`${API_URL}/business/status`, {
-      withCredentials: true,
-    });
+    const response = await api.get(`/businesses/status`);
     return response.data;
   },
 };

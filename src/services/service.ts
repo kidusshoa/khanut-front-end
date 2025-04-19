@@ -1,7 +1,5 @@
-import axios from "axios";
 import { ServiceInput } from "@/lib/validations/service";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+import api from "./api";
 
 interface PaginationParams {
   page?: number;
@@ -18,14 +16,14 @@ export const serviceApi = {
     try {
       const { page = 1, limit = 10, sort, order, search, serviceType } = params;
 
-      let url = `${API_URL}/services?page=${page}&limit=${limit}`;
+      let url = `/services?page=${page}&limit=${limit}`;
 
       if (sort) url += `&sort=${sort}`;
       if (order) url += `&order=${order}`;
       if (search) url += `&search=${search}`;
       if (serviceType) url += `&serviceType=${serviceType}`;
 
-      const response = await axios.get(url);
+      const response = await api.get(url);
       return response.data;
     } catch (error) {
       console.error("Error fetching all services:", error);
@@ -41,14 +39,14 @@ export const serviceApi = {
     try {
       const { page = 1, limit = 10, sort, order, search, serviceType } = params;
 
-      let url = `${API_URL}/services/business/${businessId}?page=${page}&limit=${limit}`;
+      let url = `/services/business/${businessId}?page=${page}&limit=${limit}`;
 
       if (sort) url += `&sort=${sort}`;
       if (order) url += `&order=${order}`;
       if (search) url += `&search=${search}`;
       if (serviceType) url += `&serviceType=${serviceType}`;
 
-      const response = await axios.get(url);
+      const response = await api.get(url);
       return response.data;
     } catch (error) {
       console.error("Error fetching business services:", error);
@@ -59,7 +57,7 @@ export const serviceApi = {
   // Get service by ID
   getServiceById: async (serviceId: string) => {
     try {
-      const response = await axios.get(`${API_URL}/services/${serviceId}`);
+      const response = await api.get(`/services/${serviceId}`);
       return response.data;
     } catch (error) {
       console.error("Error fetching service:", error);
@@ -76,13 +74,13 @@ export const serviceApi = {
     try {
       const { page = 1, limit = 10, sort, order, search } = params;
 
-      let url = `${API_URL}/services/business/${businessId}/type/${type}?page=${page}&limit=${limit}`;
+      let url = `/services/business/${businessId}/type/${type}?page=${page}&limit=${limit}`;
 
       if (sort) url += `&sort=${sort}`;
       if (order) url += `&order=${order}`;
       if (search) url += `&search=${search}`;
 
-      const response = await axios.get(url);
+      const response = await api.get(url);
       return response.data;
     } catch (error) {
       console.error("Error fetching services by type:", error);
@@ -93,7 +91,7 @@ export const serviceApi = {
   // Create a new service
   createService: async (serviceData: FormData) => {
     try {
-      const response = await axios.post(`${API_URL}/services`, serviceData, {
+      const response = await api.post(`/services`, serviceData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
@@ -108,15 +106,11 @@ export const serviceApi = {
   // Update a service
   updateService: async (serviceId: string, serviceData: FormData) => {
     try {
-      const response = await axios.put(
-        `${API_URL}/services/${serviceId}`,
-        serviceData,
-        {
-          headers: {
-            "Content-Type": "multipart/form-data",
-          },
-        }
-      );
+      const response = await api.put(`/services/${serviceId}`, serviceData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
       return response.data;
     } catch (error) {
       console.error("Error updating service:", error);
@@ -127,7 +121,7 @@ export const serviceApi = {
   // Delete a service
   deleteService: async (serviceId: string) => {
     try {
-      const response = await axios.delete(`${API_URL}/services/${serviceId}`);
+      const response = await api.delete(`/services/${serviceId}`);
       return response.data;
     } catch (error) {
       console.error("Error deleting service:", error);

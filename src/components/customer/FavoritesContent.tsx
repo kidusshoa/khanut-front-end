@@ -24,11 +24,13 @@ interface FavoritesContentProps {
   customerId: string;
 }
 
-export default function FavoritesContent({ customerId }: FavoritesContentProps) {
+export default function FavoritesContent({
+  customerId,
+}: FavoritesContentProps) {
   const router = useRouter();
   const { data: session } = useSession();
   const [searchQuery, setSearchQuery] = useState("");
-  
+
   // Mock favorites data - replace with actual API call
   const [favorites, setFavorites] = useState<FavoriteItem[]>([
     {
@@ -38,7 +40,8 @@ export default function FavoritesContent({ customerId }: FavoritesContentProps) 
       businessName: "Tasty Foods Inc.",
       price: 250,
       rating: 4.8,
-      image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
+      image:
+        "https://images.unsplash.com/photo-1504674900247-0877df9cc836?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
     },
     {
       id: 2,
@@ -47,7 +50,8 @@ export default function FavoritesContent({ customerId }: FavoritesContentProps) 
       businessName: "Chic Salon",
       price: 500,
       rating: 4.5,
-      image: "https://images.unsplash.com/photo-1560066984-138dadb4c035?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1374&q=80",
+      image:
+        "https://images.unsplash.com/photo-1560066984-138dadb4c035?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1374&q=80",
     },
     {
       id: 3,
@@ -56,7 +60,8 @@ export default function FavoritesContent({ customerId }: FavoritesContentProps) 
       businessName: "Relaxation Spa",
       price: 800,
       rating: 4.9,
-      image: "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
+      image:
+        "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1470&q=80",
     },
     {
       id: 4,
@@ -65,7 +70,8 @@ export default function FavoritesContent({ customerId }: FavoritesContentProps) 
       businessName: "Artisan Goods",
       price: 450,
       rating: 4.7,
-      image: "https://images.unsplash.com/photo-1627123424574-724758594e93?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1374&q=80",
+      image:
+        "https://images.unsplash.com/photo-1627123424574-724758594e93?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1374&q=80",
     },
   ]);
 
@@ -83,13 +89,13 @@ export default function FavoritesContent({ customerId }: FavoritesContentProps) 
   }
 
   const handleRemoveFavorite = (id: number) => {
-    setFavorites(favorites.filter(item => item.id !== id));
+    setFavorites(favorites.filter((item) => item.id !== id));
     toast.success("Removed from favorites");
   };
 
-  const filteredFavorites = favorites.filter(item => {
+  const filteredFavorites = favorites.filter((item) => {
     if (!searchQuery) return true;
-    
+
     const query = searchQuery.toLowerCase();
     return (
       item.name.toLowerCase().includes(query) ||
@@ -105,6 +111,11 @@ export default function FavoritesContent({ customerId }: FavoritesContentProps) 
     }).format(amount);
   };
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    // The search is handled client-side, so we just prevent the default form submission
+  };
+
   return (
     <CustomerDashboardLayout customerId={customerId}>
       <div className="space-y-6">
@@ -116,7 +127,7 @@ export default function FavoritesContent({ customerId }: FavoritesContentProps) 
         </div>
 
         {/* Search */}
-        <div className="relative">
+        <form onSubmit={handleSearch} className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" />
           <Input
             type="text"
@@ -125,7 +136,7 @@ export default function FavoritesContent({ customerId }: FavoritesContentProps) 
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
           />
-        </div>
+        </form>
 
         {/* Favorites List */}
         {filteredFavorites.length > 0 ? (

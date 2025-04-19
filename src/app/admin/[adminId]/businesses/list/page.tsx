@@ -77,7 +77,7 @@ export default function BusinessListPage() {
       }
 
       const response = await axios.get<ApiResponse>(
-        "https://khanut.onrender.com/api/admin/businesses/list",
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/businesses/list`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -248,7 +248,7 @@ export default function BusinessListPage() {
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-start">
                     <CardTitle className="text-lg">{business.name}</CardTitle>
-                    <Badge variant={business.approved ? "success" : "outline"}>
+                    <Badge variant={business.approved ? "default" : "outline"}>
                       {business.approved ? "Approved" : "Pending"}
                     </Badge>
                   </div>

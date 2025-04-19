@@ -79,7 +79,7 @@ export default function ManageUsers() {
 
     try {
       const res = await axios.get(
-        "https://khanut.onrender.com/api/admin/users",
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/users`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -123,7 +123,7 @@ export default function ManageUsers() {
 
       if (action === "warn") {
         await axios.post(
-          `https://khanut.onrender.com/api/admin/users/${selectedUser._id}/warn`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/admin/users/${selectedUser._id}/warn`,
           { reason },
           {
             headers: {
@@ -133,7 +133,7 @@ export default function ManageUsers() {
         );
       } else if (action === "delete") {
         await axios.delete(
-          `https://khanut.onrender.com/api/admin/users/${selectedUser._id}`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/admin/users/${selectedUser._id}`,
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
@@ -264,7 +264,7 @@ export default function ManageUsers() {
             </TabsTrigger>
             <TabsTrigger value="active" className="gap-2">
               <Badge
-                variant="success"
+                variant="default"
                 className="h-2 w-2 p-0 rounded-full mr-1"
               />
               Active
@@ -316,7 +316,7 @@ export default function ManageUsers() {
                       </div>
                     </div>
                     <Badge
-                      variant={user.status === "active" ? "success" : "outline"}
+                      variant={user.status === "active" ? "default" : "outline"}
                     >
                       {user.status === "active" ? "Active" : "Inactive"}
                     </Badge>
@@ -463,7 +463,7 @@ export default function ManageUsers() {
                       <Badge
                         variant={
                           selectedUser?.status === "active"
-                            ? "success"
+                            ? "default"
                             : "outline"
                         }
                         className="mt-1"

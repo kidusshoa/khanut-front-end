@@ -1,8 +1,8 @@
-'use client'
+"use client";
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { useRouter } from 'next/navigation';
-import Cookies from 'js-cookie';
+import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 
 interface Review {
   _id: string;
@@ -37,7 +37,7 @@ export default function PendingReviewsPage() {
     currentPage: 1,
     totalPages: 1,
     total: 0,
-    limit: 5
+    limit: 5,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -45,15 +45,15 @@ export default function PendingReviewsPage() {
 
   const fetchPendingReviews = async (page: number = 1) => {
     try {
-      const accessToken = Cookies.get('client-token');
-      
+      const accessToken = Cookies.get("client-token");
+
       if (!accessToken) {
-        router.push('/login');
+        router.push("/login");
         return;
       }
 
       const response = await axios.get<ApiResponse>(
-        `https://khanut.onrender.com/api/admin/reviews/pending?page=${page}&limit=${pagination.limit}`, 
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/reviews/pending?page=${page}&limit=${pagination.limit}`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -66,16 +66,16 @@ export default function PendingReviewsPage() {
         currentPage: response.data.currentPage,
         totalPages: response.data.totalPages,
         total: response.data.total,
-        limit: pagination.limit
+        limit: pagination.limit,
       });
     } catch (error) {
       console.error("Fetch error:", error);
       setError("Failed to load pending reviews");
-      
+
       if (axios.isAxiosError(error) && error.response?.status === 401) {
-        Cookies.remove('client-token');
-        Cookies.remove('user-role');
-        router.push('/login');
+        Cookies.remove("client-token");
+        Cookies.remove("user-role");
+        router.push("/login");
       }
     } finally {
       setLoading(false);
@@ -84,9 +84,9 @@ export default function PendingReviewsPage() {
 
   const handleApprove = async (reviewId: string) => {
     try {
-      const accessToken = Cookies.get('client-token');
+      const accessToken = Cookies.get("client-token");
       await axios.patch(
-        `https://khanut.onrender.com/api/admin/reviews/${reviewId}/approve`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/reviews/${reviewId}/approve`,
         {},
         {
           headers: {
@@ -94,7 +94,7 @@ export default function PendingReviewsPage() {
           },
         }
       );
-    
+
       fetchPendingReviews(pagination.currentPage);
     } catch (error) {
       console.error("Approve error:", error);
@@ -104,9 +104,9 @@ export default function PendingReviewsPage() {
 
   const handleReject = async (reviewId: string) => {
     try {
-      const accessToken = Cookies.get('client-token');
+      const accessToken = Cookies.get("client-token");
       await axios.patch(
-        `https://khanut.onrender.com/api/admin/reviews/${reviewId}/reject`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/reviews/${reviewId}/reject`,
         {},
         {
           headers: {
@@ -114,7 +114,7 @@ export default function PendingReviewsPage() {
           },
         }
       );
-     
+
       fetchPendingReviews(pagination.currentPage);
     } catch (error) {
       console.error("Reject error:", error);
@@ -142,9 +142,7 @@ export default function PendingReviewsPage() {
       </p>
 
       {reviews.length === 0 ? (
-        <div className="p-4 bg-gray-100 rounded">
-          No pending reviews found.
-        </div>
+        <div className="p-4 bg-gray-100 rounded">No pending reviews found.</div>
       ) : (
         <div>
           <table className="min-w-full bg-white rounded shadow mb-4">

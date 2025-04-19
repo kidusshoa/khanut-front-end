@@ -1,8 +1,15 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
+import { handleLogout } from "@/lib/auth-utils";
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -47,19 +54,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setRole(null);
       setUserId(null);
     }
-    
+
     setIsLoading(false);
   }, []);
 
-  const logout = () => {
-    Cookies.remove("client-token");
-    Cookies.remove("user-role");
-    Cookies.remove("user-id");
+  const logout = async () => {
+    // Use the centralized logout utility
+    await handleLogout();
+
+    // Update local state
     setIsAuthenticated(false);
     setToken(null);
     setRole(null);
     setUserId(null);
-    router.push("/login");
   };
 
   if (isLoading) {

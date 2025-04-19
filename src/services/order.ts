@@ -1,7 +1,5 @@
-import axios from "axios";
 import { OrderInput } from "@/lib/validations/service";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+import api from "./api";
 
 interface PaginationParams {
   page?: number;
@@ -32,7 +30,7 @@ export const orderApi = {
         endDate,
       } = params;
 
-      let url = `${API_URL}/orders/business/${businessId}?page=${page}&limit=${limit}`;
+      let url = `/orders/business/${businessId}?page=${page}&limit=${limit}`;
 
       if (sort) url += `&sort=${sort}`;
       if (order) url += `&order=${order}`;
@@ -41,7 +39,7 @@ export const orderApi = {
       if (startDate) url += `&startDate=${startDate}`;
       if (endDate) url += `&endDate=${endDate}`;
 
-      const response = await axios.get(url);
+      const response = await api.get(url);
       return response.data;
     } catch (error) {
       console.error("Error fetching business orders:", error);
@@ -65,7 +63,7 @@ export const orderApi = {
         endDate,
       } = params;
 
-      let url = `${API_URL}/orders/customer/${customerId}?page=${page}&limit=${limit}`;
+      let url = `/orders/customer/${customerId}?page=${page}&limit=${limit}`;
 
       if (sort) url += `&sort=${sort}`;
       if (order) url += `&order=${order}`;
@@ -73,7 +71,7 @@ export const orderApi = {
       if (startDate) url += `&startDate=${startDate}`;
       if (endDate) url += `&endDate=${endDate}`;
 
-      const response = await axios.get(url);
+      const response = await api.get(url);
       return response.data;
     } catch (error) {
       console.error("Error fetching customer orders:", error);
@@ -84,7 +82,7 @@ export const orderApi = {
   // Get order by ID
   getOrderById: async (orderId: string) => {
     try {
-      const response = await axios.get(`${API_URL}/orders/${orderId}`);
+      const response = await api.get(`/orders/${orderId}`);
       return response.data;
     } catch (error) {
       console.error("Error fetching order:", error);
@@ -95,7 +93,7 @@ export const orderApi = {
   // Create a new order
   createOrder: async (orderData: OrderInput) => {
     try {
-      const response = await axios.post(`${API_URL}/orders`, orderData);
+      const response = await api.post(`/orders`, orderData);
       return response.data;
     } catch (error) {
       console.error("Error creating order:", error);
@@ -106,12 +104,9 @@ export const orderApi = {
   // Update order status
   updateOrderStatus: async (orderId: string, status: string) => {
     try {
-      const response = await axios.patch(
-        `${API_URL}/orders/${orderId}/status`,
-        {
-          status,
-        }
-      );
+      const response = await api.patch(`/orders/${orderId}/status`, {
+        status,
+      });
       return response.data;
     } catch (error) {
       console.error("Error updating order status:", error);
@@ -125,8 +120,8 @@ export const orderApi = {
     shippingData: { trackingNumber?: string; shippingAddress?: any }
   ) => {
     try {
-      const response = await axios.patch(
-        `${API_URL}/orders/${orderId}/shipping`,
+      const response = await api.patch(
+        `/orders/${orderId}/shipping`,
         shippingData
       );
       return response.data;

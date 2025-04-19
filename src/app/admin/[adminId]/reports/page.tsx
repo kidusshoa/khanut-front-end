@@ -15,8 +15,8 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { FaDownload } from "react-icons/fa";
-import Cookies from 'js-cookie';
-import { useRouter } from 'next/navigation';
+import Cookies from "js-cookie";
+import { useRouter } from "next/navigation";
 
 const COLORS = ["#8884d8", "#82ca9d", "#ffc658"];
 
@@ -40,21 +40,24 @@ export default function ReportsPage() {
   useEffect(() => {
     const fetchReportData = async () => {
       try {
-        const accessToken = Cookies.get('client-token');
-        
+        const accessToken = Cookies.get("client-token");
+
         if (!accessToken) {
-          router.push('/login');
+          router.push("/login");
           return;
         }
 
-        const response = await fetch('https://khanut.onrender.com/api/admin/reports', {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        });
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/admin/reports`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
 
         if (!response.ok) {
-          throw new Error('Failed to fetch report data');
+          throw new Error("Failed to fetch report data");
         }
 
         const data: ReportData = await response.json();
@@ -62,10 +65,10 @@ export default function ReportsPage() {
       } catch (error) {
         console.error("Error fetching report data:", error);
         setError("Failed to load report data");
-        if (error instanceof Error && error.message.includes('401')) {
-          Cookies.remove('client-token');
-          Cookies.remove('user-role');
-          router.push('/login');
+        if (error instanceof Error && error.message.includes("401")) {
+          Cookies.remove("client-token");
+          Cookies.remove("user-role");
+          router.push("/login");
         }
       } finally {
         setLoading(false);
@@ -84,21 +87,28 @@ export default function ReportsPage() {
   };
 
   if (loading) {
-    return <div className="max-w-6xl mx-auto py-8 px-4">Loading reports...</div>;
+    return (
+      <div className="max-w-6xl mx-auto py-8 px-4">Loading reports...</div>
+    );
   }
 
   if (error) {
-    return <div className="max-w-6xl mx-auto py-8 px-4 text-red-500">{error}</div>;
+    return (
+      <div className="max-w-6xl mx-auto py-8 px-4 text-red-500">{error}</div>
+    );
   }
 
   if (!reportData) {
-    return <div className="max-w-6xl mx-auto py-8 px-4">No report data available</div>;
+    return (
+      <div className="max-w-6xl mx-auto py-8 px-4">
+        No report data available
+      </div>
+    );
   }
 
- 
-  const businessData = reportData.monthlyBusinesses.map(item => ({
+  const businessData = reportData.monthlyBusinesses.map((item) => ({
     name: item.month,
-    businesses: item.count
+    businesses: item.count,
   }));
 
   const reviewBreakdown = [
@@ -115,15 +125,21 @@ export default function ReportsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
         <div className="bg-white p-6 rounded shadow text-center">
           <p className="text-sm text-gray-500">Total Users</p>
-          <p className="text-2xl font-bold text-orange-600">{reportData.totalUsers}</p>
+          <p className="text-2xl font-bold text-orange-600">
+            {reportData.totalUsers}
+          </p>
         </div>
         <div className="bg-white p-6 rounded shadow text-center">
           <p className="text-sm text-gray-500">Total Businesses</p>
-          <p className="text-2xl font-bold text-orange-600">{reportData.totalBusinesses}</p>
+          <p className="text-2xl font-bold text-orange-600">
+            {reportData.totalBusinesses}
+          </p>
         </div>
         <div className="bg-white p-6 rounded shadow text-center">
           <p className="text-sm text-gray-500">Total Reviews</p>
-          <p className="text-2xl font-bold text-orange-600">{reportData.totalReviews}</p>
+          <p className="text-2xl font-bold text-orange-600">
+            {reportData.totalReviews}
+          </p>
         </div>
       </div>
 

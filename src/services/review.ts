@@ -1,6 +1,4 @@
-import axios from "axios";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+import api from "./api";
 
 interface PaginationParams {
   page?: number;
@@ -30,14 +28,14 @@ export const reviewApi = {
         maxRating,
       } = params;
 
-      let url = `${API_URL}/reviews/service/${serviceId}?page=${page}&limit=${limit}`;
+      let url = `/reviews/service/${serviceId}?page=${page}&limit=${limit}`;
 
       if (sort) url += `&sort=${sort}`;
       if (order) url += `&order=${order}`;
       if (minRating) url += `&minRating=${minRating}`;
       if (maxRating) url += `&maxRating=${maxRating}`;
 
-      const response = await axios.get(url);
+      const response = await api.get(url);
       return response.data;
     } catch (error) {
       console.error("Error fetching service reviews:", error);
@@ -60,14 +58,14 @@ export const reviewApi = {
         maxRating,
       } = params;
 
-      let url = `${API_URL}/reviews/business/${businessId}?page=${page}&limit=${limit}`;
+      let url = `/reviews/business/${businessId}?page=${page}&limit=${limit}`;
 
       if (sort) url += `&sort=${sort}`;
       if (order) url += `&order=${order}`;
       if (minRating) url += `&minRating=${minRating}`;
       if (maxRating) url += `&maxRating=${maxRating}`;
 
-      const response = await axios.get(url);
+      const response = await api.get(url);
       return response.data;
     } catch (error) {
       console.error("Error fetching business reviews:", error);
@@ -83,12 +81,12 @@ export const reviewApi = {
     try {
       const { page = 1, limit = 10, sort, order } = params;
 
-      let url = `${API_URL}/reviews/customer/${customerId}?page=${page}&limit=${limit}`;
+      let url = `/reviews/customer/${customerId}?page=${page}&limit=${limit}`;
 
       if (sort) url += `&sort=${sort}`;
       if (order) url += `&order=${order}`;
 
-      const response = await axios.get(url);
+      const response = await api.get(url);
       return response.data;
     } catch (error) {
       console.error("Error fetching customer reviews:", error);
@@ -99,9 +97,7 @@ export const reviewApi = {
   // Get service rating statistics
   getServiceRatingStats: async (serviceId: string) => {
     try {
-      const response = await axios.get(
-        `${API_URL}/reviews/stats/service/${serviceId}`
-      );
+      const response = await api.get(`/reviews/stats/service/${serviceId}`);
       return response.data;
     } catch (error) {
       console.error("Error fetching service rating stats:", error);
@@ -118,7 +114,7 @@ export const reviewApi = {
     comment: string;
   }) => {
     try {
-      const response = await axios.post(`${API_URL}/reviews`, reviewData);
+      const response = await api.post(`/reviews`, reviewData);
       return response.data;
     } catch (error) {
       console.error("Error creating review:", error);
@@ -135,10 +131,7 @@ export const reviewApi = {
     }
   ) => {
     try {
-      const response = await axios.put(
-        `${API_URL}/reviews/${reviewId}`,
-        reviewData
-      );
+      const response = await api.put(`/reviews/${reviewId}`, reviewData);
       return response.data;
     } catch (error) {
       console.error("Error updating review:", error);
@@ -149,7 +142,7 @@ export const reviewApi = {
   // Delete a review
   deleteReview: async (reviewId: string) => {
     try {
-      const response = await axios.delete(`${API_URL}/reviews/${reviewId}`);
+      const response = await api.delete(`/reviews/${reviewId}`);
       return response.data;
     } catch (error) {
       console.error("Error deleting review:", error);

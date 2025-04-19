@@ -31,7 +31,7 @@ export default function CustomerRegistrationPage() {
     setIsSubmitting(true);
     try {
       const response = await axios.post(
-        "https://khanut.onrender.com/api/auth/register",
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`,
         {
           name: data.name,
           email: data.email,

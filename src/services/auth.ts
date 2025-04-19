@@ -1,21 +1,19 @@
-import axios from "axios";
 import { LoginInput, RegisterInput } from "@/lib/validations/auth";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import api from "./api";
 
 export const authService = {
   async register(data: RegisterInput) {
-    const response = await axios.post(`${API_URL}/auth/register`, data);
+    const response = await api.post("/auth/register", data);
     return response.data;
   },
 
   async login(data: LoginInput) {
-    const response = await axios.post(`${API_URL}/auth/login`, data);
+    const response = await api.post("/auth/login", data);
     return response.data;
   },
 
   async verify2FA(email: string, code: string) {
-    const response = await axios.post(`${API_URL}/auth/verify`, {
+    const response = await api.post("/auth/verify-2fa", {
       email,
       code,
     });
@@ -23,22 +21,22 @@ export const authService = {
   },
 
   async resendCode(email: string) {
-    const response = await axios.post(`${API_URL}/auth/resend-code`, {
+    const response = await api.post("/auth/request-2fa", {
       email,
     });
     return response.data;
   },
 
   async logout(refreshToken: string) {
-    const response = await axios.post(`${API_URL}/auth/logout`, {
+    const response = await api.post("/auth/logout", {
       token: refreshToken,
     });
     return response.data;
   },
 
   async refreshToken(refreshToken: string) {
-    const response = await axios.post(`${API_URL}/auth/refresh`, {
-      refreshToken,
+    const response = await api.post("/auth/refresh", {
+      token: refreshToken,
     });
     return response.data;
   },

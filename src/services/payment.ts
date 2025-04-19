@@ -1,6 +1,4 @@
-import axios from "axios";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+import api from "./api";
 
 interface PaginationParams {
   page?: number;
@@ -17,8 +15,8 @@ export const paymentApi = {
   // Initialize payment for an order
   initializeOrderPayment: async (orderId: string, paymentData: any = {}) => {
     try {
-      const response = await axios.post(
-        `${API_URL}/payments/order/${orderId}/initialize`,
+      const response = await api.post(
+        `/payments/order/${orderId}/initialize`,
         paymentData
       );
       return response.data;
@@ -34,8 +32,8 @@ export const paymentApi = {
     paymentData: any = {}
   ) => {
     try {
-      const response = await axios.post(
-        `${API_URL}/payments/appointment/${appointmentId}/initialize`,
+      const response = await api.post(
+        `/payments/appointment/${appointmentId}/initialize`,
         paymentData
       );
       return response.data;
@@ -48,7 +46,7 @@ export const paymentApi = {
   // Verify payment status
   verifyPayment: async (txRef: string) => {
     try {
-      const response = await axios.get(`${API_URL}/payments/verify/${txRef}`);
+      const response = await api.get(`/payments/verify/${txRef}`);
       return response.data;
     } catch (error) {
       console.error("Error verifying payment:", error);
@@ -72,7 +70,7 @@ export const paymentApi = {
         endDate,
       } = params;
 
-      let url = `${API_URL}/payments/customer/${customerId}?page=${page}&limit=${limit}`;
+      let url = `/payments/customer/${customerId}?page=${page}&limit=${limit}`;
 
       if (sort) url += `&sort=${sort}`;
       if (order) url += `&order=${order}`;
@@ -80,7 +78,7 @@ export const paymentApi = {
       if (startDate) url += `&startDate=${startDate}`;
       if (endDate) url += `&endDate=${endDate}`;
 
-      const response = await axios.get(url);
+      const response = await api.get(url);
       return response.data;
     } catch (error) {
       console.error("Error fetching customer payments:", error);
@@ -104,7 +102,7 @@ export const paymentApi = {
         endDate,
       } = params;
 
-      let url = `${API_URL}/payments/business/${businessId}?page=${page}&limit=${limit}`;
+      let url = `/payments/business/${businessId}?page=${page}&limit=${limit}`;
 
       if (sort) url += `&sort=${sort}`;
       if (order) url += `&order=${order}`;
@@ -112,7 +110,7 @@ export const paymentApi = {
       if (startDate) url += `&startDate=${startDate}`;
       if (endDate) url += `&endDate=${endDate}`;
 
-      const response = await axios.get(url);
+      const response = await api.get(url);
       return response.data;
     } catch (error) {
       console.error("Error fetching business payments:", error);

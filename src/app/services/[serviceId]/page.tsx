@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import {
   Calendar,
@@ -12,6 +13,9 @@ import {
   Clock,
   Tag,
   Loader2,
+  ChevronRight,
+  Building,
+  ArrowLeft,
 } from "lucide-react";
 import { serviceApi } from "@/services/service";
 import { BookAppointmentModal } from "@/components/customer/BookAppointmentModal";
@@ -19,6 +23,8 @@ import { AddToCartModal } from "@/components/customer/AddToCartModal";
 import { ReviewList } from "@/components/reviews/ReviewList";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Card, CardContent } from "@/components/ui/card";
+import { businessDetailApi } from "@/services/businessDetail";
 import { toast } from "react-hot-toast";
 
 export default function ServiceDetailPage({
@@ -42,9 +48,16 @@ export default function ServiceDetailPage({
         setService(serviceData);
 
         // Fetch business details
-        // This would need to be implemented in your business API
-        // const businessData = await businessApi.getBusinessById(serviceData.businessId);
-        // setBusiness(businessData);
+        if (serviceData.businessId) {
+          try {
+            const businessData = await businessDetailApi.getBusinessById(
+              serviceData.businessId
+            );
+            setBusiness(businessData);
+          } catch (businessError) {
+            console.error("Error fetching business details:", businessError);
+          }
+        }
       } catch (error) {
         console.error("Error fetching service details:", error);
         toast.error("Failed to load service details");
@@ -110,28 +123,67 @@ export default function ServiceDetailPage({
 
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+      <div className="container mx-auto py-12 flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <Loader2 className="h-12 w-12 animate-spin text-orange-500 mx-auto mb-4" />
+          <h3 className="text-lg font-medium">Loading service details...</h3>
+        </div>
       </div>
     );
   }
 
   if (!service) {
     return (
-      <div className="container mx-auto py-12 px-4 text-center">
-        <h1 className="text-2xl font-bold text-gray-900 mb-4">
-          Service not found
-        </h1>
-        <p className="text-gray-600 mb-6">
-          The service you're looking for doesn't exist or has been removed.
-        </p>
-        <Button onClick={() => router.back()}>Go Back</Button>
+      <div className="container mx-auto py-12 flex items-center justify-center min-h-[60vh]">
+        <div className="text-center">
+          <ShoppingBag className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <h3 className="text-lg font-medium mb-2">Service not found</h3>
+          <p className="text-muted-foreground mb-6">
+            The service you're looking for doesn't exist or has been removed.
+          </p>
+          <Button
+            onClick={() => router.push("/search")}
+            className="bg-orange-600 hover:bg-orange-700"
+          >
+            Back to Search
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
+    <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      {/* Breadcrumb */}
+      <div className="flex items-center text-sm text-muted-foreground mb-6">
+        <Button
+          variant="link"
+          className="p-0 h-auto text-muted-foreground"
+          onClick={() => router.push("/search")}
+        >
+          Search
+        </Button>
+        <ChevronRight className="h-4 w-4 mx-1" />
+        {business && (
+          <>
+            <Button
+              variant="link"
+              className="p-0 h-auto text-muted-foreground"
+              onClick={() => router.push(`/businesses/${business._id}`)}
+            >
+              {business.name}
+            </Button>
+            <ChevronRight className="h-4 w-4 mx-1" />
+          </>
+        )}
+        <span className="text-foreground">{service.name}</span>
+      </div>
+
+      <Button variant="outline" className="mb-6" onClick={() => router.back()}>
+        <ArrowLeft className="h-4 w-4 mr-2" />
+        Back
+      </Button>
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Service Image */}
         <div className="relative h-80 md:h-full rounded-lg overflow-hidden">
@@ -207,13 +259,40 @@ export default function ServiceDetailPage({
               </div>
             )}
 
-            {/* Business info (placeholder) */}
-            <div className="border-t border-gray-200 pt-4 mb-6">
-              <h3 className="text-lg font-semibold mb-2">Provided by</h3>
-              <p className="text-gray-700">
-                {business?.name || "Business Name"}
-              </p>
-            </div>
+            {/* Business info */}
+            {business && (
+              <Card className="mb-6">
+                <CardContent className="p-4">
+                  <div className="flex items-start space-x-4">
+                    <div className="h-12 w-12 rounded-full bg-muted flex-shrink-0 overflow-hidden">
+                      {business.logo ? (
+                        <img
+                          src={business.logo}
+                          alt={business.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center">
+                          <Building className="h-6 w-6 text-muted-foreground" />
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-1">
+                      <h3 className="font-medium text-lg">{business.name}</h3>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {business.city || "Location not specified"}
+                      </p>
+                      <Link href={`/businesses/${business._id}`}>
+                        <Button variant="outline" className="mt-2">
+                          View Business
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Action Button */}
             <Button

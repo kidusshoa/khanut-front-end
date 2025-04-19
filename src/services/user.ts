@@ -1,17 +1,9 @@
-import axios from "axios";
-import { getAccessToken } from "@/auth";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import api from "./api";
 
 export const userService = {
   async getCustomerProfile() {
     try {
-      const accessToken = await getAccessToken();
-      const response = await axios.get(`${API_URL}/customer/profile`, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
+      const response = await api.get(`/customer/profile`);
       return response.data;
     } catch (error) {
       console.error("Error fetching customer profile:", error);
@@ -19,14 +11,15 @@ export const userService = {
     }
   },
 
-  async updateCustomerProfile(data: { name?: string; currentPassword?: string; newPassword?: string }) {
+  async updateCustomerProfile(data: {
+    name?: string;
+    phone?: string;
+    location?: string;
+    currentPassword?: string;
+    newPassword?: string;
+  }) {
     try {
-      const accessToken = await getAccessToken();
-      const response = await axios.patch(`${API_URL}/customer/profile`, data, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
+      const response = await api.put(`/customer/profile`, data);
       return response.data;
     } catch (error) {
       console.error("Error updating customer profile:", error);
@@ -36,16 +29,80 @@ export const userService = {
 
   async updateProfilePicture(formData: FormData) {
     try {
-      const accessToken = await getAccessToken();
-      const response = await axios.patch(`${API_URL}/customer/profile/picture`, formData, {
+      const response = await api.put(`/customer/profile/picture`, formData, {
         headers: {
-          Authorization: `Bearer ${accessToken}`,
           "Content-Type": "multipart/form-data",
         },
       });
       return response.data;
     } catch (error) {
       console.error("Error updating profile picture:", error);
+      throw error;
+    }
+  },
+
+  // Get customer favorites
+  async getCustomerFavorites() {
+    try {
+      const response = await api.get("/customer/favorites");
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching customer favorites:", error);
+      throw error;
+    }
+  },
+
+  // Add business to favorites
+  async addToFavorites(businessId: string) {
+    try {
+      const response = await api.post(`/customer/favorites/${businessId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error adding business to favorites:", error);
+      throw error;
+    }
+  },
+
+  // Remove business from favorites
+  async removeFromFavorites(businessId: string) {
+    try {
+      const response = await api.delete(`/customer/favorites/${businessId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error removing business from favorites:", error);
+      throw error;
+    }
+  },
+
+  // Get customer notifications
+  async getCustomerNotifications(params = {}) {
+    try {
+      const response = await api.get("/notifications", { params });
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching customer notifications:", error);
+      throw error;
+    }
+  },
+
+  // Mark notification as read
+  async markNotificationAsRead(notificationId: string) {
+    try {
+      const response = await api.patch(`/notifications/${notificationId}/read`);
+      return response.data;
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+      throw error;
+    }
+  },
+
+  // Get unread notification count
+  async getUnreadNotificationCount() {
+    try {
+      const response = await api.get("/notifications/unread/count");
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching unread notification count:", error);
       throw error;
     }
   },

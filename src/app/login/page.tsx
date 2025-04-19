@@ -37,7 +37,7 @@ export default function LoginPage() {
     try {
       // First, try direct API login to get the token
       const apiResponse = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/login`,
+        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`,
         {
           email: data.email,
           password: data.password,
@@ -78,7 +78,7 @@ export default function LoginPage() {
             // Check business approval status
             try {
               const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/business/status`,
+                `${process.env.NEXT_PUBLIC_API_URL}/api/business/status`,
                 {
                   headers: {
                     Authorization: `Bearer ${apiResponse.data.accessToken}`,

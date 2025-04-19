@@ -8,7 +8,6 @@ import {
   Heart,
   Clock,
   MapPin,
-  Search,
   ArrowRight,
   Star,
   Loader2,
@@ -31,6 +30,7 @@ import { orderApi } from "@/services/order";
 import dayjs from "dayjs";
 import Link from "next/link";
 import Image from "next/image";
+import SearchBar from "./SearchBar";
 
 // Mock API calls - replace with actual API calls
 const fetchDashboardStats = async (customerId: string) => {
@@ -50,7 +50,9 @@ interface CustomerDashboardContentProps {
   customerId: string;
 }
 
-export default function CustomerDashboardContent({ customerId }: CustomerDashboardContentProps) {
+export default function CustomerDashboardContent({
+  customerId,
+}: CustomerDashboardContentProps) {
   // Fetch dashboard stats
   const { data: stats, isLoading: isStatsLoading } = useQuery({
     queryKey: ["customerStats", customerId],
@@ -119,20 +121,7 @@ export default function CustomerDashboardContent({ customerId }: CustomerDashboa
 
         {/* Search Bar */}
         <div className="relative">
-          <form className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder="Search for services, businesses..."
-              className="pl-10 pr-4 py-6 rounded-lg border-muted bg-background"
-            />
-            <Button
-              type="submit"
-              className="absolute right-1 top-1/2 -translate-y-1/2 bg-orange-600 hover:bg-orange-700"
-            >
-              Search
-            </Button>
-          </form>
+          <SearchBar />
         </div>
 
         {/* Stats Cards */}
