@@ -73,11 +73,34 @@ export default function CustomerDashboardLayout({
         try {
           const API_URL =
             process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+          console.log("Fetching business name for ID:", businessId);
+          console.log("API URL:", `${API_URL}/api/businesses/${businessId}`);
+
+          // Use the API service instead of direct fetch
           const response = await fetch(
             `${API_URL}/api/businesses/${businessId}`
           );
+
+          // If the response is not ok, try the alternative endpoint
+          if (!response.ok) {
+            console.log("First endpoint failed, trying alternative endpoint");
+            const altResponse = await fetch(
+              `${API_URL}/api/business/${businessId}`
+            );
+            if (altResponse.ok) {
+              return await altResponse.json();
+            }
+          }
           const data = await response.json();
-          setBusinessName(data.name || "Business Details");
+          console.log("Business data received:", data);
+
+          if (data && data.name) {
+            console.log("Setting business name to:", data.name);
+            setBusinessName(data.name);
+          } else {
+            console.log("No business name found in data");
+            setBusinessName("Business Details");
+          }
         } catch (error) {
           console.error("Error fetching business name:", error);
           setBusinessName("Business Details");
@@ -370,10 +393,16 @@ export default function CustomerDashboardLayout({
                   ? businessName || "Business Details"
                   : menuItems.find((item) => item.active)?.title || "Dashboard"}
               </h1>
-              {(userProfile?.name || session?.user?.name) && (
+              {isBusinessPage ? (
                 <p className="text-sm text-muted-foreground">
-                  Welcome, {userProfile?.name || session?.user?.name}
+                  Business Profile
                 </p>
+              ) : (
+                (userProfile?.name || session?.user?.name) && (
+                  <p className="text-sm text-muted-foreground">
+                    Welcome, {userProfile?.name || session?.user?.name}
+                  </p>
+                )
               )}
             </div>
           </div>

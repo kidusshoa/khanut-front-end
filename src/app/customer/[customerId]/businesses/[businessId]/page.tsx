@@ -151,18 +151,19 @@ export default function CustomerBusinessDetailPage() {
 
   // Filter services based on active tab
   const filteredServices =
-    services?.filter((service) => {
+    services?.filter((service: any) => {
       if (activeTab === "all") return true;
       return service.serviceType === activeTab;
     }) || [];
 
   // Calculate average rating
   const averageRating = reviews?.length
-    ? reviews.reduce((acc, review) => acc + review.rating, 0) / reviews.length
+    ? reviews.reduce((acc: any, review: any) => acc + review.rating, 0) /
+      reviews.length
     : 0;
 
   // Format address
-  const formatAddress = (business) => {
+  const formatAddress = (business: any) => {
     if (!business) return "Location not specified";
 
     const parts = [
@@ -257,10 +258,16 @@ export default function CustomerBusinessDetailPage() {
       </div>
 
       {/* Business Name Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-        <h1 className="text-4xl font-bold text-orange-600">
-          {business?.name || "Business Details"}
-        </h1>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6 bg-orange-50 dark:bg-orange-950/20 p-6 rounded-lg border-2 border-orange-300 dark:border-orange-800/50 shadow-md">
+        <div>
+          <h1 className="text-4xl font-bold text-orange-600">
+            {business?.name || "Business Details"}
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
+            {business?.category || "Business"} in{" "}
+            {business?.city || "Local Area"}
+          </p>
+        </div>
 
         {reviews && (
           <div className="flex items-center bg-white dark:bg-gray-800 px-4 py-2 rounded-lg shadow-sm">
@@ -316,7 +323,7 @@ export default function CustomerBusinessDetailPage() {
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
           <div>
             <h2 className="text-2xl font-semibold">
-              {business?.name || "Business Details"}
+              About {business?.name || "This Business"}
             </h2>
 
             {business?.category && (
@@ -338,7 +345,7 @@ export default function CustomerBusinessDetailPage() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            {business?.serviceTypes?.map((type) => (
+            {business?.serviceTypes?.map((type: any) => (
               <Badge
                 key={type}
                 variant="outline"
@@ -421,7 +428,7 @@ export default function CustomerBusinessDetailPage() {
                               {day}
                             </span>
                             <span className="text-muted-foreground">
-                              {hours || "Closed"}
+                              {typeof hours === "string" ? hours : "Closed"}
                             </span>
                           </div>
                         )
@@ -478,7 +485,7 @@ export default function CustomerBusinessDetailPage() {
                 </div>
               ) : filteredServices.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {filteredServices.map((service) => (
+                  {filteredServices.map((service: any) => (
                     <ServiceCard
                       key={service._id}
                       service={{
@@ -520,7 +527,7 @@ export default function CustomerBusinessDetailPage() {
           <Card>
             <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <CardTitle>Reviews</CardTitle>
-              {reviews?.length > 0 && (
+              {reviews && reviews.length > 0 && (
                 <div className="flex items-center gap-2 text-sm">
                   <div className="flex">
                     {[1, 2, 3, 4, 5].map((star) => (
@@ -539,8 +546,8 @@ export default function CustomerBusinessDetailPage() {
                     {averageRating.toFixed(1)}
                   </span>
                   <span className="text-muted-foreground">
-                    based on {reviews.length}{" "}
-                    {reviews.length === 1 ? "review" : "reviews"}
+                    based on {reviews?.length || 0}{" "}
+                    {reviews?.length === 1 ? "review" : "reviews"}
                   </span>
                 </div>
               )}
@@ -550,9 +557,9 @@ export default function CustomerBusinessDetailPage() {
                 <div className="py-12">
                   <LoadingState size="md" message="Loading reviews..." />
                 </div>
-              ) : reviews?.length > 0 ? (
+              ) : reviews && reviews.length > 0 ? (
                 <div className="space-y-6">
-                  {reviews.map((review) => (
+                  {reviews.map((review: any) => (
                     <div
                       key={review._id}
                       className="p-4 rounded-lg border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"

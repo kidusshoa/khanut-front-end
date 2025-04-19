@@ -94,14 +94,18 @@ export default function NearbyContent({ customerId }: NearbyContentProps) {
           },
           (error) => {
             console.error("Error getting location:", error);
-            toast.error(
-              "Could not get your location. Please enable location services."
-            );
+            toast.success("Using default location: Addis Ababa, Ethiopia");
+            // Set default location to Addis Ababa
+            setUserLocation({ lat: 9.0222, lng: 38.7578 });
+            setLocationName("Addis Ababa, Ethiopia");
             setIsLoading(false);
           }
         );
       } else {
-        toast.error("Geolocation is not supported by your browser");
+        toast.success("Using default location: Addis Ababa, Ethiopia");
+        // Set default location to Addis Ababa
+        setUserLocation({ lat: 9.0222, lng: 38.7578 });
+        setLocationName("Addis Ababa, Ethiopia");
         setIsLoading(false);
       }
     };
@@ -109,18 +113,62 @@ export default function NearbyContent({ customerId }: NearbyContentProps) {
     getUserLocation();
   }, []);
 
+  // Set map view as default on larger screens
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        // lg breakpoint
+        setIsMapView(true);
+      }
+    };
+
+    // Set initial state
+    handleResize();
+
+    // Add event listener
+    window.addEventListener("resize", handleResize);
+
+    // Cleanup
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  // State for map search location
+  const [mapSearchLocation, setMapSearchLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+
   // Fetch nearby businesses
-  const { data: nearbyBusinesses, isLoading: isBusinessesLoading } = useQuery<
-    Business[]
-  >({
-    queryKey: ["nearbyBusinesses", userLocation, distance, category],
+  const {
+    data: nearbyBusinesses,
+    isLoading: isBusinessesLoading,
+    error: queryError,
+    refetch,
+  } = useQuery<Business[]>({
+    queryKey: [
+      "nearbyBusinesses",
+      userLocation,
+      mapSearchLocation,
+      distance,
+      category,
+    ],
     queryFn: async () => {
-      if (!userLocation) return [];
+      // Use map search location if available, otherwise use user location
+      const searchLocation = mapSearchLocation || userLocation;
+
+      if (!searchLocation) {
+        console.log("No location available, returning empty array");
+        return [];
+      }
 
       try {
+        // Log API configuration
+        console.log("API base URL:", process.env.NEXT_PUBLIC_API_URL);
+        console.log("API instance baseURL:", api.defaults.baseURL);
+
         const params: any = {
-          lat: userLocation.lat,
-          lng: userLocation.lng,
+          lat: searchLocation.lat,
+          lng: searchLocation.lng,
           distance: distance * 1000, // Convert to meters
         };
 
@@ -135,21 +183,72 @@ export default function NearbyContent({ customerId }: NearbyContentProps) {
           params.distance
         }${params.category ? `&category=${params.category}` : ""}`;
         console.log("Calling API URL:", url);
+        console.log("Request parameters:", params);
 
+        // Make direct fetch call for debugging
+        console.log("Attempting direct fetch call...");
+        try {
+          const directResponse = await fetch(url);
+          const directData = await directResponse.json();
+          console.log("Direct fetch response:", directData);
+        } catch (directError) {
+          console.error("Direct fetch error:", directError);
+        }
+
+        // Make sure we're using the correct endpoint path with axios
+        console.log("Attempting axios call...");
         const response = await api.get("/businesses/nearby", { params });
         console.log("Nearby businesses API response:", response.data);
 
+        // If we get here, the request was successful
+        toast.success(`Found ${response.data.length} nearby businesses`);
         return response.data || [];
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching nearby businesses:", error);
-        toast.error(
-          "Failed to load nearby businesses. Please try again later."
-        );
+
+        // More detailed error handling
+        if (error.response) {
+          // The request was made and the server responded with a status code
+          // that falls out of the range of 2xx
+          console.error("Error response data:", error.response.data);
+          console.error("Error response status:", error.response.status);
+
+          if (error.response.status === 404) {
+            toast.error(
+              "API endpoint not found. Please check server configuration."
+            );
+          } else {
+            toast.error(
+              `Failed to load nearby businesses: ${
+                error.response.data?.message || error.response.statusText
+              }`
+            );
+          }
+        } else if (error.request) {
+          // The request was made but no response was received
+          console.error("Error request:", error.request);
+          toast.error(
+            "No response from server. Please check your internet connection."
+          );
+        } else {
+          // Something happened in setting up the request that triggered an Error
+          toast.error(`Failed to load nearby businesses: ${error.message}`);
+        }
+
         return [];
       }
     },
     enabled: !!userLocation,
+    retry: 1, // Only retry once
+    retryDelay: 1000, // Wait 1 second before retrying
   });
+
+  // Log query error if present
+  useEffect(() => {
+    if (queryError) {
+      console.error("Query error:", queryError);
+    }
+  }, [queryError]);
 
   // No mock data - using real data from API only
 
@@ -263,16 +362,20 @@ export default function NearbyContent({ customerId }: NearbyContentProps) {
 
             <div className="flex items-center gap-2">
               <Button
-                variant={isMapView ? "default" : "outline"}
+                variant={isMapView ? "outline" : "default"}
                 size="sm"
+                className={
+                  !isMapView ? "bg-orange-600 hover:bg-orange-700" : ""
+                }
                 onClick={() => setIsMapView(false)}
               >
                 <Building className="h-4 w-4 mr-2" />
                 List
               </Button>
               <Button
-                variant={isMapView ? "outline" : "default"}
+                variant={isMapView ? "default" : "outline"}
                 size="sm"
+                className={isMapView ? "bg-orange-600 hover:bg-orange-700" : ""}
                 onClick={() => setIsMapView(true)}
               >
                 <MapPin className="h-4 w-4 mr-2" />
@@ -282,14 +385,30 @@ export default function NearbyContent({ customerId }: NearbyContentProps) {
           </div>
         </div>
 
+        {/* Maximize Map Button (visible on smaller screens) */}
+        {!isMapView && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-4 w-full md:hidden flex items-center justify-center gap-2 bg-orange-100 text-orange-800 hover:bg-orange-200 border-orange-300"
+            onClick={() => setIsMapView(true)}
+          >
+            <MapPin className="h-4 w-4" />
+            <span>View Full Map</span>
+          </Button>
+        )}
+
         {/* Map View */}
         {isMapView && userLocation && (
-          <div className="rounded-lg overflow-hidden border h-[500px]">
+          <div className="rounded-lg overflow-hidden border h-[700px] w-full relative">
             <BusinessMap
-              latitude={userLocation.lat}
-              longitude={userLocation.lng}
-              businessName="Your Location"
-              zoom={13}
+              latitude={(mapSearchLocation || userLocation).lat}
+              longitude={(mapSearchLocation || userLocation).lng}
+              businessName={
+                mapSearchLocation ? "Search Location" : "Your Location"
+              }
+              zoom={12}
+              height="700px"
               markers={
                 nearbyBusinesses
                   ? nearbyBusinesses.map((business: Business) => ({
@@ -297,10 +416,64 @@ export default function NearbyContent({ customerId }: NearbyContentProps) {
                       longitude: business.location.coordinates[0],
                       name: business.name,
                       id: business._id,
+                      onClick: () => {
+                        // Navigate to business profile page
+                        router.push(
+                          `/customer/${customerId}/businesses/${business._id}`
+                        );
+                      },
                     }))
                   : []
               }
+              onViewportChange={(newViewport) => {
+                // Store the current map center for potential search
+                setMapSearchLocation({
+                  lat: newViewport.latitude,
+                  lng: newViewport.longitude,
+                });
+              }}
             />
+
+            {/* Search at this location button */}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-10">
+              <Button
+                onClick={() => {
+                  if (mapSearchLocation) {
+                    // Update location name
+                    fetch(
+                      `https://api.mapbox.com/geocoding/v5/mapbox.places/${mapSearchLocation.lng},${mapSearchLocation.lat}.json?access_token=${process.env.NEXT_PUBLIC_MAPBOX_TOKEN}&types=place`
+                    )
+                      .then((response) => response.json())
+                      .then((data) => {
+                        if (data.features && data.features.length > 0) {
+                          setLocationName(data.features[0].place_name);
+                        } else {
+                          setLocationName(
+                            `Location at ${mapSearchLocation.lat.toFixed(
+                              4
+                            )}, ${mapSearchLocation.lng.toFixed(4)}`
+                          );
+                        }
+                      })
+                      .catch((error) => {
+                        console.error("Error fetching location name:", error);
+                        setLocationName(
+                          `Location at ${mapSearchLocation.lat.toFixed(
+                            4
+                          )}, ${mapSearchLocation.lng.toFixed(4)}`
+                        );
+                      });
+
+                    // Refetch businesses at this location
+                    refetch();
+                    toast.success("Searching for businesses at this location");
+                  }
+                }}
+                className="bg-orange-600 hover:bg-orange-700 shadow-lg"
+              >
+                Search This Area
+              </Button>
+            </div>
           </div>
         )}
 
@@ -412,8 +585,12 @@ export default function NearbyContent({ customerId }: NearbyContentProps) {
                 </h3>
                 <p className="text-muted-foreground mb-6">
                   {category !== "all"
-                    ? `No ${category} businesses found within ${distance}km of your location.`
-                    : `No businesses found within ${distance}km of your location.`}
+                    ? `No ${category} businesses found within ${distance}km of ${
+                        mapSearchLocation ? "this" : "your"
+                      } location.`
+                    : `No businesses found within ${distance}km of ${
+                        mapSearchLocation ? "this" : "your"
+                      } location.`}
                 </p>
                 <Button
                   onClick={() => {

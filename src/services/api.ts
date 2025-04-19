@@ -7,8 +7,12 @@ import axios, {
 import Cookies from "js-cookie";
 import { handleLogout } from "@/lib/auth-utils";
 
-const API_URL =
-  `${process.env.NEXT_PUBLIC_API_URL}/api` || "http://localhost:4000/api";
+// Ensure we have a valid API URL
+const API_URL = process.env.NEXT_PUBLIC_API_URL
+  ? `${process.env.NEXT_PUBLIC_API_URL}/api`
+  : "http://localhost:4000/api";
+
+console.log("API URL configured as:", API_URL);
 
 // Create a custom axios instance
 const api: AxiosInstance = axios.create({
