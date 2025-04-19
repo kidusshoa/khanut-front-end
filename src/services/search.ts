@@ -6,6 +6,8 @@ interface SearchParams {
   limit?: number;
   sort?: string;
   order?: "asc" | "desc";
+  category?: string;
+  city?: string;
   filters?: Record<string, any>;
 }
 
@@ -100,14 +102,19 @@ export const searchApi = {
   // Comprehensive search across all search endpoints
   searchAll: async (params: SearchParams) => {
     try {
-      const { query } = params;
+      const { query, category, city } = params;
+
+      // Create filters object with category and city if provided
+      const filters = { ...params.filters };
+      if (category) filters.category = category;
+      if (city) filters.city = city;
 
       // Make parallel requests to all search endpoints
       const [businessResults, descriptionResults, servicesResults] =
         await Promise.all([
-          searchApi.searchBusinessesByName({ ...params }),
-          searchApi.searchBusinessesByDescription({ ...params }),
-          searchApi.searchBusinessesByServices({ ...params }),
+          searchApi.searchBusinessesByName({ ...params, filters }),
+          searchApi.searchBusinessesByDescription({ ...params, filters }),
+          searchApi.searchBusinessesByServices({ ...params, filters }),
         ]);
 
       // Combine and deduplicate results
@@ -136,6 +143,17 @@ export const searchApi = {
       };
     } catch (error) {
       console.error("Error performing comprehensive search:", error);
+      throw error;
+    }
+  },
+
+  // Get business by ID
+  getBusinessById: async (businessId: string) => {
+    try {
+      const response = await api.get(`/businesses/${businessId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching business by ID:", error);
       throw error;
     }
   },

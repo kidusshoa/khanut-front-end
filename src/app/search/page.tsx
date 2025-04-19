@@ -37,9 +37,36 @@ import { toast } from "react-hot-toast";
 export default function SearchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const initialQuery = searchParams.get("q") || "";
+  const initialQuery = searchParams.get("q") || searchParams.get("query") || "";
   const initialType = searchParams.get("type") || "all";
   const initialSearchType = searchParams.get("searchType") || "all";
+
+  // Check if we have a customer ID in the session
+  // This is a fallback in case the middleware doesn't handle the redirect
+  useEffect(() => {
+    // This is a simplified example - you would need to implement proper session handling
+    const checkCustomerSession = async () => {
+      try {
+        // You would typically get this from your auth provider
+        const session = await fetch("/api/auth/session").then((res) =>
+          res.json()
+        );
+
+        if (session?.user?.customerId) {
+          // Redirect to customer-specific search
+          router.replace(
+            `/customer/${session.user.customerId}/search${
+              initialQuery ? `?q=${encodeURIComponent(initialQuery)}` : ""
+            }`
+          );
+        }
+      } catch (error) {
+        console.error("Error checking session:", error);
+      }
+    };
+
+    checkCustomerSession();
+  }, [router, initialQuery]);
 
   const [query, setQuery] = useState(initialQuery);
   const [searchType, setSearchType] = useState<

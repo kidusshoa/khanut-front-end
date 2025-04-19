@@ -59,6 +59,35 @@ export default function CustomerDashboardLayout({
   const [cartCount, setCartCount] = useState(0);
   const [userProfile, setUserProfile] = useState<any>(null);
 
+  // Check if we're on a business details page
+  const isBusinessPage = pathname.includes("/businesses/");
+  const businessId = isBusinessPage ? pathname.split("/").pop() : null;
+
+  // State to store business name
+  const [businessName, setBusinessName] = useState<string>("");
+
+  // Fetch business name if on a business page
+  useEffect(() => {
+    if (isBusinessPage && businessId) {
+      const fetchBusinessName = async () => {
+        try {
+          const API_URL =
+            process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+          const response = await fetch(
+            `${API_URL}/api/businesses/${businessId}`
+          );
+          const data = await response.json();
+          setBusinessName(data.name || "Business Details");
+        } catch (error) {
+          console.error("Error fetching business name:", error);
+          setBusinessName("Business Details");
+        }
+      };
+
+      fetchBusinessName();
+    }
+  }, [isBusinessPage, businessId]);
+
   // Ensure theme component renders only after mounted on client
   useEffect(() => {
     setMounted(true);
@@ -117,6 +146,15 @@ export default function CustomerDashboardLayout({
       icon: <Home className="h-5 w-5" />,
       href: `/customer/${customerId}`,
       active: pathname === `/customer/${customerId}`,
+    },
+    {
+      title: "Search",
+      icon: <Search className="h-5 w-5" />,
+      href: `/customer/${customerId}/search`,
+      active:
+        pathname === `/customer/${customerId}/search` ||
+        pathname.startsWith(`/customer/${customerId}/businesses/`) ||
+        pathname.startsWith(`/customer/${customerId}/services/`),
     },
     {
       title: "Browse Services",
@@ -334,7 +372,9 @@ export default function CustomerDashboardLayout({
           <div className="flex-1 flex items-center">
             <div className="flex flex-col">
               <h1 className="text-xl font-semibold">
-                {menuItems.find((item) => item.active)?.title || "Dashboard"}
+                {isBusinessPage
+                  ? businessName || "Business Details"
+                  : menuItems.find((item) => item.active)?.title || "Dashboard"}
               </h1>
               {(userProfile?.name || session?.user?.name) && (
                 <p className="text-sm text-muted-foreground">
@@ -345,6 +385,15 @@ export default function CustomerDashboardLayout({
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Search */}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => router.push(`/customer/${customerId}/search`)}
+            >
+              <Search className="h-5 w-5" />
+            </Button>
+
             {/* Cart */}
             <Button
               variant="ghost"

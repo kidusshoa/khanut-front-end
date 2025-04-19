@@ -5,6 +5,7 @@ import { getToken } from "next-auth/jwt";
 export async function middleware(request: NextRequest) {
   const token = await getToken({ req: request });
   const path = request.nextUrl.pathname;
+  const search = request.nextUrl.search;
 
   // Public paths that don't require authentication
   const publicPaths = ["/login", "/register", "/verify", "/"];
@@ -17,6 +18,13 @@ export async function middleware(request: NextRequest) {
   // Check if user is authenticated
   if (!token) {
     return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  // Handle search redirects for customers
+  if (path === "/search" && token?.role === "customer" && token?.customerId) {
+    return NextResponse.redirect(
+      new URL(`/customer/${token.customerId}/search${search}`, request.url)
+    );
   }
 
   // Business route protection

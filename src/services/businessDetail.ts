@@ -62,12 +62,18 @@ export const businessDetailApi = {
   },
 
   // Submit a review for a business
-  submitReview: async (businessId: string, rating: number, comment: string) => {
+  submitReview: async (
+    businessId: string,
+    rating: number,
+    comment: string,
+    customerId?: string
+  ) => {
     try {
       const response = await api.post(`/reviews`, {
         businessId,
         rating,
         comment,
+        customerId, // Include customerId if available
       });
       return response.data;
     } catch (error) {

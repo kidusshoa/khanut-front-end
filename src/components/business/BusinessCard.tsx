@@ -2,7 +2,27 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { MapPin, Star, Clock, Calendar, ShoppingBag } from "lucide-react";
+import {
+  MapPin,
+  Star,
+  Clock,
+  Calendar,
+  ShoppingBag,
+  Tag,
+  Store,
+  Utensils,
+  Briefcase,
+  ShoppingCart,
+  Scissors,
+  Home,
+  Car,
+  Laptop,
+  Book,
+  Heart,
+  Shirt,
+  Coffee,
+  LucideIcon,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -20,10 +40,13 @@ interface BusinessCardProps {
       state?: string;
       country?: string;
     };
+    city?: string;
     rating?: number;
     reviewCount?: number;
     serviceTypes?: string[];
     categories?: string[];
+    category?: string;
+    customerId?: string;
   };
 }
 
@@ -56,8 +79,37 @@ export function BusinessCard({ business }: BusinessCardProps) {
     }
   };
 
+  // Helper function to get an icon based on business category
+  const getCategoryIcon = (category: string) => {
+    const categoryMap: Record<string, LucideIcon> = {
+      Restaurant: Utensils,
+      Cafe: Coffee,
+      Retail: Store,
+      Electronics: Laptop,
+      Clothing: Shirt,
+      Books: Book,
+      Automotive: Car,
+      Health: Heart,
+      Beauty: Scissors,
+      Home: Home,
+      Professional: Briefcase,
+      Shopping: ShoppingCart,
+    };
+
+    // Default icon if category doesn't match
+    const Icon = categoryMap[category] || Tag;
+    return <Icon className="h-3.5 w-3.5" />;
+  };
+
   return (
-    <Link href={`/businesses/${business._id}`} className="group">
+    <Link
+      href={
+        business.customerId
+          ? `/customer/${business.customerId}/search/${business._id}`
+          : `/businesses/${business._id}`
+      }
+      className="group"
+    >
       <div className="rounded-lg overflow-hidden border border-border bg-card transition-all hover:shadow-md h-full flex flex-col">
         <div className="aspect-video relative overflow-hidden">
           {business.coverImage && !imageError ? (
@@ -108,6 +160,18 @@ export function BusinessCard({ business }: BusinessCardProps) {
             )}
           </div>
 
+          {business.category && (
+            <div className="mb-2">
+              <Badge
+                variant="outline"
+                className="bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400 flex items-center gap-1 px-2 py-1"
+              >
+                {getCategoryIcon(business.category)}
+                {business.category}
+              </Badge>
+            </div>
+          )}
+
           <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
             {business.description}
           </p>
@@ -117,6 +181,15 @@ export function BusinessCard({ business }: BusinessCardProps) {
               <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 mr-1 flex-shrink-0" />
               <span className="text-sm text-muted-foreground line-clamp-1">
                 {formatAddress(business.address)}
+              </span>
+            </div>
+          )}
+
+          {!business.address && business.city && (
+            <div className="flex items-start mb-3">
+              <MapPin className="h-4 w-4 text-muted-foreground mt-0.5 mr-1 flex-shrink-0" />
+              <span className="text-sm text-muted-foreground line-clamp-1">
+                {business.city}
               </span>
             </div>
           )}
@@ -150,7 +223,11 @@ export function BusinessCard({ business }: BusinessCardProps) {
 
             <div className="mt-4">
               <Link
-                href={`/businesses/${business._id}`}
+                href={
+                  business.customerId
+                    ? `/customer/${business.customerId}/search/${business._id}`
+                    : `/businesses/${business._id}`
+                }
                 className={cn(
                   buttonVariants({ variant: "default" }),
                   "w-full bg-orange-600 hover:bg-orange-700"

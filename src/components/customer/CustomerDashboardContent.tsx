@@ -121,7 +121,7 @@ export default function CustomerDashboardContent({
 
         {/* Search Bar */}
         <div className="relative">
-          <SearchBar />
+          <SearchBar customerId={customerId} />
         </div>
 
         {/* Stats Cards */}

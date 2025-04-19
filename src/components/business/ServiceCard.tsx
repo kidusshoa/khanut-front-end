@@ -16,6 +16,7 @@ interface ServiceCardProps {
     images: string[];
     duration?: number;
     inventory?: number;
+    customerId?: string;
   };
   onDelete: () => void;
   onEdit: () => void;
@@ -135,7 +136,11 @@ export function ServiceCard({
         ) : (
           <div className="w-full">
             <Link
-              href={`/services/${service._id}`}
+              href={
+                service.customerId
+                  ? `/customer/${service.customerId}/services/${service._id}`
+                  : `/services/${service._id}`
+              }
               className="block w-full mb-2"
             >
               <Button variant="outline" className="w-full">

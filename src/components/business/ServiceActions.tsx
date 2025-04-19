@@ -3,15 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { 
-  Calendar, 
-  ShoppingBag, 
-  MapPin, 
-  Clock, 
-  Plus, 
+import {
+  Calendar,
+  ShoppingBag,
+  MapPin,
+  Clock,
+  Plus,
   Minus,
   ChevronRight,
-  CalendarDays
+  CalendarDays,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -50,6 +50,7 @@ interface ServiceActionsProps {
       endTime: string;
     };
     inventory?: number;
+    customerId?: string;
   };
 }
 
@@ -60,62 +61,74 @@ export function ServiceActions({ service }: ServiceActionsProps) {
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [selectedTime, setSelectedTime] = useState<string | undefined>(undefined);
-  
+  const [selectedTime, setSelectedTime] = useState<string | undefined>(
+    undefined
+  );
+
   // Generate available time slots based on service availability
   const getAvailableTimeSlots = () => {
     if (!service.availability) return [];
-    
+
     const { startTime, endTime } = service.availability;
     const slots = [];
-    
-    const start = parseInt(startTime.split(':')[0]);
-    const end = parseInt(endTime.split(':')[0]);
-    
+
+    const start = parseInt(startTime.split(":")[0]);
+    const end = parseInt(endTime.split(":")[0]);
+
     for (let hour = start; hour < end; hour++) {
       slots.push(`${hour}:00`);
       slots.push(`${hour}:30`);
     }
-    
+
     return slots;
   };
-  
+
   const timeSlots = getAvailableTimeSlots();
-  
+
   const handleAddToCart = () => {
     if (!session) {
       toast.error("Please log in to add items to cart");
-      router.push("/login");
+      if (service.customerId) {
+        router.push(`/customer/${service.customerId}/login`);
+      } else {
+        router.push("/login");
+      }
       return;
     }
-    
+
     // Add to cart logic would go here
     toast.success(`Added ${quantity} ${service.name} to cart`);
     setIsCartModalOpen(false);
   };
-  
+
   const handleBookAppointment = () => {
     if (!session) {
       toast.error("Please log in to book appointments");
-      router.push("/login");
+      if (service.customerId) {
+        router.push(`/customer/${service.customerId}/login`);
+      } else {
+        router.push("/login");
+      }
       return;
     }
-    
+
     if (!selectedDate) {
       toast.error("Please select a date");
       return;
     }
-    
+
     if (!selectedTime) {
       toast.error("Please select a time");
       return;
     }
-    
+
     // Book appointment logic would go here
-    toast.success(`Appointment booked for ${format(selectedDate, 'PPP')} at ${selectedTime}`);
+    toast.success(
+      `Appointment booked for ${format(selectedDate, "PPP")} at ${selectedTime}`
+    );
     setIsBookModalOpen(false);
   };
-  
+
   const renderActionButton = () => {
     switch (service.serviceType) {
       case "appointment":
@@ -131,7 +144,8 @@ export function ServiceActions({ service }: ServiceActionsProps) {
               <DialogHeader>
                 <DialogTitle>Book Appointment</DialogTitle>
                 <DialogDescription>
-                  Select a date and time for your appointment with {service.name}.
+                  Select a date and time for your appointment with{" "}
+                  {service.name}.
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
@@ -147,7 +161,9 @@ export function ServiceActions({ service }: ServiceActionsProps) {
                         )}
                       >
                         <CalendarDays className="mr-2 h-4 w-4" />
-                        {selectedDate ? format(selectedDate, "PPP") : "Select a date"}
+                        {selectedDate
+                          ? format(selectedDate, "PPP")
+                          : "Select a date"}
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0">
@@ -166,7 +182,7 @@ export function ServiceActions({ service }: ServiceActionsProps) {
                     </PopoverContent>
                   </Popover>
                 </div>
-                
+
                 <div className="grid gap-2">
                   <Label htmlFor="time">Time</Label>
                   <div className="grid grid-cols-3 gap-2">
@@ -175,7 +191,11 @@ export function ServiceActions({ service }: ServiceActionsProps) {
                         key={time}
                         type="button"
                         variant={selectedTime === time ? "default" : "outline"}
-                        className={selectedTime === time ? "bg-orange-600 hover:bg-orange-700" : ""}
+                        className={
+                          selectedTime === time
+                            ? "bg-orange-600 hover:bg-orange-700"
+                            : ""
+                        }
                         onClick={() => setSelectedTime(time)}
                       >
                         {time}
@@ -185,15 +205,15 @@ export function ServiceActions({ service }: ServiceActionsProps) {
                 </div>
               </div>
               <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => setIsBookModalOpen(false)}
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="button" 
+                <Button
+                  type="button"
                   className="bg-orange-600 hover:bg-orange-700"
                   onClick={handleBookAppointment}
                 >
@@ -203,7 +223,7 @@ export function ServiceActions({ service }: ServiceActionsProps) {
             </DialogContent>
           </Dialog>
         );
-        
+
       case "product":
         return (
           <Dialog open={isCartModalOpen} onOpenChange={setIsCartModalOpen}>
@@ -239,20 +259,23 @@ export function ServiceActions({ service }: ServiceActionsProps) {
                       variant="outline"
                       size="icon"
                       onClick={() => setQuantity(quantity + 1)}
-                      disabled={service.inventory !== undefined && quantity >= service.inventory}
+                      disabled={
+                        service.inventory !== undefined &&
+                        quantity >= service.inventory
+                      }
                     >
                       <Plus className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <span>Price:</span>
                   <span className="font-medium">
                     ETB {(service.price * quantity).toFixed(2)}
                   </span>
                 </div>
-                
+
                 {service.inventory !== undefined && (
                   <div className="text-sm text-muted-foreground">
                     {service.inventory} items available in stock
@@ -260,15 +283,15 @@ export function ServiceActions({ service }: ServiceActionsProps) {
                 )}
               </div>
               <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => setIsCartModalOpen(false)}
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="button" 
+                <Button
+                  type="button"
                   className="bg-orange-600 hover:bg-orange-700"
                   onClick={handleAddToCart}
                 >
@@ -278,33 +301,45 @@ export function ServiceActions({ service }: ServiceActionsProps) {
             </DialogContent>
           </Dialog>
         );
-        
+
       case "in_person":
         return (
-          <Button 
+          <Button
             className="w-full bg-orange-600 hover:bg-orange-700"
-            onClick={() => router.push(`/businesses/${service.businessId}`)}
+            onClick={() => {
+              if (service.customerId) {
+                router.push(
+                  `/customer/${service.customerId}/businesses/${service.businessId}`
+                );
+              } else {
+                router.push(`/businesses/${service.businessId}`);
+              }
+            }}
           >
             <MapPin className="mr-2 h-4 w-4" />
             Visit Business
           </Button>
         );
-        
+
       default:
         return (
-          <Button 
+          <Button
             className="w-full bg-orange-600 hover:bg-orange-700"
-            onClick={() => router.push(`/services/${service._id}`)}
+            onClick={() => {
+              if (service.customerId) {
+                router.push(
+                  `/customer/${service.customerId}/services/${service._id}`
+                );
+              } else {
+                router.push(`/services/${service._id}`);
+              }
+            }}
           >
             View Details
           </Button>
         );
     }
   };
-  
-  return (
-    <div className="mt-4">
-      {renderActionButton()}
-    </div>
-  );
+
+  return <div className="mt-4">{renderActionButton()}</div>;
 }
