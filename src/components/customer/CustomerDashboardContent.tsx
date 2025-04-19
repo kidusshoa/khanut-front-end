@@ -11,6 +11,18 @@ import {
   ArrowRight,
   Star,
   Loader2,
+  Utensils,
+  Scissors,
+  Car,
+  Laptop,
+  Home,
+  Shirt,
+  Book,
+  Coffee,
+  Store,
+  Briefcase,
+  ShoppingCart,
+  Search,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import {
@@ -363,6 +375,107 @@ export default function CustomerDashboardContent({
               )}
             </CardContent>
           </Card>
+        </div>
+
+        {/* Featured Categories */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold tracking-tight">
+              Featured Categories
+            </h2>
+            <Button variant="ghost" size="sm" asChild>
+              <Link
+                href={`/customer/${customerId}/search`}
+                className="flex items-center gap-1"
+              >
+                Browse all <ArrowRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {[
+              {
+                name: "Restaurant",
+                icon: <Utensils className="h-6 w-6" />,
+                color:
+                  "bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400",
+              },
+              {
+                name: "Beauty",
+                icon: <Scissors className="h-6 w-6" />,
+                color:
+                  "bg-pink-100 text-pink-800 dark:bg-pink-900/20 dark:text-pink-400",
+              },
+              {
+                name: "Electronics",
+                icon: <Laptop className="h-6 w-6" />,
+                color:
+                  "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400",
+              },
+              {
+                name: "Automotive",
+                icon: <Car className="h-6 w-6" />,
+                color:
+                  "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400",
+              },
+              {
+                name: "Home",
+                icon: <Home className="h-6 w-6" />,
+                color:
+                  "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400",
+              },
+              {
+                name: "Fashion",
+                icon: <Shirt className="h-6 w-6" />,
+                color:
+                  "bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400",
+              },
+              {
+                name: "Books",
+                icon: <Book className="h-6 w-6" />,
+                color:
+                  "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400",
+              },
+              {
+                name: "Cafe",
+                icon: <Coffee className="h-6 w-6" />,
+                color:
+                  "bg-amber-100 text-amber-800 dark:bg-amber-900/20 dark:text-amber-400",
+              },
+              {
+                name: "Retail",
+                icon: <Store className="h-6 w-6" />,
+                color:
+                  "bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400",
+              },
+              {
+                name: "Professional",
+                icon: <Briefcase className="h-6 w-6" />,
+                color:
+                  "bg-slate-100 text-slate-800 dark:bg-slate-900/20 dark:text-slate-400",
+              },
+            ].map((category) => (
+              <Link
+                key={category.name}
+                href={`/customer/${customerId}/search?category=${encodeURIComponent(
+                  category.name
+                )}`}
+                className="group"
+              >
+                <div className="flex flex-col items-center justify-center p-4 rounded-lg border border-border bg-card hover:shadow-md transition-all text-center h-full">
+                  <div
+                    className={`w-12 h-12 rounded-full ${category.color} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}
+                  >
+                    {category.icon}
+                  </div>
+                  <span className="font-medium text-sm group-hover:text-orange-600 transition-colors">
+                    {category.name}
+                  </span>
+                </div>
+              </Link>
+            ))}
+          </div>
         </div>
 
         {/* Recommended Services */}

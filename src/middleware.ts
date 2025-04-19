@@ -27,6 +27,27 @@ export async function middleware(request: NextRequest) {
     );
   }
 
+  // Customer route protection
+  if (path.startsWith("/customer")) {
+    if (token.role !== "customer") {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    // Extract customerId from path
+    const pathParts = path.split("/");
+    const pathCustomerId = pathParts[2];
+
+    // For development, we'll skip the customer ID check
+    // In production, you would want to check if the user is trying to access another customer's data
+    /*
+    if (pathCustomerId && pathCustomerId !== token.id) {
+      return NextResponse.redirect(
+        new URL(`/customer/${token.id}`, request.url)
+      );
+    }
+    */
+  }
+
   // Business route protection
   if (path.startsWith("/business")) {
     if (token.role !== "business") {

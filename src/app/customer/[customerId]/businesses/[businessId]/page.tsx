@@ -35,6 +35,7 @@ import {
   Coffee,
 } from "lucide-react";
 import { LoadingState } from "@/components/ui/loading-state";
+import { BusinessDetailSkeleton } from "@/components/business/BusinessDetailSkeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
@@ -177,11 +178,7 @@ export default function CustomerBusinessDetailPage() {
   if (isBusinessLoading) {
     return (
       <CustomerDashboardLayout customerId={customerId}>
-        <LoadingState
-          message="Loading business details..."
-          size="lg"
-          className="min-h-[60vh]"
-        />
+        <BusinessDetailSkeleton />
       </CustomerDashboardLayout>
     );
   }
@@ -260,13 +257,37 @@ export default function CustomerBusinessDetailPage() {
       </div>
 
       {/* Business Name Header */}
-      <h1 className="text-4xl font-bold mb-6 text-orange-600">
-        {business?.name || "Business Details"}
-      </h1>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+        <h1 className="text-4xl font-bold text-orange-600">
+          {business?.name || "Business Details"}
+        </h1>
+
+        {reviews && (
+          <div className="flex items-center bg-white dark:bg-gray-800 px-4 py-2 rounded-lg shadow-sm">
+            <div className="flex mr-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                  key={star}
+                  className={cn(
+                    "h-5 w-5",
+                    star <= Math.round(averageRating)
+                      ? "text-yellow-500 fill-yellow-500"
+                      : "text-gray-300"
+                  )}
+                />
+              ))}
+            </div>
+            <span className="font-medium">{averageRating.toFixed(1)}</span>
+            <span className="text-muted-foreground ml-1">
+              ({reviews.length} {reviews.length === 1 ? "review" : "reviews"})
+            </span>
+          </div>
+        )}
+      </div>
 
       {/* Business Header */}
       <div className="mb-8">
-        <div className="relative rounded-lg overflow-hidden h-64 mb-6">
+        <div className="relative rounded-lg overflow-hidden h-80 mb-6 shadow-md">
           {business?.coverImage ? (
             <img
               src={business.coverImage}
@@ -282,7 +303,7 @@ export default function CustomerBusinessDetailPage() {
           )}
 
           {business?.logo && (
-            <div className="absolute bottom-4 left-4 h-20 w-20 rounded-full border-4 border-white overflow-hidden bg-white">
+            <div className="absolute bottom-4 left-4 h-24 w-24 rounded-full border-4 border-white overflow-hidden bg-white shadow-lg">
               <img
                 src={business.logo}
                 alt={`${business.name} logo`}
@@ -302,7 +323,7 @@ export default function CustomerBusinessDetailPage() {
               <div className="mt-2 mb-2">
                 <Badge
                   variant="outline"
-                  className="bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400 flex items-center gap-1 px-2 py-1"
+                  className="bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400 flex items-center gap-1 px-3 py-1.5 text-sm font-medium shadow-sm"
                 >
                   {getCategoryIcon(business.category)}
                   {business.category}
@@ -314,27 +335,6 @@ export default function CustomerBusinessDetailPage() {
               <MapPin className="h-4 w-4 mr-1" />
               <span>{formatAddress(business)}</span>
             </div>
-
-            {reviews && (
-              <div className="flex items-center mt-2">
-                <div className="flex">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      className={cn(
-                        "h-4 w-4",
-                        star <= Math.round(averageRating)
-                          ? "text-yellow-500 fill-yellow-500"
-                          : "text-gray-300"
-                      )}
-                    />
-                  ))}
-                </div>
-                <span className="ml-2 text-sm">
-                  {averageRating.toFixed(1)} ({reviews.length} reviews)
-                </span>
-              </div>
-            )}
           </div>
 
           <div className="flex flex-wrap gap-2">
@@ -378,41 +378,106 @@ export default function CustomerBusinessDetailPage() {
               <CardTitle>About</CardTitle>
             </CardHeader>
             <CardContent>
-              {business?.category && (
-                <div className="mb-3 flex items-center gap-2">
-                  <Badge
-                    variant="outline"
-                    className="bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400 flex items-center gap-1 px-2 py-1"
-                  >
-                    {getCategoryIcon(business.category)}
-                    {business.category}
-                  </Badge>
-                </div>
-              )}
-              <p className="text-muted-foreground">
-                {business?.description || "No description available."}
-              </p>
+              <div className="space-y-4">
+                {business?.category && (
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-sm text-muted-foreground">
+                      Category:
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className="bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400 flex items-center gap-1 px-2 py-1"
+                    >
+                      {getCategoryIcon(business.category)}
+                      {business.category}
+                    </Badge>
+                  </div>
+                )}
+
+                {business?.description ? (
+                  <div>
+                    <h3 className="text-lg font-medium mb-2">Description</h3>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {business.description}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-muted-foreground italic">
+                    No description available.
+                  </p>
+                )}
+
+                {business?.businessHours && (
+                  <div className="mt-4">
+                    <h3 className="text-lg font-medium mb-2">Business Hours</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {Object.entries(business.businessHours).map(
+                        ([day, hours]) => (
+                          <div
+                            key={day}
+                            className="flex justify-between border-b border-gray-100 dark:border-gray-800 py-1 last:border-0"
+                          >
+                            <span className="font-medium capitalize">
+                              {day}
+                            </span>
+                            <span className="text-muted-foreground">
+                              {hours || "Closed"}
+                            </span>
+                          </div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
 
           {/* Services Section */}
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle>Services</CardTitle>
-              <Tabs defaultValue="all" onValueChange={setActiveTab}>
-                <TabsList>
-                  <TabsTrigger value="all">All</TabsTrigger>
-                  <TabsTrigger value="appointment">Appointments</TabsTrigger>
-                  <TabsTrigger value="product">Products</TabsTrigger>
-                  <TabsTrigger value="in_person">In-Person</TabsTrigger>
-                </TabsList>
-              </Tabs>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <CardTitle>Services</CardTitle>
+                <Tabs defaultValue="all" onValueChange={setActiveTab}>
+                  <TabsList className="h-9">
+                    <TabsTrigger
+                      value="all"
+                      className="text-xs sm:text-sm px-3"
+                    >
+                      All
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="appointment"
+                      className="text-xs sm:text-sm px-3"
+                    >
+                      <Calendar className="h-3.5 w-3.5 mr-1 hidden sm:inline" />
+                      Appointments
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="product"
+                      className="text-xs sm:text-sm px-3"
+                    >
+                      <ShoppingBag className="h-3.5 w-3.5 mr-1 hidden sm:inline" />
+                      Products
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value="in_person"
+                      className="text-xs sm:text-sm px-3"
+                    >
+                      <MapPin className="h-3.5 w-3.5 mr-1 hidden sm:inline" />
+                      In-Person
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
             </CardHeader>
             <CardContent>
               {isServicesLoading ? (
-                <LoadingState size="md" message="Loading services..." />
+                <div className="py-12">
+                  <LoadingState size="md" message="Loading services..." />
+                </div>
               ) : filteredServices.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {filteredServices.map((service) => (
                     <ServiceCard
                       key={service._id}
@@ -427,9 +492,24 @@ export default function CustomerBusinessDetailPage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">
+                <div className="text-center py-12">
+                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 mb-4">
+                    {activeTab === "appointment" ? (
+                      <Calendar className="h-6 w-6 text-muted-foreground" />
+                    ) : activeTab === "product" ? (
+                      <ShoppingBag className="h-6 w-6 text-muted-foreground" />
+                    ) : activeTab === "in_person" ? (
+                      <MapPin className="h-6 w-6 text-muted-foreground" />
+                    ) : (
+                      <Clock className="h-6 w-6 text-muted-foreground" />
+                    )}
+                  </div>
+                  <p className="text-muted-foreground font-medium">
                     No {activeTab === "all" ? "services" : activeTab} available.
+                  </p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    This business hasn't added any{" "}
+                    {activeTab === "all" ? "services" : activeTab} yet.
                   </p>
                 </div>
               )}
@@ -438,22 +518,48 @@ export default function CustomerBusinessDetailPage() {
 
           {/* Reviews Section */}
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <CardTitle>Reviews</CardTitle>
+              {reviews?.length > 0 && (
+                <div className="flex items-center gap-2 text-sm">
+                  <div className="flex">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={cn(
+                          "h-4 w-4",
+                          star <= Math.round(averageRating)
+                            ? "text-yellow-500 fill-yellow-500"
+                            : "text-gray-300"
+                        )}
+                      />
+                    ))}
+                  </div>
+                  <span className="font-medium">
+                    {averageRating.toFixed(1)}
+                  </span>
+                  <span className="text-muted-foreground">
+                    based on {reviews.length}{" "}
+                    {reviews.length === 1 ? "review" : "reviews"}
+                  </span>
+                </div>
+              )}
             </CardHeader>
             <CardContent>
               {isReviewsLoading ? (
-                <LoadingState size="md" message="Loading reviews..." />
+                <div className="py-12">
+                  <LoadingState size="md" message="Loading reviews..." />
+                </div>
               ) : reviews?.length > 0 ? (
                 <div className="space-y-6">
                   {reviews.map((review) => (
                     <div
                       key={review._id}
-                      className="pb-6 border-b last:border-0"
+                      className="p-4 rounded-lg border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                     >
-                      <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-start justify-between mb-3">
                         <div className="flex items-center">
-                          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mr-3">
+                          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mr-3 border border-gray-200 dark:border-gray-700">
                             {review.authorId?.profilePicture ? (
                               <img
                                 src={review.authorId.profilePicture}
@@ -469,11 +575,18 @@ export default function CustomerBusinessDetailPage() {
                               {review.authorId?.name || "Anonymous"}
                             </h4>
                             <p className="text-xs text-muted-foreground">
-                              {new Date(review.createdAt).toLocaleDateString()}
+                              {new Date(review.createdAt).toLocaleDateString(
+                                undefined,
+                                {
+                                  year: "numeric",
+                                  month: "long",
+                                  day: "numeric",
+                                }
+                              )}
                             </p>
                           </div>
                         </div>
-                        <div className="flex">
+                        <div className="flex bg-gray-50 dark:bg-gray-800 px-2 py-1 rounded-md">
                           {[1, 2, 3, 4, 5].map((star) => (
                             <Star
                               key={star}
@@ -487,15 +600,22 @@ export default function CustomerBusinessDetailPage() {
                           ))}
                         </div>
                       </div>
-                      <p className="text-sm">{review.comment}</p>
+                      <p className="text-sm leading-relaxed">
+                        {review.comment}
+                      </p>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">No reviews yet.</p>
+                <div className="text-center py-12">
+                  <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 mb-4">
+                    <Star className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <p className="text-muted-foreground font-medium">
+                    No reviews yet
+                  </p>
                   <p className="text-sm text-muted-foreground mt-2 mb-4">
-                    Be the first to share your experience!
+                    Be the first to share your experience with this business!
                   </p>
                 </div>
               )}
@@ -503,7 +623,7 @@ export default function CustomerBusinessDetailPage() {
           </Card>
 
           {/* Review Form Section */}
-          <Card className="mt-8">
+          <Card className="mt-8 border-2 border-dashed border-gray-200 dark:border-gray-800">
             <CardHeader>
               <CardTitle>Write a Review</CardTitle>
               <p className="text-sm text-muted-foreground">
@@ -518,6 +638,7 @@ export default function CustomerBusinessDetailPage() {
                   queryClient.invalidateQueries({
                     queryKey: ["businessReviews", businessId],
                   });
+                  toast.success("Your review has been submitted!");
                 }}
               />
             </CardContent>
@@ -532,20 +653,35 @@ export default function CustomerBusinessDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               {business?.phone && (
-                <div className="flex items-center">
-                  <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span>{business.phone}</span>
+                <div className="flex items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-md transition-colors">
+                  <div className="h-8 w-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mr-3">
+                    <Phone className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Phone</div>
+                    <div className="font-medium">{business.phone}</div>
+                  </div>
                 </div>
               )}
               {business?.email && (
-                <div className="flex items-center">
-                  <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <span>{business.email}</span>
+                <div className="flex items-center p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-md transition-colors">
+                  <div className="h-8 w-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mr-3">
+                    <Mail className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-muted-foreground">Email</div>
+                    <div className="font-medium">{business.email}</div>
+                  </div>
                 </div>
               )}
-              <div className="flex items-start">
-                <MapPin className="h-4 w-4 mr-2 text-muted-foreground mt-1" />
-                <span>{formatAddress(business)}</span>
+              <div className="flex items-start p-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-md transition-colors">
+                <div className="h-8 w-8 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mr-3">
+                  <MapPin className="h-4 w-4 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <div className="text-sm text-muted-foreground">Address</div>
+                  <div className="font-medium">{formatAddress(business)}</div>
+                </div>
               </div>
 
               {/* Map */}
@@ -559,31 +695,6 @@ export default function CustomerBusinessDetailPage() {
                     />
                   </div>
                 )}
-            </CardContent>
-          </Card>
-
-          {/* Business Hours */}
-          <Card className="mb-8">
-            <CardHeader>
-              <CardTitle>Business Hours</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {business?.businessHours ? (
-                <div className="space-y-2">
-                  {Object.entries(business.businessHours).map(
-                    ([day, hours]) => (
-                      <div key={day} className="flex justify-between">
-                        <span className="font-medium capitalize">{day}</span>
-                        <span>{hours || "Closed"}</span>
-                      </div>
-                    )
-                  )}
-                </div>
-              ) : (
-                <p className="text-muted-foreground">
-                  Business hours not available.
-                </p>
-              )}
             </CardContent>
           </Card>
 

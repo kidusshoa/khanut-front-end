@@ -20,7 +20,8 @@ import { ServiceCard } from "@/components/business/ServiceCard";
 import CustomerDashboardLayout from "@/components/layout/CustomerDashboardLayout";
 import SearchHistory from "@/components/customer/SearchHistory";
 import { searchApi } from "@/services/search";
-import { LoadingState } from "@/components/ui/loading-state";
+
+import { SearchResultsSkeleton } from "@/components/search/SearchResultsSkeleton";
 
 export default function CustomerSearchPage() {
   const params = useParams();
@@ -32,18 +33,70 @@ export default function CustomerSearchPage() {
   const initialCategory = searchParams.get("category") || "";
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
-  const [activeTab, setActiveTab] = useState("all");
+
   const [categories, setCategories] = useState<string[]>([]);
+
+  // Define service type
+  interface Service {
+    _id: string;
+    name: string;
+    description: string;
+    price: number;
+    serviceType: "appointment" | "product" | "in_person";
+    images: string[];
+    duration?: number;
+    inventory?: number;
+    businessId?: string;
+  }
+
+  // Define business type
+  interface Business {
+    _id: string;
+    name: string;
+    description: string;
+    logo?: string;
+    coverImage?: string;
+    address?: {
+      street?: string;
+      city?: string;
+      state?: string;
+      country?: string;
+    };
+    city?: string;
+    category?: string;
+    rating?: number;
+    reviewCount?: number;
+    serviceTypes?: string[];
+    categories?: string[];
+  }
+
+  // Define search results type
+  interface SearchResults {
+    businesses: Business[];
+    services: Service[];
+    totalBusinesses: number;
+    totalServices: number;
+    query: string;
+  }
 
   // Fetch search results
   const {
     data: searchResults,
     isLoading,
     refetch,
-  } = useQuery({
+  } = useQuery<SearchResults>({
     queryKey: ["search", searchQuery],
     queryFn: async () => {
-      if (!searchQuery.trim()) return { businesses: [], services: [] };
+      if (!searchQuery.trim()) {
+        return {
+          businesses: [],
+          services: [],
+          totalBusinesses: 0,
+          totalServices: 0,
+          query: searchQuery,
+        } as SearchResults;
+      }
+
       // Update the searchApi call to include category if it exists
       const result = await searchApi.searchAll({ query: searchQuery });
 
@@ -66,7 +119,7 @@ export default function CustomerSearchPage() {
         setCategories(uniqueCategories);
       }
 
-      return result;
+      return result as SearchResults;
     },
     enabled: !!searchQuery.trim(),
   });
@@ -188,10 +241,10 @@ export default function CustomerSearchPage() {
       </div>
 
       {isLoading ? (
-        <LoadingState message="Searching..." size="md" />
+        <SearchResultsSkeleton />
       ) : searchQuery && searchResults ? (
         <div>
-          <Tabs defaultValue="all" onValueChange={setActiveTab}>
+          <Tabs defaultValue="all">
             <TabsList className="mb-6">
               <TabsTrigger value="all">All</TabsTrigger>
               <TabsTrigger value="businesses">Businesses</TabsTrigger>
@@ -206,7 +259,7 @@ export default function CustomerSearchPage() {
                     <div className="mb-8">
                       <h2 className="text-xl font-semibold mb-4">Businesses</h2>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {searchResults.businesses.map((business) => (
+                        {searchResults.businesses.map((business: Business) => (
                           <div
                             key={business._id}
                             onClick={() => handleBusinessClick(business._id)}
@@ -235,7 +288,7 @@ export default function CustomerSearchPage() {
                     <div>
                       <h2 className="text-xl font-semibold mb-4">Services</h2>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {searchResults.services.map((service) => (
+                        {searchResults.services.map((service: Service) => (
                           <ServiceCard
                             key={service._id}
                             service={{
@@ -270,7 +323,7 @@ export default function CustomerSearchPage() {
             <TabsContent value="businesses">
               {searchResults.businesses?.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {searchResults.businesses.map((business) => (
+                  {searchResults.businesses.map((business: Business) => (
                     <div
                       key={business._id}
                       onClick={() => handleBusinessClick(business._id)}
@@ -310,7 +363,7 @@ export default function CustomerSearchPage() {
             <TabsContent value="services">
               {searchResults.services?.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {searchResults.services.map((service) => (
+                  {searchResults.services.map((service: Service) => (
                     <ServiceCard
                       key={service._id}
                       service={{

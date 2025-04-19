@@ -187,12 +187,6 @@ export default function CustomerDashboardLayout({
       active: pathname === `/customer/${customerId}/favorites`,
     },
     {
-      title: "Recent Activity",
-      icon: <Clock className="h-5 w-5" />,
-      href: `/customer/${customerId}/activity`,
-      active: pathname === `/customer/${customerId}/activity`,
-    },
-    {
       title: "Nearby Services",
       icon: <MapPin className="h-5 w-5" />,
       href: `/customer/${customerId}/nearby`,
