@@ -1,5 +1,6 @@
 // Business Detail API service
 import api from "./api";
+import { Business, Service, Review } from "@/types/business";
 
 export interface BusinessDetailParams {
   includeServices?: boolean;
@@ -11,7 +12,7 @@ export const businessDetailApi = {
   getBusinessById: async (
     businessId: string,
     params: BusinessDetailParams = {}
-  ) => {
+  ): Promise<Business> => {
     try {
       console.log(`Fetching business details for ID: ${businessId}`);
 
@@ -33,42 +34,14 @@ export const businessDetailApi = {
       console.error("Error fetching business details:", error);
       // Return a default object instead of throwing to prevent UI errors
       return {
-        name: "Relaxing Spa Treatments",
         _id: businessId,
-        category: "Health & Wellness",
-        city: "Addis Ababa",
-        description:
-          "Offering a variety of relaxing spa treatments and massages.",
-        address: {
-          street: "123 Relaxation Avenue",
-          state: "Addis Ababa",
-          country: "Ethiopia",
-        },
-        phone: "+251 91 234 5678",
-        email: "relax@spabusiness.com",
-        serviceTypes: ["appointment", "in_person"],
-        businessHours: {
-          monday: "9:00 AM - 6:00 PM",
-          tuesday: "9:00 AM - 6:00 PM",
-          wednesday: "9:00 AM - 6:00 PM",
-          thursday: "9:00 AM - 6:00 PM",
-          friday: "9:00 AM - 6:00 PM",
-          saturday: "10:00 AM - 4:00 PM",
-          sunday: "Closed",
-        },
-        coverImage:
-          "https://images.unsplash.com/photo-1600334129128-685c5582fd35?q=80&w=2070",
-        logo: "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?q=80&w=2070",
-        location: {
-          type: "Point",
-          coordinates: [38.7578, 9.0222],
-        },
+        name: "Business Details",
       };
     }
   },
 
   // Get business services
-  getBusinessServices: async (businessId: string) => {
+  getBusinessServices: async (businessId: string): Promise<Service[]> => {
     try {
       console.log(`Fetching services for business ID: ${businessId}`);
 
@@ -83,7 +56,7 @@ export const businessDetailApi = {
   },
 
   // Get business reviews
-  getBusinessReviews: async (businessId: string) => {
+  getBusinessReviews: async (businessId: string): Promise<Review[]> => {
     try {
       console.log(`Fetching reviews for business ID: ${businessId}`);
 
@@ -98,7 +71,10 @@ export const businessDetailApi = {
   },
 
   // Get similar businesses
-  getSimilarBusinesses: async (businessId: string, category: string) => {
+  getSimilarBusinesses: async (
+    businessId: string,
+    category: string
+  ): Promise<Business[]> => {
     try {
       console.log(
         `Fetching similar businesses for ID: ${businessId}, category: ${category}`
@@ -128,7 +104,7 @@ export const businessDetailApi = {
     rating: number,
     comment: string,
     customerId?: string
-  ) => {
+  ): Promise<Review | { success: boolean; error?: string }> => {
     try {
       console.log(`Submitting review for business ID: ${businessId}`);
       console.log(

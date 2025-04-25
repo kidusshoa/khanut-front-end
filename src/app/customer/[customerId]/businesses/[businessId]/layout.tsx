@@ -7,8 +7,9 @@ export const metadata: Metadata = {
   description: "View detailed business information, services, and reviews",
 };
 
-// We're using static metadata instead of dynamic metadata to avoid the params issue
-// The actual business name will be set client-side
+// Note: We're using static metadata because dynamic metadata requires server components
+// and we're using client components for this page. The actual business name will be
+// displayed in the UI and in the browser tab via document.title in useEffect
 
 export default function BusinessDetailsLayout({
   children,

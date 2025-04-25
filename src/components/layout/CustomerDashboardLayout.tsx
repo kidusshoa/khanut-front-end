@@ -40,6 +40,7 @@ import { signOut } from "next-auth/react";
 import { authService } from "@/services/auth";
 import { userService } from "@/services/user";
 import { Badge } from "@/components/ui/badge";
+import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
 
 interface CustomerDashboardLayoutProps {
   children: React.ReactNode;
@@ -434,6 +435,9 @@ export default function CustomerDashboardLayout({
                 </Badge>
               )}
             </Button>
+
+            {/* Notifications */}
+            <NotificationDropdown />
 
             {/* Theme Toggle */}
             {mounted && (

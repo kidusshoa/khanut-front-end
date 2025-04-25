@@ -15,10 +15,8 @@ import {
   ShoppingBag,
   Clock,
   ChevronRight,
-  Loader2,
   Building,
   User,
-  PenLine,
   ArrowLeft,
   Tag,
   Store,
@@ -33,29 +31,26 @@ import {
   Heart,
   Shirt,
   Coffee,
+  RefreshCw,
 } from "lucide-react";
 import { LoadingState } from "@/components/ui/loading-state";
 import { BusinessDetailSkeleton } from "@/components/business/BusinessDetailSkeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import { businessDetailApi } from "@/services/businessDetail";
 import { ServiceCard } from "@/components/business/ServiceCard";
 import { BusinessMap } from "@/components/business/BusinessMap";
 import { ReviewForm } from "@/components/business/ReviewForm";
 import { SimilarBusinesses } from "@/components/business/SimilarBusinesses";
+import { FallbackImage } from "@/components/ui/fallback-image";
+import { FavoriteButton } from "@/components/business/FavoriteButton";
 import CustomerDashboardLayout from "@/components/layout/CustomerDashboardLayout";
 import { cn } from "@/lib/utils";
 import { toast } from "react-hot-toast";
+import { toastService } from "@/services/toast";
+import { analyticsService } from "@/services/analytics";
 
 // Helper function to get an icon based on business category
 const getCategoryIcon = (category: string) => {
@@ -91,13 +86,16 @@ export default function CustomerBusinessDetailPage() {
   const [activeTab, setActiveTab] = useState("all");
   // Review form is now always shown at the bottom of the page
 
-  // Debug auth state
+  // Track business view and debug auth state
   useEffect(() => {
     console.log("Customer ID from URL:", customerId);
     console.log("Auth Customer ID:", authCustomerId);
     console.log("Session:", session);
     console.log("Is Authenticated:", isAuthenticated);
-  }, [customerId, authCustomerId, session, isAuthenticated]);
+
+    // Track business view for analytics
+    analyticsService.trackBusinessView(businessId, customerId);
+  }, [customerId, authCustomerId, session, isAuthenticated, businessId]);
 
   // Get search context from URL parameters
   const searchQuery = searchParams.get("q") || "";
@@ -136,18 +134,48 @@ export default function CustomerBusinessDetailPage() {
   // Handle errors
   useEffect(() => {
     if (businessError) {
-      toast.error("Failed to load business details");
+      toastService.error("Failed to load business details");
       console.error(businessError);
     }
     if (servicesError) {
-      toast.error("Failed to load business services");
+      toastService.error("Failed to load business services");
       console.error(servicesError);
     }
     if (reviewsError) {
-      toast.error("Failed to load business reviews");
+      toastService.error("Failed to load business reviews");
       console.error(reviewsError);
     }
   }, [businessError, servicesError, reviewsError]);
+
+  // Update document title when business data is loaded
+  useEffect(() => {
+    if (business?.name) {
+      document.title = `${business.name} | Khanut`;
+    }
+    return () => {
+      document.title = "Business Profile | Khanut";
+    };
+  }, [business?.name]);
+
+  // Function to refresh all data
+  const refreshData = () => {
+    const refreshToast = toastService.loading("Refreshing business data...");
+
+    // Invalidate all queries related to this business
+    queryClient.invalidateQueries({ queryKey: ["businessDetail", businessId] });
+    queryClient.invalidateQueries({
+      queryKey: ["businessServices", businessId],
+    });
+    queryClient.invalidateQueries({
+      queryKey: ["businessReviews", businessId],
+    });
+
+    // Dismiss the loading toast after a short delay
+    setTimeout(() => {
+      toast.dismiss(refreshToast);
+      toastService.success("Business data refreshed");
+    }, 1000);
+  };
 
   // Filter services based on active tab
   const filteredServices =
@@ -255,6 +283,22 @@ export default function CustomerBusinessDetailPage() {
             Back to Search Results
           </Button>
         )}
+
+        <Button
+          variant="outline"
+          className="ml-auto"
+          onClick={refreshData}
+          disabled={isBusinessLoading || isServicesLoading || isReviewsLoading}
+        >
+          <RefreshCw
+            className={cn(
+              "h-4 w-4 mr-2",
+              (isBusinessLoading || isServicesLoading || isReviewsLoading) &&
+                "animate-spin"
+            )}
+          />
+          Refresh
+        </Button>
       </div>
 
       {/* Business Name Header */}
@@ -295,26 +339,27 @@ export default function CustomerBusinessDetailPage() {
       {/* Business Header */}
       <div className="mb-8">
         <div className="relative rounded-lg overflow-hidden h-80 mb-6 shadow-md">
-          {business?.coverImage ? (
-            <img
-              src={business.coverImage}
-              alt={business.name}
+          <div className="w-full h-full">
+            <FallbackImage
+              src={business?.coverImage}
+              alt={business?.name || "Business cover image"}
               className="w-full h-full object-cover"
+              fallbackType="business"
+              fallbackClassName="h-16 w-16"
+              fill
             />
-          ) : (
-            <div className="w-full h-full bg-muted flex items-center justify-center">
-              <div className="text-6xl font-bold text-muted-foreground">
-                {business?.name?.charAt(0)}
-              </div>
-            </div>
-          )}
+          </div>
 
           {business?.logo && (
             <div className="absolute bottom-4 left-4 h-24 w-24 rounded-full border-4 border-white overflow-hidden bg-white shadow-lg">
-              <img
+              <FallbackImage
                 src={business.logo}
                 alt={`${business.name} logo`}
                 className="object-cover w-full h-full"
+                fallbackType="business"
+                fallbackClassName="h-8 w-8"
+                width={96}
+                height={96}
               />
             </div>
           )}
@@ -344,34 +389,45 @@ export default function CustomerBusinessDetailPage() {
             </div>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            {business?.serviceTypes?.map((type: any) => (
-              <Badge
-                key={type}
-                variant="outline"
-                className={cn(
-                  type === "appointment" &&
-                    "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400",
-                  type === "product" &&
-                    "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400",
-                  type === "in_person" &&
-                    "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-                )}
-              >
-                <div className="flex items-center">
-                  {type === "appointment" && (
-                    <Calendar className="h-4 w-4 mr-1" />
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap gap-2">
+              {business?.serviceTypes?.map((type: any) => (
+                <Badge
+                  key={type}
+                  variant="outline"
+                  className={cn(
+                    type === "appointment" &&
+                      "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400",
+                    type === "product" &&
+                      "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400",
+                    type === "in_person" &&
+                      "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
                   )}
-                  {type === "product" && (
-                    <ShoppingBag className="h-4 w-4 mr-1" />
-                  )}
-                  {type === "in_person" && <MapPin className="h-4 w-4 mr-1" />}
-                  {type === "appointment" && "Appointments"}
-                  {type === "product" && "Products"}
-                  {type === "in_person" && "In-Person"}
-                </div>
-              </Badge>
-            ))}
+                >
+                  <div className="flex items-center">
+                    {type === "appointment" && (
+                      <Calendar className="h-4 w-4 mr-1" />
+                    )}
+                    {type === "product" && (
+                      <ShoppingBag className="h-4 w-4 mr-1" />
+                    )}
+                    {type === "in_person" && (
+                      <MapPin className="h-4 w-4 mr-1" />
+                    )}
+                    {type === "appointment" && "Appointments"}
+                    {type === "product" && "Products"}
+                    {type === "in_person" && "In-Person"}
+                  </div>
+                </Badge>
+              ))}
+            </div>
+
+            <FavoriteButton
+              businessId={businessId}
+              showText={true}
+              variant="outline"
+              size="sm"
+            />
           </div>
         </div>
       </div>
