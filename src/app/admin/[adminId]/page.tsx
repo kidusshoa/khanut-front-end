@@ -253,13 +253,23 @@ export default function AdminDashboard() {
                   <CartesianGrid
                     strokeDasharray="3 3"
                     vertical={false}
-                    stroke="#f0f0f0"
+                    stroke="hsl(var(--border))"
                   />
-                  <XAxis dataKey="name" axisLine={false} tickLine={false} />
-                  <YAxis axisLine={false} tickLine={false} />
+                  <XAxis
+                    dataKey="name"
+                    axisLine={false}
+                    tickLine={false}
+                    stroke="hsl(var(--foreground))"
+                  />
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    stroke="hsl(var(--foreground))"
+                  />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#fff",
+                      backgroundColor: "hsl(var(--card))",
+                      color: "hsl(var(--card-foreground))",
                       border: "none",
                       borderRadius: "8px",
                       boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
@@ -267,10 +277,14 @@ export default function AdminDashboard() {
                   />
                   <Bar
                     dataKey="businesses"
-                    fill="#f97316"
+                    fill="hsl(var(--accent-main))"
                     radius={[4, 4, 0, 0]}
                   />
-                  <Bar dataKey="users" fill="#8884d8" radius={[4, 4, 0, 0]} />
+                  <Bar
+                    dataKey="users"
+                    fill="hsl(var(--chart-2))"
+                    radius={[4, 4, 0, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             </div>

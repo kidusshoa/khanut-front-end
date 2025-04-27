@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Cookies from "js-cookie";
+import { useTheme } from "next-themes";
 import {
   LayoutDashboard,
   Building2,
@@ -19,6 +20,8 @@ import {
   User,
   ChevronRight,
   LogOut,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -50,6 +53,7 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { isAuthenticated, token, logout } = useAuth();
+  const { theme, setTheme } = useTheme();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
@@ -95,7 +99,7 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-background">
       {/* Overlay for mobile */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -111,7 +115,7 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
 
       {/* Sidebar */}
       <motion.aside
-        className={`fixed md:sticky top-0 left-0 z-50 h-screen w-72 bg-white shadow-lg border-r border-gray-200 flex flex-col transition-all duration-300 ease-in-out ${
+        className={`fixed md:sticky top-0 left-0 z-50 h-screen w-72 bg-card shadow-lg border-r border-border flex flex-col transition-all duration-300 ease-in-out ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         }`}
         initial={false}
@@ -237,7 +241,7 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
       {/* Content with topbar */}
       <div className="flex-1 flex flex-col min-h-screen">
         {/* Header */}
-        <header className="sticky top-0 z-30 bg-white border-b border-gray-200 shadow-sm">
+        <header className="sticky top-0 z-30 bg-card border-b border-border shadow-sm">
           <div className="flex items-center justify-between p-4">
             <div className="flex items-center gap-3">
               <button
@@ -313,7 +317,25 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
                 </DropdownMenuContent>
               </DropdownMenu>
 
-              <div className="h-6 w-px bg-gray-200"></div>
+              <div className="h-6 w-px bg-border"></div>
+
+              {/* Theme toggle */}
+              {mounted && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                  className="mr-2"
+                >
+                  {theme === "dark" ? (
+                    <Sun className="h-5 w-5" />
+                  ) : (
+                    <Moon className="h-5 w-5" />
+                  )}
+                </Button>
+              )}
+
+              <div className="h-6 w-px bg-border"></div>
 
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -348,7 +370,7 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
 
         <main className="flex-1 p-6">{children}</main>
 
-        <footer className="border-t border-gray-200 p-4 text-center text-sm text-gray-500">
+        <footer className="border-t border-border p-4 text-center text-sm text-muted-foreground">
           © {new Date().getFullYear()} Khanut Admin Panel. All rights reserved.
         </footer>
       </div>
