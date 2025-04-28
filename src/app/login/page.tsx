@@ -87,17 +87,31 @@ export default function LoginPage() {
               );
 
               if (!response.ok) {
-                throw new Error("Failed to check business status");
+                console.error("Business status check failed:", response.status);
+                // Store token in localStorage for other components to use
+                localStorage.setItem(
+                  "accessToken",
+                  apiResponse.data.accessToken
+                );
+                router.push(`/business/${userId}/pending`);
+                return;
               }
 
-              const { status } = await response.json();
-              if (status === "approved") {
+              const data = await response.json();
+              console.log("Business status response:", data);
+
+              // Store token in localStorage for other components to use
+              localStorage.setItem("accessToken", apiResponse.data.accessToken);
+
+              if (data.status === "approved" && data.approved === true) {
                 router.push(`/business/${userId}/dashboard`);
               } else {
                 router.push(`/business/${userId}/pending`);
               }
             } catch (error) {
               console.error("Error checking business status:", error);
+              // Store token in localStorage for other components to use
+              localStorage.setItem("accessToken", apiResponse.data.accessToken);
               router.push(`/business/${userId}/pending`);
             }
             break;

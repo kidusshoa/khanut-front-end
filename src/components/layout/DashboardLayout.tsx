@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import Cookies from "js-cookie";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
@@ -28,12 +29,68 @@ export default function DashboardLayout({
     // Check if user is authenticated and has access to this business
     if (status === "unauthenticated") {
       router.push("/login");
+      return;
     } else if (status === "authenticated") {
-      // Here you would check if the user has access to this business
-      // For now, we'll just set loading to false
-      setIsLoading(false);
+      const checkBusinessStatus = async () => {
+        try {
+          // Try to get token from session first
+          const accessToken =
+            session?.accessToken ||
+            localStorage.getItem("accessToken") ||
+            Cookies.get("client-token");
+
+          if (!accessToken) {
+            console.error("No access token found");
+            router.push("/login");
+            return;
+          }
+
+          // Store token in both places to ensure consistency
+          localStorage.setItem("accessToken", accessToken);
+          if (!Cookies.get("client-token")) {
+            Cookies.set("client-token", accessToken, { expires: 7 });
+          }
+
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}/api/business/status`,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            }
+          );
+
+          if (!response.ok) {
+            if (response.status === 401) {
+              console.error("Unauthorized access, redirecting to login");
+              router.push("/login");
+              return;
+            }
+            throw new Error("Failed to check business status");
+          }
+
+          const data = await response.json();
+          console.log("Dashboard business status check:", data);
+
+          // Check if the business is approved
+          if (data.status !== "approved" || !data.approved) {
+            // If not approved, redirect to pending page
+            console.log("Business not approved, redirecting to pending page");
+            router.push(`/business/${businessId}/pending`);
+            return;
+          }
+
+          // If approved, continue loading the dashboard
+          setIsLoading(false);
+        } catch (error) {
+          console.error("Error checking business status:", error);
+          setIsLoading(false);
+        }
+      };
+
+      checkBusinessStatus();
     }
-  }, [status, router, businessId]);
+  }, [status, router, businessId, session]);
 
   if (status === "loading" || isLoading) {
     return (
@@ -78,18 +135,18 @@ export default function DashboardLayout({
       </AnimatePresence>
 
       <div className="flex-1 flex flex-col min-h-screen">
-        <Navbar 
-          businessId={businessId} 
-          onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+        <Navbar
+          businessId={businessId}
+          onMobileMenuToggle={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
         />
-        
-        <main className={cn(
-          "flex-1 pt-16 transition-all duration-300",
-          "md:ml-[280px]" // Adjust based on sidebar width
-        )}>
-          <div className="container mx-auto p-6">
-            {children}
-          </div>
+
+        <main
+          className={cn(
+            "flex-1 pt-16 transition-all duration-300",
+            "md:ml-[280px]" // Adjust based on sidebar width
+          )}
+        >
+          <div className="container mx-auto p-6">{children}</div>
           <Footer />
         </main>
       </div>

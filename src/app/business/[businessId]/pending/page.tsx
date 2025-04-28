@@ -4,38 +4,60 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 
-export default function PendingApprovalPage() {
+export default function PendingApprovalPage({
+  params: { businessId },
+}: {
+  params: { businessId: string };
+}) {
   const router = useRouter();
   const { user } = useAuthStore();
 
   useEffect(() => {
     const checkStatus = async () => {
       try {
+        const accessToken = localStorage.getItem("accessToken");
+        if (!accessToken) {
+          router.push("/login");
+          return;
+        }
+
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/business/status`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/business/status`,
           {
             headers: {
-              Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
+              Authorization: `Bearer ${accessToken}`,
             },
           }
         );
 
         if (!response.ok) {
+          if (response.status === 401) {
+            // Unauthorized, redirect to login
+            router.push("/login");
+            return;
+          }
           throw new Error("Failed to check status");
         }
 
         const data = await response.json();
-        if (data.status === "approved") {
-          router.push("/business/dashboard");
+        console.log("Business status:", data);
+
+        if (data.status === "approved" && data.approved === true) {
+          // If approved, redirect to the business dashboard
+          router.push(`/business/${businessId}/dashboard`);
         }
       } catch (error) {
         console.error("Error checking status:", error);
       }
     };
 
-    const interval = setInterval(checkStatus, 30000); // Check every 30 seconds
+    // Check immediately on page load
+    checkStatus();
+
+    // Then check periodically
+    const interval = setInterval(checkStatus, 10000); // Check every 10 seconds
     return () => clearInterval(interval);
-  }, [router]);
+  }, [router, businessId]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">

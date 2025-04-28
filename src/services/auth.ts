@@ -40,4 +40,10 @@ export const authService = {
     });
     return response.data;
   },
+
+  // Get the current business status
+  async getBusinessStatus() {
+    const response = await api.get("/business/status");
+    return response.data;
+  },
 };

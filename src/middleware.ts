@@ -10,9 +10,30 @@ export async function middleware(request: NextRequest) {
   // Public paths that don't require authentication
   const publicPaths = ["/login", "/register", "/verify", "/"];
 
-  // Check if the path starts with any of the public paths
-  if (publicPaths.some((publicPath) => path.startsWith(publicPath))) {
+  // Check if this is a public business view page
+  const isPublicBusinessView = path.match(/^\/business\/[^\/]+\/view\/?$/);
+
+  // Check if the path starts with any of the public paths or is a public business view
+  if (
+    publicPaths.some((publicPath) => path.startsWith(publicPath)) ||
+    isPublicBusinessView
+  ) {
     return NextResponse.next();
+  }
+
+  // Handle direct business ID access (redirect to dashboard)
+  if (path.match(/^\/business\/[^\/]+\/?$/) && !path.includes("/register/")) {
+    const businessId = path.split("/")[2];
+    // If authenticated and role is business, go to dashboard, otherwise view page
+    if (token && token.role === "business") {
+      return NextResponse.redirect(
+        new URL(`/business/${businessId}/dashboard`, request.url)
+      );
+    } else {
+      return NextResponse.redirect(
+        new URL(`/business/${businessId}/view`, request.url)
+      );
+    }
   }
 
   // Check if user is authenticated
@@ -49,16 +70,21 @@ export async function middleware(request: NextRequest) {
   }
 
   // Business route protection
-  if (path.startsWith("/business")) {
+  if (path.startsWith("/business") && !isPublicBusinessView) {
+    // Skip protection for business registration
+    if (path.includes("/register/")) {
+      return NextResponse.next();
+    }
+
     if (token.role !== "business") {
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
     // Special handling for business dashboard
-    if (path === "/business/dashboard") {
+    if (path.includes("/dashboard")) {
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/business/status`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/business/status`,
           {
             headers: {
               Authorization: `Bearer ${token.accessToken}`,
@@ -72,12 +98,16 @@ export async function middleware(request: NextRequest) {
 
         const { status } = await response.json();
         if (status !== "approved") {
+          const businessId = path.split("/")[2];
           return NextResponse.redirect(
-            new URL("/business/pending", request.url)
+            new URL(`/business/${businessId}/pending`, request.url)
           );
         }
       } catch (error) {
-        return NextResponse.redirect(new URL("/business/pending", request.url));
+        const businessId = path.split("/")[2];
+        return NextResponse.redirect(
+          new URL(`/business/${businessId}/pending`, request.url)
+        );
       }
     }
   }
@@ -86,5 +116,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 };
