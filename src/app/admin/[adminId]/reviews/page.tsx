@@ -9,12 +9,12 @@ interface Review {
   businessId: {
     _id: string;
     name: string;
-  };
+  } | null;
   authorId: {
     _id: string;
     email: string;
     name: string;
-  };
+  } | null;
   rating: number;
   comment: string;
   status: string;
@@ -159,9 +159,15 @@ export default function PendingReviewsPage() {
             <tbody>
               {reviews.map((review) => (
                 <tr key={review._id} className="border-b hover:bg-gray-50">
-                  <td className="p-3">{review.businessId.name}</td>
                   <td className="p-3">
-                    {review.authorId.name} ({review.authorId.email})
+                    {review.businessId
+                      ? review.businessId.name
+                      : "Unknown Business"}
+                  </td>
+                  <td className="p-3">
+                    {review.authorId
+                      ? `${review.authorId.name} (${review.authorId.email})`
+                      : "Unknown User"}
                   </td>
                   <td className="p-3">{review.rating}/5</td>
                   <td className="p-3 text-sm">{review.comment}</td>
