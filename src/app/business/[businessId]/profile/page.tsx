@@ -384,6 +384,14 @@ export default function BusinessProfilePage({
                 </Button>
                 <Button
                   className="w-full"
+                  onClick={() =>
+                    router.push(`/business/${businessId}/analytics`)
+                  }
+                >
+                  View Analytics
+                </Button>
+                <Button
+                  className="w-full"
                   variant="outline"
                   onClick={() => router.push(`/business/${businessId}/contact`)}
                 >
