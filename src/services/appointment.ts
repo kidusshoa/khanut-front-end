@@ -98,7 +98,9 @@ export const appointmentApi = {
   },
 
   // Create a new appointment
-  createAppointment: async (appointmentData: AppointmentBookingInput) => {
+  createAppointment: async (
+    appointmentData: AppointmentBookingInput & { staffId?: string }
+  ) => {
     try {
       const response = await api.post(`/appointments`, appointmentData);
       return response.data;
@@ -157,8 +159,8 @@ export const appointmentApi = {
     staffId?: string
   ) => {
     try {
-      let url = `/appointments/available/${serviceId}/${date}`;
-      if (staffId) url += `?staffId=${staffId}`;
+      let url = `/appointments/available?serviceId=${serviceId}&date=${date}`;
+      if (staffId) url += `&staffId=${staffId}`;
 
       const response = await api.get(url);
       return response.data;
@@ -249,11 +251,19 @@ export const appointmentApi = {
   },
 
   // Assign staff to appointment
-  assignStaffToAppointment: async (appointmentId: string, staffId: string) => {
+  assignStaffToAppointment: async (
+    appointmentId: string,
+    staffId: string,
+    notes?: string
+  ) => {
     try {
-      const response = await api.post(`/appointments/${appointmentId}/assign`, {
-        staffId,
-      });
+      const response = await api.post(
+        `/staff/appointment/${appointmentId}/assign`,
+        {
+          staffId,
+          notes,
+        }
+      );
       return response.data;
     } catch (error) {
       console.error("Error assigning staff to appointment:", error);

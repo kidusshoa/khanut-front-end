@@ -19,9 +19,22 @@ interface StaffInput {
 
 export const staffApi = {
   // Get all staff for a business
-  getBusinessStaff: async (businessId: string) => {
+  getBusinessStaff: async (
+    businessId: string,
+    params?: { search?: string; isActive?: boolean }
+  ) => {
     try {
-      const response = await api.get(`/staff/business/${businessId}`);
+      const queryParams = new URLSearchParams();
+      if (params?.search) queryParams.append("search", params.search);
+      if (params?.isActive !== undefined)
+        queryParams.append("isActive", params.isActive.toString());
+
+      const queryString = queryParams.toString()
+        ? `?${queryParams.toString()}`
+        : "";
+      const response = await api.get(
+        `/staff/business/${businessId}${queryString}`
+      );
       return response.data;
     } catch (error) {
       console.error("Error fetching business staff:", error);
@@ -43,7 +56,10 @@ export const staffApi = {
   // Create a new staff member
   createStaff: async (businessId: string, staffData: StaffInput) => {
     try {
-      const response = await api.post(`/staff/business/${businessId}`, staffData);
+      const response = await api.post(
+        `/staff/business/${businessId}`,
+        staffData
+      );
       return response.data;
     } catch (error) {
       console.error("Error creating staff:", error);
@@ -76,7 +92,9 @@ export const staffApi = {
   // Get staff availability for a specific date
   getStaffAvailability: async (staffId: string, date: string) => {
     try {
-      const response = await api.get(`/staff/${staffId}/availability/${date}`);
+      const response = await api.get(
+        `/staff/${staffId}/availability?date=${date}`
+      );
       return response.data;
     } catch (error) {
       console.error("Error fetching staff availability:", error);
@@ -96,7 +114,10 @@ export const staffApi = {
     }
   ) => {
     try {
-      const response = await api.put(`/staff/${staffId}/availability`, availability);
+      const response = await api.put(
+        `/staff/${staffId}/availability`,
+        availability
+      );
       return response.data;
     } catch (error) {
       console.error("Error updating staff availability:", error);
@@ -123,13 +144,17 @@ export const staffApi = {
   },
 
   // Get staff assignments (appointments assigned to staff)
-  getStaffAssignments: async (staffId: string, params: { startDate?: string; endDate?: string } = {}) => {
+  getStaffAssignments: async (
+    staffId: string,
+    params: { startDate?: string; endDate?: string } = {}
+  ) => {
     try {
       let url = `/staff/${staffId}/assignments`;
-      
+
       if (params.startDate) url += `?startDate=${params.startDate}`;
-      if (params.endDate) url += `${params.startDate ? '&' : '?'}endDate=${params.endDate}`;
-      
+      if (params.endDate)
+        url += `${params.startDate ? "&" : "?"}endDate=${params.endDate}`;
+
       const response = await api.get(url);
       return response.data;
     } catch (error) {
@@ -141,7 +166,9 @@ export const staffApi = {
   // Assign staff to appointment
   assignStaffToAppointment: async (appointmentId: string, staffId: string) => {
     try {
-      const response = await api.post(`/appointments/${appointmentId}/assign`, { staffId });
+      const response = await api.post(`/appointments/${appointmentId}/assign`, {
+        staffId,
+      });
       return response.data;
     } catch (error) {
       console.error("Error assigning staff to appointment:", error);
@@ -155,7 +182,10 @@ export const staffApi = {
     status: "confirmed" | "declined" | "completed"
   ) => {
     try {
-      const response = await api.patch(`/appointments/${appointmentId}/assignment/status`, { status });
+      const response = await api.patch(
+        `/appointments/${appointmentId}/assignment/status`,
+        { status }
+      );
       return response.data;
     } catch (error) {
       console.error("Error updating staff assignment status:", error);

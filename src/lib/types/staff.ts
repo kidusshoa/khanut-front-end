@@ -33,12 +33,27 @@ export interface TimeSlot {
 }
 
 export interface StaffAssignment {
+  _id: string;
   staffId: string;
   appointmentId: string;
   status: "assigned" | "confirmed" | "declined" | "completed";
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StaffUnavailability {
+  _id: string;
+  staffId: string;
+  startDate: string;
+  endDate: string;
+  reason?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface RecurringAppointment {
+  _id: string;
   customerId: string;
   businessId: string;
   serviceId: string;
@@ -53,4 +68,6 @@ export interface RecurringAppointment {
   status: "active" | "paused" | "completed" | "cancelled";
   notes?: string;
   appointmentIds: string[]; // IDs of individual appointments created from this recurring appointment
+  createdAt: string;
+  updatedAt: string;
 }
