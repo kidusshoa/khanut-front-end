@@ -1,5 +1,9 @@
-import { AppointmentBookingInput } from "@/lib/validations/service";
+import {
+  AppointmentBookingInput,
+  RecurringAppointmentInput,
+} from "@/lib/validations/service";
 import api from "./api";
+import { RecurringAppointment } from "@/lib/types/staff";
 
 interface PaginationParams {
   page?: number;
@@ -147,14 +151,112 @@ export const appointmentApi = {
   },
 
   // Get available time slots for a service on a specific date
-  getAvailableTimeSlots: async (serviceId: string, date: string) => {
+  getAvailableTimeSlots: async (
+    serviceId: string,
+    date: string,
+    staffId?: string
+  ) => {
     try {
-      const response = await api.get(
-        `/appointments/available/${serviceId}/${date}`
-      );
+      let url = `/appointments/available/${serviceId}/${date}`;
+      if (staffId) url += `?staffId=${staffId}`;
+
+      const response = await api.get(url);
       return response.data;
     } catch (error) {
       console.error("Error fetching available time slots:", error);
+      throw error;
+    }
+  },
+
+  // Create a recurring appointment
+  createRecurringAppointment: async (
+    recurringData: RecurringAppointmentInput
+  ) => {
+    try {
+      const response = await api.post("/appointments/recurring", recurringData);
+      return response.data;
+    } catch (error) {
+      console.error("Error creating recurring appointment:", error);
+      throw error;
+    }
+  },
+
+  // Get recurring appointments for a customer
+  getCustomerRecurringAppointments: async (customerId: string) => {
+    try {
+      const response = await api.get(
+        `/appointments/recurring/customer/${customerId}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching customer recurring appointments:", error);
+      throw error;
+    }
+  },
+
+  // Get recurring appointments for a business
+  getBusinessRecurringAppointments: async (businessId: string) => {
+    try {
+      const response = await api.get(
+        `/appointments/recurring/business/${businessId}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching business recurring appointments:", error);
+      throw error;
+    }
+  },
+
+  // Update recurring appointment
+  updateRecurringAppointment: async (
+    recurringId: string,
+    recurringData: Partial<RecurringAppointmentInput>
+  ) => {
+    try {
+      const response = await api.put(
+        `/appointments/recurring/${recurringId}`,
+        recurringData
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error updating recurring appointment:", error);
+      throw error;
+    }
+  },
+
+  // Cancel recurring appointment
+  cancelRecurringAppointment: async (recurringId: string) => {
+    try {
+      const response = await api.patch(
+        `/appointments/recurring/${recurringId}/cancel`
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error cancelling recurring appointment:", error);
+      throw error;
+    }
+  },
+
+  // Get staff for a specific appointment
+  getAppointmentStaff: async (appointmentId: string) => {
+    try {
+      const response = await api.get(`/appointments/${appointmentId}/staff`);
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching appointment staff:", error);
+      throw error;
+    }
+  },
+
+  // Assign staff to appointment
+  assignStaffToAppointment: async (appointmentId: string, staffId: string) => {
+    try {
+      const response = await api.post(`/appointments/${appointmentId}/assign`, {
+        staffId,
+      });
+      return response.data;
+    } catch (error) {
+      console.error("Error assigning staff to appointment:", error);
       throw error;
     }
   },

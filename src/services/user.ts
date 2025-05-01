@@ -99,10 +99,57 @@ export const userService = {
   // Get unread notification count
   async getUnreadNotificationCount() {
     try {
-      const response = await api.get("/notifications/unread/count");
+      const response = await api.get("/notifications/unread");
       return response.data;
     } catch (error) {
       console.error("Error fetching unread notification count:", error);
+      throw error;
+    }
+  },
+
+  // Mark all notifications as read
+  async markAllNotificationsAsRead() {
+    try {
+      const response = await api.patch("/notifications/mark-all-read");
+      return response.data;
+    } catch (error) {
+      console.error("Error marking all notifications as read:", error);
+      throw error;
+    }
+  },
+
+  // Delete notification
+  async deleteNotification(notificationId: string) {
+    try {
+      const response = await api.delete(`/notifications/${notificationId}`);
+      return response.data;
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+      throw error;
+    }
+  },
+
+  // Get business updates
+  async getBusinessUpdates() {
+    try {
+      const response = await api.get("/notifications/business-updates");
+      return response.data;
+    } catch (error) {
+      console.error("Error fetching business updates:", error);
+      throw error;
+    }
+  },
+
+  // Update notification preferences
+  async updateNotificationPreferences(preferences: { notify: boolean }) {
+    try {
+      const response = await api.put(
+        "/customer/notification-preferences",
+        preferences
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Error updating notification preferences:", error);
       throw error;
     }
   },

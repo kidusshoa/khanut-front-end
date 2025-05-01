@@ -2,14 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { 
-  Bell, 
-  Search, 
-  Moon, 
-  Sun, 
-  Menu,
-  X
-} from "lucide-react";
+import { Search, Moon, Sun, Menu, X } from "lucide-react";
+import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,7 +25,10 @@ interface NavbarProps {
   onMobileMenuToggle: () => void;
 }
 
-export default function Navbar({ businessId, onMobileMenuToggle }: NavbarProps) {
+export default function Navbar({
+  businessId,
+  onMobileMenuToggle,
+}: NavbarProps) {
   const { data: session } = useSession();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -103,10 +100,7 @@ export default function Navbar({ businessId, onMobileMenuToggle }: NavbarProps) 
       </div>
 
       <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
-          <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-orange-500"></span>
-        </Button>
+        <NotificationDropdown />
 
         {mounted && (
           <Button
@@ -131,9 +125,7 @@ export default function Navbar({ businessId, onMobileMenuToggle }: NavbarProps) 
                   alt={session?.user?.name || "User"}
                 />
                 <AvatarFallback className="bg-orange-100 text-orange-600">
-                  {session?.user?.name
-                    ? getInitials(session.user.name)
-                    : "U"}
+                  {session?.user?.name ? getInitials(session.user.name) : "U"}
                 </AvatarFallback>
               </Avatar>
             </Button>
@@ -151,14 +143,10 @@ export default function Navbar({ businessId, onMobileMenuToggle }: NavbarProps) 
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href={`/business/${businessId}/profile`}>
-                Profile
-              </Link>
+              <Link href={`/business/${businessId}/profile`}>Profile</Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href={`/business/${businessId}/settings`}>
-                Settings
-              </Link>
+              <Link href={`/business/${businessId}/settings`}>Settings</Link>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

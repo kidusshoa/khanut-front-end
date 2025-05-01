@@ -13,10 +13,14 @@ export async function middleware(request: NextRequest) {
   // Check if this is a public business view page
   const isPublicBusinessView = path.match(/^\/business\/[^\/]+\/view\/?$/);
 
-  // Check if the path starts with any of the public paths or is a public business view
+  // Check if this is a pending page
+  const isPendingPage = path.match(/^\/business\/[^\/]+\/pending\/?$/);
+
+  // Check if the path starts with any of the public paths, is a public business view, or is a pending page
   if (
     publicPaths.some((publicPath) => path.startsWith(publicPath)) ||
-    isPublicBusinessView
+    isPublicBusinessView ||
+    isPendingPage
   ) {
     return NextResponse.next();
   }
@@ -70,7 +74,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Business route protection
-  if (path.startsWith("/business") && !isPublicBusinessView) {
+  if (path.startsWith("/business") && !isPublicBusinessView && !isPendingPage) {
     // Skip protection for business registration
     if (path.includes("/register/")) {
       return NextResponse.next();
@@ -96,8 +100,8 @@ export async function middleware(request: NextRequest) {
           throw new Error("Failed to check business status");
         }
 
-        const { status } = await response.json();
-        if (status !== "approved") {
+        const { status, approved } = await response.json();
+        if (status !== "approved" || !approved) {
           const businessId = path.split("/")[2];
           return NextResponse.redirect(
             new URL(`/business/${businessId}/pending`, request.url)

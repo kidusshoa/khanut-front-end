@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Bell } from "lucide-react";
+import { Bell, Check, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -13,86 +13,76 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { userService } from "@/services/user";
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
-
-interface Notification {
-  _id: string;
-  title: string;
-  message: string;
-  type: string;
-  isRead: boolean;
-  createdAt: string;
-  link?: string;
-}
+import { useNotifications, Notification } from "./NotificationProvider";
+import { useRouter } from "next/navigation";
 
 export function NotificationDropdown() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+  const {
+    notifications,
+    unreadCount,
+    fetchNotifications,
+    markAsRead,
+    markAllAsRead,
+  } = useNotifications();
+  const [isLoading, setIsLoading] = useState(false);
+  const [isMarkingAll, setIsMarkingAll] = useState(false);
 
-  // Fetch notifications and unread count
-  const fetchNotifications = async () => {
-    try {
-      setIsLoading(true);
-      const data = await userService.getCustomerNotifications({ limit: 5 });
-      setNotifications(data.notifications || []);
-      
-      const countData = await userService.getUnreadNotificationCount();
-      setUnreadCount(countData.count || 0);
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
-    } finally {
-      setIsLoading(false);
-    }
+  // Refresh notifications
+  const handleRefresh = async () => {
+    setIsLoading(true);
+    await fetchNotifications();
+    setIsLoading(false);
   };
 
-  // Mark notification as read
-  const markAsRead = async (notificationId: string) => {
-    try {
-      await userService.markNotificationAsRead(notificationId);
-      
-      // Update local state
-      setNotifications(prev => 
-        prev.map(notification => 
-          notification._id === notificationId 
-            ? { ...notification, isRead: true } 
-            : notification
-        )
-      );
-      
-      // Update unread count
-      setUnreadCount(prev => Math.max(0, prev - 1));
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
-    }
+  // Mark all as read
+  const handleMarkAllAsRead = async () => {
+    if (unreadCount === 0) return;
+
+    setIsMarkingAll(true);
+    await markAllAsRead();
+    setIsMarkingAll(false);
   };
 
   // Get notification icon based on type
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case "appointment":
-        return "📅";
+        return "🗓️";
       case "order":
         return "📦";
       case "payment":
         return "💰";
       case "review":
         return "⭐";
+      case "warning":
+        return "⚠️";
       default:
         return "🔔";
+    }
+  };
+
+  // Handle notification click
+  const handleNotificationClick = (notification: Notification) => {
+    if (!notification.isRead) {
+      markAsRead(notification._id);
+    }
+
+    if (notification.link) {
+      router.push(notification.link);
     }
   };
 
   // Load notifications on mount
   useEffect(() => {
     fetchNotifications();
-    
+
     // Refresh notifications every 5 minutes
     const interval = setInterval(fetchNotifications, 5 * 60 * 1000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -114,17 +104,22 @@ export function NotificationDropdown() {
       <DropdownMenuContent className="w-80" align="end">
         <DropdownMenuLabel className="flex justify-between items-center">
           <span>Notifications</span>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="h-8 text-xs"
-            onClick={fetchNotifications}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isLoading}
+            className="h-8 px-2"
           >
-            Refresh
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              "Refresh"
+            )}
           </Button>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        
+
         {isLoading ? (
           <div className="p-2 space-y-3">
             {[1, 2, 3].map((i) => (
@@ -138,7 +133,7 @@ export function NotificationDropdown() {
             ))}
           </div>
         ) : notifications.length > 0 ? (
-          <DropdownMenuGroup>
+          <DropdownMenuGroup className="max-h-[300px] overflow-y-auto">
             {notifications.map((notification) => (
               <DropdownMenuItem
                 key={notification._id}
@@ -146,16 +141,20 @@ export function NotificationDropdown() {
                   "flex items-start p-3 cursor-pointer",
                   !notification.isRead && "bg-muted/50"
                 )}
-                onClick={() => markAsRead(notification._id)}
+                onClick={() => handleNotificationClick(notification)}
               >
                 <div className="flex-shrink-0 mr-3 text-xl">
                   {getNotificationIcon(notification.type)}
                 </div>
                 <div className="flex-1 space-y-1">
                   <p className="font-medium text-sm">{notification.title}</p>
-                  <p className="text-xs text-muted-foreground">{notification.message}</p>
                   <p className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(notification.createdAt), { addSuffix: true })}
+                    {notification.message}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatDistanceToNow(new Date(notification.createdAt), {
+                      addSuffix: true,
+                    })}
                   </p>
                 </div>
                 {!notification.isRead && (
@@ -166,16 +165,37 @@ export function NotificationDropdown() {
           </DropdownMenuGroup>
         ) : (
           <div className="py-6 text-center">
-            <p className="text-muted-foreground text-sm">No notifications yet</p>
+            <p className="text-muted-foreground text-sm">
+              No notifications yet
+            </p>
           </div>
         )}
-        
+
         <DropdownMenuSeparator />
-        <DropdownMenuItem className="justify-center" asChild>
-          <a href="/notifications" className="w-full text-center cursor-pointer">
-            View all notifications
-          </a>
-        </DropdownMenuItem>
+        <div className="flex justify-between p-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleMarkAllAsRead}
+            disabled={unreadCount === 0 || isMarkingAll}
+            className="h-8"
+          >
+            {isMarkingAll ? (
+              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            ) : (
+              <Check className="h-4 w-4 mr-2" />
+            )}
+            Mark all as read
+          </Button>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => router.push("/notifications")}
+            className="h-8"
+          >
+            View all
+          </Button>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   );

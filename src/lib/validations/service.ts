@@ -16,8 +16,12 @@ export const appointmentServiceSchema = serviceBaseSchema.extend({
   duration: z.coerce.number().min(15, "Duration must be at least 15 minutes"),
   availability: z.object({
     days: z.array(z.string()).min(1, "Select at least one day"),
-    startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
-    endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
+    startTime: z
+      .string()
+      .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
+    endTime: z
+      .string()
+      .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
   }),
 });
 
@@ -27,15 +31,21 @@ export const productServiceSchema = serviceBaseSchema.extend({
   inventory: z.coerce.number().nonnegative("Inventory must be 0 or positive"),
   sku: z.string().min(3, "SKU must be at least 3 characters"),
   weight: z.coerce.number().optional(),
-  dimensions: z.object({
-    length: z.coerce.number(),
-    width: z.coerce.number(),
-    height: z.coerce.number(),
-  }).optional(),
-  shippingInfo: z.object({
-    freeShipping: z.boolean().default(false),
-    shippingCost: z.coerce.number().nonnegative("Shipping cost must be 0 or positive"),
-  }).optional(),
+  dimensions: z
+    .object({
+      length: z.coerce.number(),
+      width: z.coerce.number(),
+      height: z.coerce.number(),
+    })
+    .optional(),
+  shippingInfo: z
+    .object({
+      freeShipping: z.boolean().default(false),
+      shippingCost: z.coerce
+        .number()
+        .nonnegative("Shipping cost must be 0 or positive"),
+    })
+    .optional(),
 });
 
 // In-person service schema
@@ -55,9 +65,41 @@ export const appointmentBookingSchema = z.object({
   serviceId: z.string(),
   businessId: z.string(),
   customerId: z.string(),
+  staffId: z.string().optional(),
   date: z.string(),
-  startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
-  endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
+  startTime: z
+    .string()
+    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
+  endTime: z
+    .string()
+    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
+  notes: z.string().optional(),
+  isRecurring: z.boolean().optional().default(false),
+  recurrencePattern: z
+    .enum(["daily", "weekly", "biweekly", "monthly"])
+    .optional(),
+  recurrenceEndDate: z.string().optional(),
+  recurrenceCount: z.number().optional(),
+});
+
+// Recurring appointment schema
+export const recurringAppointmentSchema = z.object({
+  serviceId: z.string(),
+  businessId: z.string(),
+  customerId: z.string(),
+  staffId: z.string().optional(),
+  recurrencePattern: z.enum(["daily", "weekly", "biweekly", "monthly"]),
+  startDate: z.string(),
+  endDate: z.string().optional(),
+  recurrenceCount: z.number().optional(),
+  dayOfWeek: z.number().min(0).max(6).optional(), // 0-6 for Sunday-Saturday
+  dayOfMonth: z.number().min(1).max(31).optional(), // 1-31
+  startTime: z
+    .string()
+    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
+  endTime: z
+    .string()
+    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
   notes: z.string().optional(),
 });
 
@@ -88,5 +130,8 @@ export type AppointmentServiceInput = z.infer<typeof appointmentServiceSchema>;
 export type ProductServiceInput = z.infer<typeof productServiceSchema>;
 export type InPersonServiceInput = z.infer<typeof inPersonServiceSchema>;
 export type AppointmentBookingInput = z.infer<typeof appointmentBookingSchema>;
+export type RecurringAppointmentInput = z.infer<
+  typeof recurringAppointmentSchema
+>;
 export type OrderInput = z.infer<typeof orderSchema>;
 export type OrderItemInput = z.infer<typeof orderItemSchema>;
