@@ -73,10 +73,11 @@ interface Order {
 }
 
 export default function BusinessOrdersPage({
-  params: { businessId },
+  params,
 }: {
   params: { businessId: string };
 }) {
+  const businessId = params.businessId;
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("all");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);

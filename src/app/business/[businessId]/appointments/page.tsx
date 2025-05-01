@@ -3,16 +3,16 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { 
-  Calendar, 
-  Clock, 
-  User, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Calendar,
+  Clock,
+  User,
+  CheckCircle,
+  XCircle,
   AlertCircle,
   Loader2,
   Eye,
-  CalendarDays
+  CalendarDays,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -22,7 +22,14 @@ import { ColumnDef } from "@tanstack/react-table";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { appointmentApi } from "@/services/appointment";
 import { toast } from "react-hot-toast";
-import { format, parseISO, isToday, isTomorrow, isThisWeek, isAfter } from "date-fns";
+import {
+  format,
+  parseISO,
+  isToday,
+  isTomorrow,
+  isThisWeek,
+  isAfter,
+} from "date-fns";
 import {
   Popover,
   PopoverContent,
@@ -53,33 +60,41 @@ interface Appointment {
 }
 
 export default function BusinessAppointmentsPage({
-  params: { businessId },
+  params,
 }: {
   params: { businessId: string };
 }) {
+  const businessId = params.businessId;
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("all");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
 
   // Fetch appointments
-  const { data: appointments, isLoading, refetch } = useQuery({
+  const {
+    data: appointments,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["appointments", businessId, activeTab, selectedDate],
     queryFn: () => {
       const params: any = {};
-      
+
       if (activeTab !== "all") {
         params.status = activeTab;
       }
-      
+
       if (selectedDate) {
         params.date = format(selectedDate, "yyyy-MM-dd");
       }
-      
+
       return appointmentApi.getBusinessAppointments(businessId, params);
     },
   });
 
-  const handleStatusChange = async (appointmentId: string, newStatus: string) => {
+  const handleStatusChange = async (
+    appointmentId: string,
+    newStatus: string
+  ) => {
     try {
       await appointmentApi.updateAppointmentStatus(appointmentId, newStatus);
       toast.success(`Appointment ${newStatus} successfully`);
@@ -151,7 +166,8 @@ export default function BusinessAppointmentsPage({
             </div>
             <div className="text-sm text-muted-foreground flex items-center">
               <Clock className="h-3 w-3 mr-1" />
-              {formatTime(appointment.startTime)} - {formatTime(appointment.endTime)}
+              {formatTime(appointment.startTime)} -{" "}
+              {formatTime(appointment.endTime)}
             </div>
           </div>
         );
@@ -210,7 +226,8 @@ export default function BusinessAppointmentsPage({
           >
             <div className="flex items-center">
               {getStatusIcon(appointment.status)}
-              {appointment.status.charAt(0).toUpperCase() + appointment.status.slice(1)}
+              {appointment.status.charAt(0).toUpperCase() +
+                appointment.status.slice(1)}
             </div>
           </Badge>
         );
@@ -236,7 +253,7 @@ export default function BusinessAppointmentsPage({
             >
               <Eye className="h-4 w-4" />
             </Button>
-            
+
             {isPending && (
               <Button
                 variant="outline"
@@ -248,7 +265,7 @@ export default function BusinessAppointmentsPage({
                 Confirm
               </Button>
             )}
-            
+
             {isConfirmed && !isPast && (
               <Button
                 variant="outline"
@@ -260,7 +277,7 @@ export default function BusinessAppointmentsPage({
                 Complete
               </Button>
             )}
-            
+
             {(isPending || isConfirmed) && !isCompleted && !isCancelled && (
               <Button
                 variant="outline"
@@ -296,7 +313,9 @@ export default function BusinessAppointmentsPage({
               <PopoverTrigger asChild>
                 <Button variant="outline" className="flex items-center gap-2">
                   <CalendarDays className="h-4 w-4" />
-                  {selectedDate ? format(selectedDate, "MMM d, yyyy") : "Filter by date"}
+                  {selectedDate
+                    ? format(selectedDate, "MMM d, yyyy")
+                    : "Filter by date"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="end">
@@ -308,9 +327,9 @@ export default function BusinessAppointmentsPage({
                 />
                 {selectedDate && (
                   <div className="p-3 border-t border-border">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => setSelectedDate(undefined)}
                       className="w-full"
                     >
@@ -350,11 +369,14 @@ export default function BusinessAppointmentsPage({
                   No appointments found
                 </h3>
                 <p className="text-muted-foreground mb-6">
-                  {selectedDate 
-                    ? `No appointments for ${format(selectedDate, "MMMM d, yyyy")}`
+                  {selectedDate
+                    ? `No appointments for ${format(
+                        selectedDate,
+                        "MMMM d, yyyy"
+                      )}`
                     : activeTab === "all"
-                      ? "You don't have any appointments yet."
-                      : `You don't have any ${activeTab} appointments.`}
+                    ? "You don't have any appointments yet."
+                    : `You don't have any ${activeTab} appointments.`}
                 </p>
                 {selectedDate && (
                   <Button

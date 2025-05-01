@@ -2,22 +2,40 @@
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { 
-  BarChart, 
-  Calendar, 
-  DollarSign, 
-  Package, 
-  ShoppingBag, 
+import { useParams } from "next/navigation";
+import {
+  BarChart,
+  Calendar,
+  DollarSign,
+  Package,
+  ShoppingBag,
   Users,
   ArrowUpRight,
   ArrowDownRight,
-  Loader2
+  Loader2,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { cn } from "@/lib/utils";
-import { format } from "date-fns";
+// Create a simple date formatter function
+const formatDate = (date: Date, format: string) => {
+  const options: Intl.DateTimeFormatOptions = {};
+  if (format.includes("MMM")) options.month = "short";
+  if (format.includes("yyyy")) options.year = "numeric";
+  if (format.includes("d")) options.day = "numeric";
+  if (format.includes("h")) options.hour = "numeric";
+  if (format.includes("mm")) options.minute = "2-digit";
+  if (format.includes("a")) options.hour12 = true;
+
+  return new Intl.DateTimeFormat("en-US", options).format(date);
+};
 import { Bar, Line } from "react-chartjs-2";
 import {
   Chart as ChartJS,
@@ -48,7 +66,7 @@ ChartJS.register(
 const fetchDashboardStats = async (businessId: string) => {
   // Simulate API call
   await new Promise((resolve) => setTimeout(resolve, 1000));
-  
+
   return {
     totalRevenue: 15750,
     totalOrders: 124,
@@ -64,9 +82,9 @@ const fetchDashboardStats = async (businessId: string) => {
 const fetchRevenueData = async (businessId: string) => {
   // Simulate API call
   await new Promise((resolve) => setTimeout(resolve, 1500));
-  
+
   const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  
+
   return {
     labels: days,
     datasets: [
@@ -89,7 +107,7 @@ const fetchRevenueData = async (businessId: string) => {
 const fetchServiceData = async (businessId: string) => {
   // Simulate API call
   await new Promise((resolve) => setTimeout(resolve, 1200));
-  
+
   return {
     labels: ["Appointments", "Products", "In-Person"],
     datasets: [
@@ -115,7 +133,7 @@ const fetchServiceData = async (businessId: string) => {
 const fetchRecentOrders = async (businessId: string) => {
   // Simulate API call
   await new Promise((resolve) => setTimeout(resolve, 800));
-  
+
   return [
     {
       id: "ORD-001",
@@ -128,7 +146,7 @@ const fetchRecentOrders = async (businessId: string) => {
       id: "ORD-002",
       customer: "Jane Smith",
       date: new Date(2023, 6, 14),
-      amount: 89.50,
+      amount: 89.5,
       status: "shipped",
     },
     {
@@ -151,7 +169,7 @@ const fetchRecentOrders = async (businessId: string) => {
 const fetchUpcomingAppointments = async (businessId: string) => {
   // Simulate API call
   await new Promise((resolve) => setTimeout(resolve, 700));
-  
+
   return [
     {
       id: "APT-001",
@@ -177,11 +195,9 @@ const fetchUpcomingAppointments = async (businessId: string) => {
   ];
 };
 
-export default function BusinessDashboardPage({
-  params: { businessId },
-}: {
-  params: { businessId: string };
-}) {
+export default function BusinessDashboardPage() {
+  const params = useParams();
+  const businessId = params.businessId as string;
   // Fetch dashboard stats
   const { data: stats, isLoading: isStatsLoading } = useQuery({
     queryKey: ["dashboardStats", businessId],
@@ -207,10 +223,11 @@ export default function BusinessDashboardPage({
   });
 
   // Fetch upcoming appointments
-  const { data: upcomingAppointments, isLoading: isAppointmentsLoading } = useQuery({
-    queryKey: ["upcomingAppointments", businessId],
-    queryFn: () => fetchUpcomingAppointments(businessId),
-  });
+  const { data: upcomingAppointments, isLoading: isAppointmentsLoading } =
+    useQuery({
+      queryKey: ["upcomingAppointments", businessId],
+      queryFn: () => fetchUpcomingAppointments(businessId),
+    });
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -249,7 +266,9 @@ export default function BusinessDashboardPage({
           {/* Revenue Card */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Revenue
+              </CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -291,7 +310,9 @@ export default function BusinessDashboardPage({
           {/* Orders Card */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Orders</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Orders
+              </CardTitle>
               <ShoppingBag className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
@@ -302,7 +323,9 @@ export default function BusinessDashboardPage({
                 </div>
               ) : (
                 <>
-                  <div className="text-2xl font-bold">{stats?.totalOrders || 0}</div>
+                  <div className="text-2xl font-bold">
+                    {stats?.totalOrders || 0}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     <span
                       className={cn(
@@ -351,12 +374,14 @@ export default function BusinessDashboardPage({
                     <span
                       className={cn(
                         "inline-flex items-center",
-                        stats?.appointmentsChange && stats.appointmentsChange > 0
+                        stats?.appointmentsChange &&
+                          stats.appointmentsChange > 0
                           ? "text-green-500"
                           : "text-red-500"
                       )}
                     >
-                      {stats?.appointmentsChange && stats.appointmentsChange > 0 ? (
+                      {stats?.appointmentsChange &&
+                      stats.appointmentsChange > 0 ? (
                         <ArrowUpRight className="mr-1 h-3 w-3" />
                       ) : (
                         <ArrowDownRight className="mr-1 h-3 w-3" />
@@ -431,18 +456,23 @@ export default function BusinessDashboardPage({
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
               ) : (
-                revenueData && <Line data={revenueData} options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  scales: {
-                    y: {
-                      beginAtZero: true,
-                      ticks: {
-                        callback: (value) => `ETB ${value}`
-                      }
-                    }
-                  }
-                }} />
+                revenueData && (
+                  <Line
+                    data={revenueData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                          ticks: {
+                            callback: (value) => `ETB ${value}`,
+                          },
+                        },
+                      },
+                    }}
+                  />
+                )
               )}
             </CardContent>
           </Card>
@@ -459,15 +489,20 @@ export default function BusinessDashboardPage({
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
               ) : (
-                serviceData && <Bar data={serviceData} options={{
-                  responsive: true,
-                  maintainAspectRatio: false,
-                  scales: {
-                    y: {
-                      beginAtZero: true,
-                    }
-                  }
-                }} />
+                serviceData && (
+                  <Bar
+                    data={serviceData}
+                    options={{
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      scales: {
+                        y: {
+                          beginAtZero: true,
+                        },
+                      },
+                    }}
+                  />
+                )
               )}
             </CardContent>
           </Card>
@@ -505,14 +540,17 @@ export default function BusinessDashboardPage({
                               getStatusColor(order.status)
                             )}
                           >
-                            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                            {order.status.charAt(0).toUpperCase() +
+                              order.status.slice(1)}
                           </span>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium">{formatCurrency(order.amount)}</p>
+                        <p className="font-medium">
+                          {formatCurrency(order.amount)}
+                        </p>
                         <p className="text-sm text-muted-foreground">
-                          {format(order.date, "MMM d, yyyy")}
+                          {formatDate(order.date, "MMM d, yyyy")}
                         </p>
                       </div>
                     </div>
@@ -548,10 +586,10 @@ export default function BusinessDashboardPage({
                       </div>
                       <div className="text-right">
                         <p className="font-medium">
-                          {format(appointment.date, "h:mm a")}
+                          {formatDate(appointment.date, "h:mm a")}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {format(appointment.date, "MMM d, yyyy")}
+                          {formatDate(appointment.date, "MMM d, yyyy")}
                         </p>
                       </div>
                     </div>

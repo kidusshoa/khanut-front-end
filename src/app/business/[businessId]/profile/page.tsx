@@ -201,11 +201,12 @@ interface Service {
   inventory?: number;
 }
 
-export default function BusinessProfilePage({
-  params: { businessId },
+export default async function BusinessProfilePage({
+  params,
 }: {
   params: { businessId: string };
 }) {
+  const businessId = params.businessId;
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("about");
 

@@ -37,22 +37,28 @@ import { format } from "date-fns";
 const fetchServiceDetails = async (serviceId: string) => {
   try {
     console.log("Fetching service details for ID:", serviceId);
-    
+
     const url = `${process.env.NEXT_PUBLIC_API_URL}/api/services/${serviceId}`;
     console.log("Service URL:", url);
-    
+
     const response = await fetch(url, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
       },
     });
-    
+
     if (!response.ok) {
-      console.error("Service endpoint failed:", response.status, response.statusText);
-      throw new Error(`Failed to fetch service details: ${response.status} ${response.statusText}`);
+      console.error(
+        "Service endpoint failed:",
+        response.status,
+        response.statusText
+      );
+      throw new Error(
+        `Failed to fetch service details: ${response.status} ${response.statusText}`
+      );
     }
-    
+
     const data = await response.json();
     console.log("Service data received:", data);
     return data;
@@ -66,7 +72,7 @@ const fetchServiceDetails = async (serviceId: string) => {
 const fetchBusinessDetails = async (businessId: string) => {
   try {
     console.log("Fetching business details for ID:", businessId);
-    
+
     // Try the primary endpoint first
     try {
       const url = `${process.env.NEXT_PUBLIC_API_URL}/api/businesses/${businessId}`;
@@ -84,8 +90,12 @@ const fetchBusinessDetails = async (businessId: string) => {
         console.log("Business data received from primary endpoint:", data);
         return data;
       }
-      
-      console.error("Primary endpoint failed:", response.status, response.statusText);
+
+      console.error(
+        "Primary endpoint failed:",
+        response.status,
+        response.statusText
+      );
       // If primary endpoint fails, we'll try the fallback
     } catch (primaryError) {
       console.error("Error with primary endpoint:", primaryError);
@@ -104,8 +114,14 @@ const fetchBusinessDetails = async (businessId: string) => {
     });
 
     if (!fallbackResponse.ok) {
-      console.error("Both endpoints failed. Fallback response:", fallbackResponse.status, fallbackResponse.statusText);
-      throw new Error(`Failed to fetch business details: ${fallbackResponse.status} ${fallbackResponse.statusText}`);
+      console.error(
+        "Both endpoints failed. Fallback response:",
+        fallbackResponse.status,
+        fallbackResponse.statusText
+      );
+      throw new Error(
+        `Failed to fetch business details: ${fallbackResponse.status} ${fallbackResponse.statusText}`
+      );
     }
 
     const fallbackData = await fallbackResponse.json();
@@ -121,22 +137,26 @@ const fetchBusinessDetails = async (businessId: string) => {
 const fetchServiceReviews = async (serviceId: string) => {
   try {
     console.log("Fetching reviews for service ID:", serviceId);
-    
+
     const url = `${process.env.NEXT_PUBLIC_API_URL}/api/reviews/service/${serviceId}`;
     console.log("Reviews URL:", url);
-    
+
     const response = await fetch(url, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
       },
     });
-    
+
     if (!response.ok) {
-      console.error("Reviews endpoint failed:", response.status, response.statusText);
+      console.error(
+        "Reviews endpoint failed:",
+        response.status,
+        response.statusText
+      );
       return []; // Return empty array instead of throwing
     }
-    
+
     const data = await response.json();
     console.log("Reviews data received:", data);
     return data;
@@ -193,14 +213,16 @@ interface Review {
 }
 
 export default function ServiceDetailsPage({
-  params: { businessId, serviceId },
+  params,
 }: {
   params: { businessId: string; serviceId: string };
 }) {
+  const businessId = params.businessId;
+  const serviceId = params.serviceId;
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("details");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  
+
   // Fetch service details
   const {
     data: service,
@@ -211,29 +233,23 @@ export default function ServiceDetailsPage({
     queryFn: () => fetchServiceDetails(serviceId),
     retry: 1,
   });
-  
+
   // Fetch business details
-  const {
-    data: business,
-    isLoading: isBusinessLoading,
-  } = useQuery({
+  const { data: business, isLoading: isBusinessLoading } = useQuery({
     queryKey: ["businessDetails", businessId],
     queryFn: () => fetchBusinessDetails(businessId),
     retry: 1,
     enabled: !!service,
   });
-  
+
   // Fetch service reviews
-  const {
-    data: reviews = [],
-    isLoading: isReviewsLoading,
-  } = useQuery({
+  const { data: reviews = [], isLoading: isReviewsLoading } = useQuery({
     queryKey: ["serviceReviews", serviceId],
     queryFn: () => fetchServiceReviews(serviceId),
     retry: 1,
     enabled: !!service,
   });
-  
+
   // Loading state
   if (isServiceLoading || isBusinessLoading) {
     return (
@@ -245,26 +261,33 @@ export default function ServiceDetailsPage({
       </div>
     );
   }
-  
+
   // Error state
   if (serviceError) {
     return (
       <div className="flex items-center justify-center min-h-[50vh]">
         <div className="flex flex-col items-center gap-2 max-w-md text-center">
-          <h2 className="text-xl font-semibold text-red-500">Error Loading Service</h2>
+          <h2 className="text-xl font-semibold text-red-500">
+            Error Loading Service
+          </h2>
           <p className="text-muted-foreground">
             {serviceError instanceof Error
               ? serviceError.message
               : "Failed to load service details"}
           </p>
-          <Button onClick={() => router.push(`/business/${businessId}/services/public`)} className="mt-4">
+          <Button
+            onClick={() =>
+              router.push(`/business/${businessId}/services/public`)
+            }
+            className="mt-4"
+          >
             Back to Services
           </Button>
         </div>
       </div>
     );
   }
-  
+
   // If we have no service data but no error occurred, show a not found message
   if (!service) {
     return (
@@ -272,16 +295,22 @@ export default function ServiceDetailsPage({
         <div className="flex flex-col items-center gap-2 max-w-md text-center">
           <h2 className="text-xl font-semibold">Service Not Found</h2>
           <p className="text-muted-foreground">
-            The service you're looking for could not be found or may have been removed.
+            The service you're looking for could not be found or may have been
+            removed.
           </p>
-          <Button onClick={() => router.push(`/business/${businessId}/services/public`)} className="mt-4">
+          <Button
+            onClick={() =>
+              router.push(`/business/${businessId}/services/public`)
+            }
+            className="mt-4"
+          >
             Back to Services
           </Button>
         </div>
       </div>
     );
   }
-  
+
   // Get service type icon
   const getServiceTypeIcon = () => {
     switch (service.serviceType) {
@@ -295,7 +324,7 @@ export default function ServiceDetailsPage({
         return null;
     }
   };
-  
+
   // Get service type label
   const getServiceTypeLabel = () => {
     switch (service.serviceType) {
@@ -309,32 +338,34 @@ export default function ServiceDetailsPage({
         return service.serviceType;
     }
   };
-  
+
   // Handle image navigation
   const handleNextImage = () => {
     if (service.images && service.images.length > 0) {
-      setCurrentImageIndex((prevIndex) => 
+      setCurrentImageIndex((prevIndex) =>
         prevIndex === service.images.length - 1 ? 0 : prevIndex + 1
       );
     }
   };
-  
+
   const handlePrevImage = () => {
     if (service.images && service.images.length > 0) {
-      setCurrentImageIndex((prevIndex) => 
+      setCurrentImageIndex((prevIndex) =>
         prevIndex === 0 ? service.images.length - 1 : prevIndex - 1
       );
     }
   };
-  
+
   // Action button based on service type
   const renderActionButton = () => {
     switch (service.serviceType) {
       case "appointment":
         return (
-          <Button 
-            className="w-full" 
-            onClick={() => router.push(`/business/${businessId}/service/${serviceId}/book`)}
+          <Button
+            className="w-full"
+            onClick={() =>
+              router.push(`/business/${businessId}/service/${serviceId}/book`)
+            }
           >
             <Calendar className="mr-2 h-4 w-4" />
             Book Appointment
@@ -342,10 +373,14 @@ export default function ServiceDetailsPage({
         );
       case "product":
         return (
-          <Button 
-            className="w-full" 
+          <Button
+            className="w-full"
             disabled={service.inventory === 0}
-            onClick={() => router.push(`/business/${businessId}/service/${serviceId}/purchase`)}
+            onClick={() =>
+              router.push(
+                `/business/${businessId}/service/${serviceId}/purchase`
+              )
+            }
           >
             <ShoppingCart className="mr-2 h-4 w-4" />
             {service.inventory === 0 ? "Out of Stock" : "Add to Cart"}
@@ -353,8 +388,8 @@ export default function ServiceDetailsPage({
         );
       case "in_person":
         return (
-          <Button 
-            className="w-full" 
+          <Button
+            className="w-full"
             variant="outline"
             onClick={() => router.push(`/business/${businessId}/contact`)}
           >
@@ -366,22 +401,24 @@ export default function ServiceDetailsPage({
         return null;
     }
   };
-  
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex flex-col gap-8">
         {/* Header with back button */}
         <div className="flex flex-col gap-4">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="w-fit"
-            onClick={() => router.push(`/business/${businessId}/services/public`)}
+            onClick={() =>
+              router.push(`/business/${businessId}/services/public`)
+            }
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Services
           </Button>
         </div>
-        
+
         {/* Service Details */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Left Column - Images */}
@@ -439,7 +476,7 @@ export default function ServiceDetailsPage({
                   </div>
                 )}
               </div>
-              
+
               {/* Service Info */}
               <CardHeader>
                 <div className="flex justify-between items-start">
@@ -464,16 +501,21 @@ export default function ServiceDetailsPage({
                   </Badge>
                 </div>
               </CardHeader>
-              
+
               <CardContent className="space-y-6">
-                <Tabs defaultValue="details" value={activeTab} onValueChange={setActiveTab}>
+                <Tabs
+                  defaultValue="details"
+                  value={activeTab}
+                  onValueChange={setActiveTab}
+                >
                   <TabsList>
                     <TabsTrigger value="details">Details</TabsTrigger>
                     <TabsTrigger value="reviews">
-                      Reviews {service.reviewCount ? `(${service.reviewCount})` : ""}
+                      Reviews{" "}
+                      {service.reviewCount ? `(${service.reviewCount})` : ""}
                     </TabsTrigger>
                   </TabsList>
-                  
+
                   <TabsContent value="details" className="mt-4 space-y-4">
                     <div>
                       <h3 className="font-medium mb-2">Description</h3>
@@ -481,9 +523,9 @@ export default function ServiceDetailsPage({
                         {service.description || "No description available."}
                       </p>
                     </div>
-                    
+
                     <Separator />
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
@@ -491,68 +533,85 @@ export default function ServiceDetailsPage({
                         </div>
                         <div>
                           <p className="text-sm text-muted-foreground">Price</p>
-                          <p className="font-medium">${service.price.toFixed(2)}</p>
+                          <p className="font-medium">
+                            ${service.price.toFixed(2)}
+                          </p>
                         </div>
                       </div>
-                      
-                      {service.serviceType === "appointment" && service.duration && (
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                            <Clock3 className="h-5 w-5 text-muted-foreground" />
+
+                      {service.serviceType === "appointment" &&
+                        service.duration && (
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                              <Clock3 className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">
+                                Duration
+                              </p>
+                              <p className="font-medium">
+                                {service.duration} minutes
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Duration</p>
-                            <p className="font-medium">{service.duration} minutes</p>
+                        )}
+
+                      {service.serviceType === "product" &&
+                        service.inventory !== undefined && (
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                              <Package className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">
+                                Availability
+                              </p>
+                              <p className="font-medium">
+                                {service.inventory > 0
+                                  ? `${service.inventory} in stock`
+                                  : "Out of stock"}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      
-                      {service.serviceType === "product" && service.inventory !== undefined && (
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                            <Package className="h-5 w-5 text-muted-foreground" />
+                        )}
+
+                      {service.serviceType === "appointment" &&
+                        service.availability && (
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                              <Calendar className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">
+                                Available Days
+                              </p>
+                              <p className="font-medium">
+                                {service.availability.days.join(", ")}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Availability</p>
-                            <p className="font-medium">
-                              {service.inventory > 0 
-                                ? `${service.inventory} in stock` 
-                                : "Out of stock"}
-                            </p>
+                        )}
+
+                      {service.serviceType === "appointment" &&
+                        service.availability && (
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                              <Clock className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                            <div>
+                              <p className="text-sm text-muted-foreground">
+                                Hours
+                              </p>
+                              <p className="font-medium">
+                                {service.availability.startTime} -{" "}
+                                {service.availability.endTime}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      
-                      {service.serviceType === "appointment" && service.availability && (
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                            <Calendar className="h-5 w-5 text-muted-foreground" />
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Available Days</p>
-                            <p className="font-medium">
-                              {service.availability.days.join(", ")}
-                            </p>
-                          </div>
-                        </div>
-                      )}
-                      
-                      {service.serviceType === "appointment" && service.availability && (
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-                            <Clock className="h-5 w-5 text-muted-foreground" />
-                          </div>
-                          <div>
-                            <p className="text-sm text-muted-foreground">Hours</p>
-                            <p className="font-medium">
-                              {service.availability.startTime} - {service.availability.endTime}
-                            </p>
-                          </div>
-                        </div>
-                      )}
+                        )}
                     </div>
                   </TabsContent>
-                  
+
                   <TabsContent value="reviews" className="mt-4">
                     {isReviewsLoading ? (
                       <div className="flex justify-center py-8">
@@ -560,23 +619,38 @@ export default function ServiceDetailsPage({
                       </div>
                     ) : reviews.length === 0 ? (
                       <div className="text-center py-8 bg-muted/30 rounded-lg">
-                        <p className="text-muted-foreground">No reviews yet for this service.</p>
+                        <p className="text-muted-foreground">
+                          No reviews yet for this service.
+                        </p>
                       </div>
                     ) : (
                       <div className="space-y-6">
                         {reviews.map((review: Review) => (
-                          <div key={review._id} className="border-b pb-6 last:border-0 last:pb-0">
+                          <div
+                            key={review._id}
+                            className="border-b pb-6 last:border-0 last:pb-0"
+                          >
                             <div className="flex items-center gap-3 mb-3">
                               <Avatar>
                                 {review.authorId.profilePicture ? (
-                                  <AvatarImage src={review.authorId.profilePicture} alt={review.authorId.name} />
+                                  <AvatarImage
+                                    src={review.authorId.profilePicture}
+                                    alt={review.authorId.name}
+                                  />
                                 ) : null}
-                                <AvatarFallback>{review.authorId.name.charAt(0)}</AvatarFallback>
+                                <AvatarFallback>
+                                  {review.authorId.name.charAt(0)}
+                                </AvatarFallback>
                               </Avatar>
                               <div>
-                                <div className="font-medium">{review.authorId.name}</div>
+                                <div className="font-medium">
+                                  {review.authorId.name}
+                                </div>
                                 <div className="text-sm text-muted-foreground">
-                                  {format(new Date(review.createdAt), "MMMM d, yyyy")}
+                                  {format(
+                                    new Date(review.createdAt),
+                                    "MMMM d, yyyy"
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -602,7 +676,7 @@ export default function ServiceDetailsPage({
               </CardContent>
             </Card>
           </div>
-          
+
           {/* Right Column - Business Info & Actions */}
           <div className="space-y-6">
             {/* Business Card */}
@@ -614,18 +688,23 @@ export default function ServiceDetailsPage({
                 <div className="flex items-center gap-3">
                   <Avatar className="h-12 w-12">
                     {business?.profilePicture ? (
-                      <AvatarImage src={business.profilePicture} alt={business?.name} />
+                      <AvatarImage
+                        src={business.profilePicture}
+                        alt={business?.name}
+                      />
                     ) : null}
                     <AvatarFallback>{business?.name.charAt(0)}</AvatarFallback>
                   </Avatar>
                   <div>
                     <h3 className="font-medium">{business?.name}</h3>
-                    <p className="text-sm text-muted-foreground">{business?.category}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {business?.category}
+                    </p>
                   </div>
                 </div>
-                
+
                 <Separator />
-                
+
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
                     <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -640,7 +719,7 @@ export default function ServiceDetailsPage({
                     <span className="text-sm">{business?.email}</span>
                   </div>
                 </div>
-                
+
                 <Button
                   variant="outline"
                   className="w-full"
@@ -650,15 +729,13 @@ export default function ServiceDetailsPage({
                 </Button>
               </CardContent>
             </Card>
-            
+
             {/* Action Card */}
             <Card>
               <CardHeader>
-                <CardTitle>
-                  ${service.price.toFixed(2)}
-                </CardTitle>
+                <CardTitle>${service.price.toFixed(2)}</CardTitle>
                 <CardDescription>
-                  {service.serviceType === "appointment" 
+                  {service.serviceType === "appointment"
                     ? `${service.duration} minutes appointment`
                     : service.serviceType === "product"
                     ? service.inventory !== undefined && service.inventory > 0
@@ -667,9 +744,7 @@ export default function ServiceDetailsPage({
                     : "In-person service"}
                 </CardDescription>
               </CardHeader>
-              <CardFooter>
-                {renderActionButton()}
-              </CardFooter>
+              <CardFooter>{renderActionButton()}</CardFooter>
             </Card>
           </div>
         </div>

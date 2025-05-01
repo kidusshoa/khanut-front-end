@@ -9,10 +9,11 @@ import { StaffManagement } from "@/components/business/StaffManagement";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 
 export default function BusinessStaffPage({
-  params: { businessId },
+  params,
 }: {
   params: { businessId: string };
 }) {
+  const businessId = params.businessId;
   const router = useRouter();
   const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(true);

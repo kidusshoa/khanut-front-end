@@ -78,21 +78,23 @@ interface Business {
 }
 
 // Fetch products for a business
-const fetchBusinessProducts = async (businessId: string): Promise<Product[]> => {
+const fetchBusinessProducts = async (
+  businessId: string
+): Promise<Product[]> => {
   try {
     const url = `${process.env.NEXT_PUBLIC_API_URL}/api/services/business/${businessId}/type/product`;
-    
+
     const response = await fetch(url, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
       },
     });
-    
+
     if (!response.ok) {
       throw new Error(`Failed to fetch products: ${response.status}`);
     }
-    
+
     const data = await response.json();
     return data;
   } catch (error) {
@@ -119,7 +121,7 @@ const fetchBusinessDetails = async (businessId: string): Promise<Business> => {
         const data = await response.json();
         return data;
       }
-      
+
       console.error("Primary endpoint failed:", response.status);
       // If primary endpoint fails, we'll try the fallback
     } catch (primaryError) {
@@ -138,7 +140,9 @@ const fetchBusinessDetails = async (businessId: string): Promise<Business> => {
     });
 
     if (!fallbackResponse.ok) {
-      throw new Error(`Failed to fetch business details: ${fallbackResponse.status}`);
+      throw new Error(
+        `Failed to fetch business details: ${fallbackResponse.status}`
+      );
     }
 
     const fallbackData = await fallbackResponse.json();
@@ -150,10 +154,13 @@ const fetchBusinessDetails = async (businessId: string): Promise<Business> => {
 };
 
 // Update product inventory
-const updateProductInventory = async (productId: string, inventory: number): Promise<Product> => {
+const updateProductInventory = async (
+  productId: string,
+  inventory: number
+): Promise<Product> => {
   try {
     const url = `${process.env.NEXT_PUBLIC_API_URL}/api/services/${productId}/inventory`;
-    
+
     const response = await fetch(url, {
       method: "PATCH",
       headers: {
@@ -161,11 +168,11 @@ const updateProductInventory = async (productId: string, inventory: number): Pro
       },
       body: JSON.stringify({ inventory }),
     });
-    
+
     if (!response.ok) {
       throw new Error(`Failed to update inventory: ${response.status}`);
     }
-    
+
     const data = await response.json();
     return data;
   } catch (error) {
@@ -175,10 +182,11 @@ const updateProductInventory = async (productId: string, inventory: number): Pro
 };
 
 export default function BusinessInventoryPage({
-  params: { businessId },
+  params,
 }: {
   params: { businessId: string };
 }): React.ReactNode {
+  const businessId = params.businessId;
   const router = useRouter();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -189,7 +197,7 @@ export default function BusinessInventoryPage({
   const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<string>("all");
-  
+
   // Fetch business details
   const {
     data: business,
@@ -200,7 +208,7 @@ export default function BusinessInventoryPage({
     queryFn: () => fetchBusinessDetails(businessId),
     retry: 1,
   });
-  
+
   // Fetch products
   const {
     data: products = [],
@@ -212,13 +220,20 @@ export default function BusinessInventoryPage({
     queryFn: () => fetchBusinessProducts(businessId),
     retry: 1,
   });
-  
+
   // Update inventory mutation
   const updateInventoryMutation = useMutation({
-    mutationFn: ({ productId, inventory }: { productId: string; inventory: number }) => 
-      updateProductInventory(productId, inventory),
+    mutationFn: ({
+      productId,
+      inventory,
+    }: {
+      productId: string;
+      inventory: number;
+    }) => updateProductInventory(productId, inventory),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["businessProducts", businessId] });
+      queryClient.invalidateQueries({
+        queryKey: ["businessProducts", businessId],
+      });
       toast({
         title: "Inventory Updated",
         description: "Product inventory has been updated successfully.",
@@ -227,72 +242,86 @@ export default function BusinessInventoryPage({
     onError: (error) => {
       toast({
         title: "Update Failed",
-        description: error instanceof Error ? error.message : "Failed to update inventory.",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to update inventory.",
         variant: "destructive",
       });
     },
   });
-  
+
   // Handle inventory update
-  const handleInventoryUpdate = (productId: string, inventory: number): void => {
+  const handleInventoryUpdate = (
+    productId: string,
+    inventory: number
+  ): void => {
     updateInventoryMutation.mutate({ productId, inventory });
   };
-  
+
   // Handle edit product
   const handleEditProduct = (product: Product): void => {
     setSelectedProduct(product);
     setIsEditModalOpen(true);
   };
-  
+
   // Handle delete product
   const handleDeleteProduct = (product: Product): void => {
     setSelectedProduct(product);
     setIsDeleteDialogOpen(true);
   };
-  
+
   // Confirm delete product
   const confirmDeleteProduct = async (): Promise<void> => {
     if (!selectedProduct) return;
-    
+
     try {
       const url = `${process.env.NEXT_PUBLIC_API_URL}/api/services/${selectedProduct._id}`;
-      
+
       const response = await fetch(url, {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
         },
       });
-      
+
       if (!response.ok) {
         throw new Error(`Failed to delete product: ${response.status}`);
       }
-      
+
       toast({
         title: "Product Deleted",
         description: "Product has been deleted successfully.",
       });
-      
-      queryClient.invalidateQueries({ queryKey: ["businessProducts", businessId] });
+
+      queryClient.invalidateQueries({
+        queryKey: ["businessProducts", businessId],
+      });
       setIsDeleteDialogOpen(false);
     } catch (error) {
       toast({
         title: "Delete Failed",
-        description: error instanceof Error ? error.message : "Failed to delete product.",
+        description:
+          error instanceof Error ? error.message : "Failed to delete product.",
         variant: "destructive",
       });
     }
   };
-  
+
   // Filter products by status
-  const filterProductsByStatus = (products: Product[], status: string): Product[] => {
+  const filterProductsByStatus = (
+    products: Product[],
+    status: string
+  ): Product[] => {
     if (status === "all") return products;
-    if (status === "in_stock") return products.filter(p => p.inventory >= 5);
-    if (status === "low_stock") return products.filter(p => p.inventory > 0 && p.inventory < 5);
-    if (status === "out_of_stock") return products.filter(p => p.inventory === 0);
+    if (status === "in_stock") return products.filter((p) => p.inventory >= 5);
+    if (status === "low_stock")
+      return products.filter((p) => p.inventory > 0 && p.inventory < 5);
+    if (status === "out_of_stock")
+      return products.filter((p) => p.inventory === 0);
     return products;
   };
-  
+
   // Filter and sort products
   const filteredProducts = [...products]
     .filter((product: Product) => {
@@ -302,16 +331,16 @@ export default function BusinessInventoryPage({
         product.description.toLowerCase().includes(searchLower)
       );
     })
-    .filter(product => filterProductsByStatus([product], activeTab).length > 0)
+    .filter(
+      (product) => filterProductsByStatus([product], activeTab).length > 0
+    )
     .sort((a: Product, b: Product) => {
       if (sortBy === "name") {
         return sortOrder === "asc"
           ? a.name.localeCompare(b.name)
           : b.name.localeCompare(a.name);
       } else if (sortBy === "price") {
-        return sortOrder === "asc"
-          ? a.price - b.price
-          : b.price - a.price;
+        return sortOrder === "asc" ? a.price - b.price : b.price - a.price;
       } else if (sortBy === "inventory") {
         return sortOrder === "asc"
           ? a.inventory - b.inventory
@@ -323,30 +352,39 @@ export default function BusinessInventoryPage({
       }
       return 0;
     });
-  
+
   // Get inventory status
   const getInventoryStatus = (inventory: number): React.ReactNode => {
     if (inventory === 0) {
       return (
-        <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+        <Badge
+          variant="outline"
+          className="bg-red-50 text-red-700 border-red-200"
+        >
           Out of Stock
         </Badge>
       );
     } else if (inventory < 5) {
       return (
-        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+        <Badge
+          variant="outline"
+          className="bg-yellow-50 text-yellow-700 border-yellow-200"
+        >
           Low Stock
         </Badge>
       );
     } else {
       return (
-        <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+        <Badge
+          variant="outline"
+          className="bg-green-50 text-green-700 border-green-200"
+        >
           In Stock
         </Badge>
       );
     }
   };
-  
+
   // Define table columns
   const columns: ColumnDef<Product>[] = [
     {
@@ -445,8 +483,8 @@ export default function BusinessInventoryPage({
               <span className="font-medium">{inventory}</span>
               {getInventoryStatus(inventory)}
             </div>
-            <Progress 
-              value={Math.min(inventory * 10, 100)} 
+            <Progress
+              value={Math.min(inventory * 10, 100)}
               className="h-2"
               indicatorClassName={
                 inventory === 0
@@ -479,7 +517,8 @@ export default function BusinessInventoryPage({
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-      cell: ({ row }) => format(new Date(row.original.createdAt), "MMM d, yyyy"),
+      cell: ({ row }) =>
+        format(new Date(row.original.createdAt), "MMM d, yyyy"),
     },
     {
       id: "actions",
@@ -507,13 +546,19 @@ export default function BusinessInventoryPage({
       },
     },
   ];
-  
+
   // Calculate inventory statistics
   const totalProducts = products.length;
-  const outOfStockProducts = products.filter((p: Product) => p.inventory === 0).length;
-  const lowStockProducts = products.filter((p: Product) => p.inventory > 0 && p.inventory < 5).length;
-  const inStockProducts = products.filter((p: Product) => p.inventory >= 5).length;
-  
+  const outOfStockProducts = products.filter(
+    (p: Product) => p.inventory === 0
+  ).length;
+  const lowStockProducts = products.filter(
+    (p: Product) => p.inventory > 0 && p.inventory < 5
+  ).length;
+  const inStockProducts = products.filter(
+    (p: Product) => p.inventory >= 5
+  ).length;
+
   // Loading state
   if (isBusinessLoading || isProductsLoading) {
     return (
@@ -527,7 +572,7 @@ export default function BusinessInventoryPage({
       </div>
     );
   }
-  
+
   // Error state
   if (businessError || productsError) {
     return (
@@ -535,7 +580,9 @@ export default function BusinessInventoryPage({
         <div className="flex items-center justify-center min-h-[50vh]">
           <div className="flex flex-col items-center gap-2 max-w-md text-center">
             <AlertCircle className="h-8 w-8 text-red-500" />
-            <h2 className="text-xl font-semibold text-red-500">Error Loading Data</h2>
+            <h2 className="text-xl font-semibold text-red-500">
+              Error Loading Data
+            </h2>
             <p className="text-muted-foreground">
               {businessError instanceof Error
                 ? businessError.message
@@ -543,7 +590,10 @@ export default function BusinessInventoryPage({
                 ? productsError.message
                 : "Failed to load data"}
             </p>
-            <Button onClick={() => router.push(`/business/${businessId}`)} className="mt-4">
+            <Button
+              onClick={() => router.push(`/business/${businessId}`)}
+              className="mt-4"
+            >
               Back to Business
             </Button>
           </div>
@@ -551,21 +601,21 @@ export default function BusinessInventoryPage({
       </div>
     );
   }
-  
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="space-y-6">
         {/* Header with back button */}
         <div className="flex flex-col gap-4">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="w-fit"
             onClick={() => router.push(`/business/${businessId}/profile`)}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Business Profile
           </Button>
-          
+
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
               <h1 className="text-3xl font-bold tracking-tight">
@@ -577,7 +627,7 @@ export default function BusinessInventoryPage({
             </div>
           </div>
         </div>
-        
+
         {/* Inventory Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
@@ -590,7 +640,7 @@ export default function BusinessInventoryPage({
               <div className="text-2xl font-bold">{totalProducts}</div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -598,10 +648,12 @@ export default function BusinessInventoryPage({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{inStockProducts}</div>
+              <div className="text-2xl font-bold text-green-600">
+                {inStockProducts}
+              </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -609,10 +661,12 @@ export default function BusinessInventoryPage({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{lowStockProducts}</div>
+              <div className="text-2xl font-bold text-yellow-600">
+                {lowStockProducts}
+              </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -620,11 +674,13 @@ export default function BusinessInventoryPage({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">{outOfStockProducts}</div>
+              <div className="text-2xl font-bold text-red-600">
+                {outOfStockProducts}
+              </div>
             </CardContent>
           </Card>
         </div>
-        
+
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="relative w-full sm:w-72">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -636,7 +692,7 @@ export default function BusinessInventoryPage({
             />
           </div>
         </div>
-        
+
         <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="all">All Products</TabsTrigger>
@@ -644,7 +700,7 @@ export default function BusinessInventoryPage({
             <TabsTrigger value="low_stock">Low Stock</TabsTrigger>
             <TabsTrigger value="out_of_stock">Out of Stock</TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value={activeTab} className="mt-6">
             {filteredProducts.length === 0 ? (
               <div className="text-center py-12 bg-muted/50 rounded-lg">
@@ -674,7 +730,7 @@ export default function BusinessInventoryPage({
             )}
           </TabsContent>
         </Tabs>
-        
+
         {/* Low Stock Warning */}
         {lowStockProducts > 0 && (
           <Card className="border-yellow-200 bg-yellow-50">
@@ -683,13 +739,14 @@ export default function BusinessInventoryPage({
               <div>
                 <h3 className="font-medium text-yellow-800">Low Stock Alert</h3>
                 <p className="text-sm text-yellow-700">
-                  This business has {lowStockProducts} product(s) with low inventory levels.
+                  This business has {lowStockProducts} product(s) with low
+                  inventory levels.
                 </p>
               </div>
             </CardContent>
           </Card>
         )}
-        
+
         {/* Out of Stock Warning */}
         {outOfStockProducts > 0 && (
           <Card className="border-red-200 bg-red-50">
@@ -698,15 +755,16 @@ export default function BusinessInventoryPage({
               <div>
                 <h3 className="font-medium text-red-800">Out of Stock Alert</h3>
                 <p className="text-sm text-red-700">
-                  This business has {outOfStockProducts} product(s) that are currently out of stock.
-                  These items are not available for purchase until restocked.
+                  This business has {outOfStockProducts} product(s) that are
+                  currently out of stock. These items are not available for
+                  purchase until restocked.
                 </p>
               </div>
             </CardContent>
           </Card>
         )}
       </div>
-      
+
       {/* Edit Modal */}
       {selectedProduct && (
         <InventoryEditModal
@@ -716,20 +774,23 @@ export default function BusinessInventoryPage({
           onUpdate={handleInventoryUpdate}
         />
       )}
-      
+
       {/* Delete Confirmation Dialog */}
-      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <AlertDialog
+        open={isDeleteDialogOpen}
+        onOpenChange={setIsDeleteDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete the product "{selectedProduct?.name}". 
-              This action cannot be undone.
+              This will permanently delete the product "{selectedProduct?.name}
+              ". This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={confirmDeleteProduct}
               className="bg-red-500 hover:bg-red-600"
             >

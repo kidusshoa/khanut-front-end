@@ -85,10 +85,11 @@ const fetchBusinessDetails = async (businessId: string) => {
 };
 
 export default function BusinessViewPage({
-  params: { businessId },
+  params,
 }: {
   params: { businessId: string };
 }) {
+  const businessId = params.businessId;
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
 

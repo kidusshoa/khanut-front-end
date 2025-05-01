@@ -3,15 +3,15 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { 
-  PlusCircle, 
-  Pencil, 
-  Trash2, 
-  Calendar, 
-  ShoppingBag, 
+import {
+  PlusCircle,
+  Pencil,
+  Trash2,
+  Calendar,
+  ShoppingBag,
   MapPin,
   Loader2,
-  Eye
+  Eye,
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -38,17 +38,22 @@ interface Service {
 }
 
 export default function BusinessServicesPage({
-  params: { businessId },
+  params,
 }: {
   params: { businessId: string };
 }) {
+  const businessId = params.businessId;
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
 
   // Fetch services
-  const { data: services, isLoading, refetch } = useQuery({
+  const {
+    data: services,
+    isLoading,
+    refetch,
+  } = useQuery({
     queryKey: ["services", businessId],
     queryFn: () => serviceApi.getBusinessServices(businessId),
   });
@@ -191,10 +196,15 @@ export default function BusinessServicesPage({
         const service = row.original;
         if (service.serviceType === "appointment" && service.duration) {
           return <div className="text-sm">{service.duration} minutes</div>;
-        } else if (service.serviceType === "product" && service.inventory !== undefined) {
+        } else if (
+          service.serviceType === "product" &&
+          service.inventory !== undefined
+        ) {
           return (
             <div className="text-sm">
-              {service.inventory > 0 ? `${service.inventory} in stock` : "Out of stock"}
+              {service.inventory > 0
+                ? `${service.inventory} in stock`
+                : "Out of stock"}
             </div>
           );
         }
@@ -204,7 +214,8 @@ export default function BusinessServicesPage({
     {
       accessorKey: "createdAt",
       header: "Created",
-      cell: ({ row }) => format(new Date(row.original.createdAt), "MMM d, yyyy"),
+      cell: ({ row }) =>
+        format(new Date(row.original.createdAt), "MMM d, yyyy"),
     },
     {
       id: "actions",
@@ -269,7 +280,10 @@ export default function BusinessServicesPage({
         <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="all">All Services</TabsTrigger>
-            <TabsTrigger value="appointment" className="flex items-center gap-1">
+            <TabsTrigger
+              value="appointment"
+              className="flex items-center gap-1"
+            >
               <Calendar className="h-4 w-4" />
               <span className="hidden sm:inline">Appointments</span>
             </TabsTrigger>
@@ -327,7 +341,9 @@ export default function BusinessServicesPage({
           businessId={businessId}
           onServiceAdded={handleServiceAdded}
           onServiceUpdated={handleServiceUpdated}
-          initialServiceType={activeTab !== "all" ? activeTab as any : undefined}
+          initialServiceType={
+            activeTab !== "all" ? (activeTab as any) : undefined
+          }
           service={selectedService}
         />
       )}

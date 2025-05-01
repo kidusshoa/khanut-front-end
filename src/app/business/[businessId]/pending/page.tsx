@@ -1,15 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Loader2 } from "lucide-react";
 
-export default function PendingApprovalPage({
-  params: { businessId },
-}: {
-  params: { businessId: string };
-}) {
+export default function PendingApprovalPage() {
+  const params = useParams();
+  const businessId = params.businessId as string;
   const router = useRouter();
   const { data: session, status } = useSession();
   const [isChecking, setIsChecking] = useState(true);

@@ -11,10 +11,12 @@ import { staffApi } from "@/services/staff";
 import { Staff } from "@/lib/types/staff";
 
 export default function StaffAvailabilityPage({
-  params: { businessId, staffId },
+  params,
 }: {
   params: { businessId: string; staffId: string };
 }) {
+  const businessId = params.businessId;
+  const staffId = params.staffId;
   const router = useRouter();
   const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(true);
@@ -35,13 +37,13 @@ export default function StaffAvailabilityPage({
       try {
         // Fetch staff details to verify they belong to this business
         const staffData = await staffApi.getStaffById(staffId);
-        
+
         if (staffData.businessId !== businessId) {
           setIsAuthorized(false);
           setIsLoading(false);
           return;
         }
-        
+
         setStaff(staffData);
         setIsAuthorized(true);
         setIsLoading(false);
