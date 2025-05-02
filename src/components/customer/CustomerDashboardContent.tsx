@@ -89,8 +89,46 @@ export default function CustomerDashboardContent({
 
   // Fetch recommended services
   const { data: recommendedServices, isLoading: isServicesLoading } = useQuery({
-    queryKey: ["recommendedServices"],
-    queryFn: () => serviceApi.getAllServices({ limit: 4 }),
+    queryKey: ["recommendedServices", customerId],
+    queryFn: async () => {
+      try {
+        // Try to get personalized recommendations
+        const response = await fetch(`/api/customer/recommended?limit=4`, {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch recommendations");
+        }
+
+        const recommendedBusinesses = await response.json();
+
+        // For each recommended business, get their top service
+        const services = [];
+        for (const business of recommendedBusinesses) {
+          const businessServices = await serviceApi.getBusinessServices(
+            business._id,
+            { limit: 1 }
+          );
+          if (businessServices && businessServices.length > 0) {
+            // Add business info to the service
+            businessServices[0].businessName = business.name;
+            businessServices[0].businessId = business._id;
+            services.push(businessServices[0]);
+          }
+        }
+
+        return services.length > 0
+          ? services
+          : await serviceApi.getAllServices({ limit: 4 });
+      } catch (error) {
+        console.error("Error fetching recommendations:", error);
+        // Fallback to regular service listing
+        return serviceApi.getAllServices({ limit: 4 });
+      }
+    },
   });
 
   const formatCurrency = (amount: number) => {
@@ -539,6 +577,11 @@ export default function CustomerDashboardContent({
                       <h3 className="font-medium line-clamp-1 group-hover:text-orange-600 transition-colors">
                         {service.name}
                       </h3>
+                      {service.businessName && (
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {service.businessName}
+                        </p>
+                      )}
                       <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
                         {service.description}
                       </p>
