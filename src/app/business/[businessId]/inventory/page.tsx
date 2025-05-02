@@ -77,109 +77,12 @@ interface Business {
   profilePicture?: string;
 }
 
-// Fetch products for a business
-const fetchBusinessProducts = async (
-  businessId: string
-): Promise<Product[]> => {
-  try {
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/api/services/business/${businessId}/type/product`;
-
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch products: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Error fetching business products:", error);
-    throw error;
-  }
-};
-
-// Fetch business details
-const fetchBusinessDetails = async (businessId: string): Promise<Business> => {
-  try {
-    // Try the primary endpoint first
-    try {
-      const url = `${process.env.NEXT_PUBLIC_API_URL}/api/businesses/${businessId}`;
-
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        return data;
-      }
-
-      console.error("Primary endpoint failed:", response.status);
-      // If primary endpoint fails, we'll try the fallback
-    } catch (primaryError) {
-      console.error("Error with primary endpoint:", primaryError);
-      // Continue to fallback
-    }
-
-    // Try fallback endpoint
-    const fallbackUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/business/${businessId}`;
-
-    const fallbackResponse = await fetch(fallbackUrl, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!fallbackResponse.ok) {
-      throw new Error(
-        `Failed to fetch business details: ${fallbackResponse.status}`
-      );
-    }
-
-    const fallbackData = await fallbackResponse.json();
-    return fallbackData;
-  } catch (error) {
-    console.error("Error fetching business details:", error);
-    throw error;
-  }
-};
-
-// Update product inventory
-const updateProductInventory = async (
-  productId: string,
-  inventory: number
-): Promise<Product> => {
-  try {
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/api/services/${productId}/inventory`;
-
-    const response = await fetch(url, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ inventory }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to update inventory: ${response.status}`);
-    }
-
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error("Error updating product inventory:", error);
-    throw error;
-  }
-};
+import {
+  getBusinessInventory,
+  updateProductStock,
+  getStockHistory,
+} from "@/services/inventoryApi";
+import { getBusinessDetails } from "@/services/businessApi";
 
 export default function BusinessInventoryPage({
   params,
@@ -205,20 +108,39 @@ export default function BusinessInventoryPage({
     error: businessError,
   } = useQuery({
     queryKey: ["businessDetails", businessId],
-    queryFn: () => fetchBusinessDetails(businessId),
+    queryFn: () => getBusinessDetails(businessId),
     retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
-  // Fetch products
+  // Fetch products with search and filter options
   const {
     data: products = [],
     isLoading: isProductsLoading,
     refetch,
     error: productsError,
   } = useQuery({
-    queryKey: ["businessProducts", businessId],
-    queryFn: () => fetchBusinessProducts(businessId),
+    queryKey: ["inventory", businessId, searchTerm, activeTab],
+    queryFn: async () => {
+      // Map activeTab to lowStock parameter
+      const lowStock =
+        activeTab === "low_stock" || activeTab === "out_of_stock";
+
+      // Get products from inventory API
+      const inventoryProducts = await getBusinessInventory(businessId, {
+        search: searchTerm || undefined,
+        lowStock: lowStock,
+      });
+
+      // Filter out_of_stock if needed
+      if (activeTab === "out_of_stock") {
+        return inventoryProducts.filter((p) => p.stock === 0);
+      }
+
+      return inventoryProducts;
+    },
     retry: 1,
+    staleTime: 1 * 60 * 1000, // 1 minute
   });
 
   // Update inventory mutation
@@ -226,13 +148,15 @@ export default function BusinessInventoryPage({
     mutationFn: ({
       productId,
       inventory,
+      reason,
     }: {
       productId: string;
       inventory: number;
-    }) => updateProductInventory(productId, inventory),
+      reason?: string;
+    }) => updateProductStock(productId, inventory, reason),
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["businessProducts", businessId],
+        queryKey: ["inventory", businessId],
       });
       toast({
         title: "Inventory Updated",
@@ -254,10 +178,26 @@ export default function BusinessInventoryPage({
   // Handle inventory update
   const handleInventoryUpdate = (
     productId: string,
-    inventory: number
+    inventory: number,
+    reason?: string
   ): void => {
-    updateInventoryMutation.mutate({ productId, inventory });
+    updateInventoryMutation.mutate({ productId, inventory, reason });
   };
+
+  // Add stock history query
+  const {
+    data: stockHistory,
+    isLoading: isHistoryLoading,
+    refetch: refetchHistory,
+  } = useQuery({
+    queryKey: ["stockHistory", selectedProduct?._id],
+    queryFn: () =>
+      selectedProduct
+        ? getStockHistory(selectedProduct._id)
+        : Promise.resolve([]),
+    enabled: !!selectedProduct && isDeleteDialogOpen, // Only fetch when viewing history
+    staleTime: 1 * 60 * 1000, // 1 minute
+  });
 
   // Handle edit product
   const handleEditProduct = (product: Product): void => {

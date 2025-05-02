@@ -1,20 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import {
-  BarChart,
   Calendar,
   DollarSign,
-  Package,
   ShoppingBag,
   Users,
   ArrowUpRight,
   ArrowDownRight,
   Loader2,
+  RefreshCw,
 } from "lucide-react";
-import { motion } from "framer-motion";
 import {
   Card,
   CardContent,
@@ -22,10 +20,31 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { cn } from "@/lib/utils";
+
+interface Order {
+  id: string;
+  customer: string;
+  date: string | Date;
+  amount: number;
+  status: string;
+}
+
+interface Appointment {
+  id: string;
+  customer: string;
+  service: string;
+  date: string | Date;
+  duration: number;
+}
 // Create a simple date formatter function
-const formatDate = (date: Date, format: string) => {
+const formatDate = (date: string | Date, format: string) => {
+  if (!date) return "";
+
+  const dateObj = typeof date === "string" ? new Date(date) : date;
+
   const options: Intl.DateTimeFormatOptions = {};
   if (format.includes("MMM")) options.month = "short";
   if (format.includes("yyyy")) options.year = "numeric";
@@ -34,7 +53,7 @@ const formatDate = (date: Date, format: string) => {
   if (format.includes("mm")) options.minute = "2-digit";
   if (format.includes("a")) options.hour12 = true;
 
-  return new Intl.DateTimeFormat("en-US", options).format(date);
+  return new Intl.DateTimeFormat("en-US", options).format(dateObj);
 };
 import { Bar, Line } from "react-chartjs-2";
 import {
@@ -48,7 +67,6 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-import { toast } from "react-hot-toast";
 
 // Register ChartJS components
 ChartJS.register(
@@ -62,172 +80,84 @@ ChartJS.register(
   Legend
 );
 
-// Mock API calls - replace with actual API calls
-const fetchDashboardStats = async (businessId: string) => {
-  // Simulate API call
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  return {
-    totalRevenue: 15750,
-    totalOrders: 124,
-    totalAppointments: 87,
-    totalCustomers: 210,
-    revenueChange: 12.5,
-    ordersChange: 8.3,
-    appointmentsChange: -3.2,
-    customersChange: 15.7,
-  };
-};
-
-const fetchRevenueData = async (businessId: string) => {
-  // Simulate API call
-  await new Promise((resolve) => setTimeout(resolve, 1500));
-
-  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-
-  return {
-    labels: days,
-    datasets: [
-      {
-        label: "This Week",
-        data: [1200, 1900, 1500, 2200, 1800, 2500, 2100],
-        borderColor: "hsl(24, 100%, 50%)",
-        backgroundColor: "hsla(24, 100%, 50%, 0.5)",
-      },
-      {
-        label: "Last Week",
-        data: [1000, 1700, 1400, 1900, 1600, 2200, 1800],
-        borderColor: "hsl(210, 100%, 50%)",
-        backgroundColor: "hsla(210, 100%, 50%, 0.5)",
-      },
-    ],
-  };
-};
-
-const fetchServiceData = async (businessId: string) => {
-  // Simulate API call
-  await new Promise((resolve) => setTimeout(resolve, 1200));
-
-  return {
-    labels: ["Appointments", "Products", "In-Person"],
-    datasets: [
-      {
-        label: "Service Types",
-        data: [42, 38, 20],
-        backgroundColor: [
-          "hsla(210, 100%, 50%, 0.7)",
-          "hsla(24, 100%, 50%, 0.7)",
-          "hsla(130, 100%, 40%, 0.7)",
-        ],
-        borderColor: [
-          "hsl(210, 100%, 50%)",
-          "hsl(24, 100%, 50%)",
-          "hsl(130, 100%, 40%)",
-        ],
-        borderWidth: 1,
-      },
-    ],
-  };
-};
-
-const fetchRecentOrders = async (businessId: string) => {
-  // Simulate API call
-  await new Promise((resolve) => setTimeout(resolve, 800));
-
-  return [
-    {
-      id: "ORD-001",
-      customer: "John Doe",
-      date: new Date(2023, 6, 15),
-      amount: 125.99,
-      status: "delivered",
-    },
-    {
-      id: "ORD-002",
-      customer: "Jane Smith",
-      date: new Date(2023, 6, 14),
-      amount: 89.5,
-      status: "shipped",
-    },
-    {
-      id: "ORD-003",
-      customer: "Bob Johnson",
-      date: new Date(2023, 6, 14),
-      amount: 210.75,
-      status: "processing",
-    },
-    {
-      id: "ORD-004",
-      customer: "Alice Brown",
-      date: new Date(2023, 6, 13),
-      amount: 45.25,
-      status: "delivered",
-    },
-  ];
-};
-
-const fetchUpcomingAppointments = async (businessId: string) => {
-  // Simulate API call
-  await new Promise((resolve) => setTimeout(resolve, 700));
-
-  return [
-    {
-      id: "APT-001",
-      customer: "Sarah Wilson",
-      service: "Haircut",
-      date: new Date(2023, 6, 16, 10, 30),
-      duration: 60,
-    },
-    {
-      id: "APT-002",
-      customer: "Michael Davis",
-      service: "Massage",
-      date: new Date(2023, 6, 16, 14, 0),
-      duration: 90,
-    },
-    {
-      id: "APT-003",
-      customer: "Emily Taylor",
-      service: "Manicure",
-      date: new Date(2023, 6, 17, 11, 0),
-      duration: 45,
-    },
-  ];
-};
+// Import API services
+import {
+  getDashboardStats,
+  getRevenueData,
+  getServiceDistribution,
+  getRecentOrders,
+  getUpcomingAppointments,
+} from "@/services/analyticsApi";
 
 export default function BusinessDashboardPage() {
   const params = useParams();
   const businessId = params.businessId as string;
+  const [revenuePeriod, setRevenuePeriod] = useState<"week" | "month" | "year">(
+    "week"
+  );
+
   // Fetch dashboard stats
-  const { data: stats, isLoading: isStatsLoading } = useQuery({
+  const {
+    data: stats,
+    isLoading: isStatsLoading,
+    error: statsError,
+  } = useQuery({
     queryKey: ["dashboardStats", businessId],
-    queryFn: () => fetchDashboardStats(businessId),
+    queryFn: () => getDashboardStats(businessId),
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Fetch revenue data
-  const { data: revenueData, isLoading: isRevenueLoading } = useQuery({
-    queryKey: ["revenueData", businessId],
-    queryFn: () => fetchRevenueData(businessId),
+  const {
+    data: revenueData,
+    isLoading: isRevenueLoading,
+    error: revenueError,
+  } = useQuery({
+    queryKey: ["revenueData", businessId, revenuePeriod],
+    queryFn: () => getRevenueData(businessId, revenuePeriod),
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Fetch service data
-  const { data: serviceData, isLoading: isServiceLoading } = useQuery({
+  const {
+    data: serviceData,
+    isLoading: isServiceLoading,
+    error: serviceError,
+  } = useQuery({
     queryKey: ["serviceData", businessId],
-    queryFn: () => fetchServiceData(businessId),
+    queryFn: () => getServiceDistribution(businessId),
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
+  // Get query client for refetching
+  const queryClient = useQueryClient();
+
   // Fetch recent orders
-  const { data: recentOrders, isLoading: isOrdersLoading } = useQuery({
+  const {
+    data: recentOrders,
+    isLoading: isOrdersLoading,
+    error: ordersError,
+  } = useQuery<Order[]>({
     queryKey: ["recentOrders", businessId],
-    queryFn: () => fetchRecentOrders(businessId),
+    queryFn: () => getRecentOrders(businessId),
+    retry: 1,
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 
   // Fetch upcoming appointments
-  const { data: upcomingAppointments, isLoading: isAppointmentsLoading } =
-    useQuery({
-      queryKey: ["upcomingAppointments", businessId],
-      queryFn: () => fetchUpcomingAppointments(businessId),
-    });
+  const {
+    data: upcomingAppointments,
+    isLoading: isAppointmentsLoading,
+    error: appointmentsError,
+  } = useQuery<Appointment[]>({
+    queryKey: ["upcomingAppointments", businessId],
+    queryFn: () => getUpcomingAppointments(businessId),
+    retry: 1,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat("en-US", {
@@ -277,6 +207,24 @@ export default function BusinessDashboardPage() {
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   <p className="text-muted-foreground">Loading...</p>
                 </div>
+              ) : statsError ? (
+                <div className="flex flex-col items-center justify-center text-center">
+                  <p className="text-xs text-muted-foreground">
+                    Failed to load stats
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-1 h-6 text-xs"
+                    onClick={() =>
+                      queryClient.invalidateQueries({
+                        queryKey: ["dashboardStats", businessId],
+                      })
+                    }
+                  >
+                    Retry
+                  </Button>
+                </div>
               ) : (
                 <>
                   <div className="text-2xl font-bold">
@@ -321,6 +269,24 @@ export default function BusinessDashboardPage() {
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   <p className="text-muted-foreground">Loading...</p>
                 </div>
+              ) : statsError ? (
+                <div className="flex flex-col items-center justify-center text-center">
+                  <p className="text-xs text-muted-foreground">
+                    Failed to load stats
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-1 h-6 text-xs"
+                    onClick={() =>
+                      queryClient.invalidateQueries({
+                        queryKey: ["dashboardStats", businessId],
+                      })
+                    }
+                  >
+                    Retry
+                  </Button>
+                </div>
               ) : (
                 <>
                   <div className="text-2xl font-bold">
@@ -364,6 +330,24 @@ export default function BusinessDashboardPage() {
                 <div className="flex items-center space-x-2">
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   <p className="text-muted-foreground">Loading...</p>
+                </div>
+              ) : statsError ? (
+                <div className="flex flex-col items-center justify-center text-center">
+                  <p className="text-xs text-muted-foreground">
+                    Failed to load stats
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-1 h-6 text-xs"
+                    onClick={() =>
+                      queryClient.invalidateQueries({
+                        queryKey: ["dashboardStats", businessId],
+                      })
+                    }
+                  >
+                    Retry
+                  </Button>
                 </div>
               ) : (
                 <>
@@ -411,6 +395,24 @@ export default function BusinessDashboardPage() {
                   <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   <p className="text-muted-foreground">Loading...</p>
                 </div>
+              ) : statsError ? (
+                <div className="flex flex-col items-center justify-center text-center">
+                  <p className="text-xs text-muted-foreground">
+                    Failed to load stats
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-1 h-6 text-xs"
+                    onClick={() =>
+                      queryClient.invalidateQueries({
+                        queryKey: ["dashboardStats", businessId],
+                      })
+                    }
+                  >
+                    Retry
+                  </Button>
+                </div>
               ) : (
                 <>
                   <div className="text-2xl font-bold">
@@ -446,14 +448,53 @@ export default function BusinessDashboardPage() {
         <div className="grid gap-4 md:grid-cols-2">
           {/* Revenue Chart */}
           <Card className="col-span-1">
-            <CardHeader>
-              <CardTitle>Revenue Overview</CardTitle>
-              <CardDescription>Weekly revenue comparison</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <div>
+                <CardTitle>Revenue Overview</CardTitle>
+                <CardDescription>
+                  {revenuePeriod === "week"
+                    ? "Weekly"
+                    : revenuePeriod === "month"
+                    ? "Monthly"
+                    : "Yearly"}{" "}
+                  revenue comparison
+                </CardDescription>
+              </div>
+              <select
+                value={revenuePeriod}
+                onChange={(e) =>
+                  setRevenuePeriod(e.target.value as "week" | "month" | "year")
+                }
+                className="h-8 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="year">This Year</option>
+              </select>
             </CardHeader>
             <CardContent className="h-80">
               {isRevenueLoading ? (
                 <div className="flex h-full items-center justify-center">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              ) : revenueError ? (
+                <div className="flex h-full flex-col items-center justify-center text-center">
+                  <p className="text-muted-foreground">
+                    Failed to load revenue data
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => {
+                      const queryClient = useQueryClient();
+                      queryClient.invalidateQueries({
+                        queryKey: ["revenueData", businessId, revenuePeriod],
+                      });
+                    }}
+                  >
+                    Try Again
+                  </Button>
                 </div>
               ) : (
                 revenueData && (
@@ -488,6 +529,24 @@ export default function BusinessDashboardPage() {
                 <div className="flex h-full items-center justify-center">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
+              ) : serviceError ? (
+                <div className="flex h-full flex-col items-center justify-center text-center">
+                  <p className="text-muted-foreground">
+                    Failed to load service distribution data
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => {
+                      queryClient.invalidateQueries({
+                        queryKey: ["serviceData", businessId],
+                      });
+                    }}
+                  >
+                    Try Again
+                  </Button>
+                </div>
               ) : (
                 serviceData && (
                   <Bar
@@ -512,18 +571,50 @@ export default function BusinessDashboardPage() {
         <div className="grid gap-4 md:grid-cols-2">
           {/* Recent Orders */}
           <Card className="col-span-1">
-            <CardHeader>
-              <CardTitle>Recent Orders</CardTitle>
-              <CardDescription>Latest customer orders</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <div>
+                <CardTitle>Recent Orders</CardTitle>
+                <CardDescription>Latest customer orders</CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() =>
+                  queryClient.invalidateQueries({
+                    queryKey: ["recentOrders", businessId],
+                  })
+                }
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
             </CardHeader>
             <CardContent>
               {isOrdersLoading ? (
                 <div className="flex h-40 items-center justify-center">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
-              ) : (
+              ) : ordersError ? (
+                <div className="flex h-40 flex-col items-center justify-center text-center">
+                  <p className="text-muted-foreground">
+                    Failed to load recent orders
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() =>
+                      queryClient.invalidateQueries({
+                        queryKey: ["recentOrders", businessId],
+                      })
+                    }
+                  >
+                    Try Again
+                  </Button>
+                </div>
+              ) : recentOrders && recentOrders.length > 0 ? (
                 <div className="space-y-4">
-                  {recentOrders?.map((order) => (
+                  {recentOrders.map((order) => (
                     <div
                       key={order.id}
                       className="flex items-center justify-between border-b border-border pb-4 last:border-0 last:pb-0"
@@ -556,24 +647,62 @@ export default function BusinessDashboardPage() {
                     </div>
                   ))}
                 </div>
+              ) : (
+                <div className="flex h-40 items-center justify-center text-center">
+                  <p className="text-muted-foreground">
+                    No recent orders found
+                  </p>
+                </div>
               )}
             </CardContent>
           </Card>
 
           {/* Upcoming Appointments */}
           <Card className="col-span-1">
-            <CardHeader>
-              <CardTitle>Upcoming Appointments</CardTitle>
-              <CardDescription>Scheduled appointments</CardDescription>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <div>
+                <CardTitle>Upcoming Appointments</CardTitle>
+                <CardDescription>Scheduled appointments</CardDescription>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={() =>
+                  queryClient.invalidateQueries({
+                    queryKey: ["upcomingAppointments", businessId],
+                  })
+                }
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
             </CardHeader>
             <CardContent>
               {isAppointmentsLoading ? (
                 <div className="flex h-40 items-center justify-center">
                   <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                 </div>
-              ) : (
+              ) : appointmentsError ? (
+                <div className="flex h-40 flex-col items-center justify-center text-center">
+                  <p className="text-muted-foreground">
+                    Failed to load upcoming appointments
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() =>
+                      queryClient.invalidateQueries({
+                        queryKey: ["upcomingAppointments", businessId],
+                      })
+                    }
+                  >
+                    Try Again
+                  </Button>
+                </div>
+              ) : upcomingAppointments && upcomingAppointments.length > 0 ? (
                 <div className="space-y-4">
-                  {upcomingAppointments?.map((appointment) => (
+                  {upcomingAppointments.map((appointment) => (
                     <div
                       key={appointment.id}
                       className="flex items-center justify-between border-b border-border pb-4 last:border-0 last:pb-0"
@@ -594,6 +723,12 @@ export default function BusinessDashboardPage() {
                       </div>
                     </div>
                   ))}
+                </div>
+              ) : (
+                <div className="flex h-40 items-center justify-center text-center">
+                  <p className="text-muted-foreground">
+                    No upcoming appointments found
+                  </p>
                 </div>
               )}
             </CardContent>

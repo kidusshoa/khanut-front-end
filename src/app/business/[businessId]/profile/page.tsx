@@ -26,70 +26,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
 
-// Fetch business details
-const fetchBusinessDetails = async (businessId: string) => {
-  try {
-    console.log("Fetching business details for ID:", businessId);
-
-    // Try the primary endpoint first
-    try {
-      const url = `${process.env.NEXT_PUBLIC_API_URL}/api/businesses/${businessId}`;
-      console.log("Trying primary URL:", url);
-
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log("Business data received from primary endpoint:", data);
-        return data;
-      }
-
-      console.error(
-        "Primary endpoint failed:",
-        response.status,
-        response.statusText
-      );
-      // If primary endpoint fails, we'll try the fallback
-    } catch (primaryError) {
-      console.error("Error with primary endpoint:", primaryError);
-      // Continue to fallback
-    }
-
-    // Try fallback endpoint
-    const fallbackUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/business/${businessId}`;
-    console.log("Trying fallback URL:", fallbackUrl);
-
-    const fallbackResponse = await fetch(fallbackUrl, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!fallbackResponse.ok) {
-      console.error(
-        "Both endpoints failed. Fallback response:",
-        fallbackResponse.status,
-        fallbackResponse.statusText
-      );
-      throw new Error(
-        `Failed to fetch business details: ${fallbackResponse.status} ${fallbackResponse.statusText}`
-      );
-    }
-
-    const fallbackData = await fallbackResponse.json();
-    console.log("Business data received from fallback endpoint:", fallbackData);
-    return fallbackData;
-  } catch (error) {
-    console.error("Error fetching business details:", error);
-    throw error;
-  }
-};
+import { getBusinessDetails } from "@/services/businessApi";
 
 // Fetch business reviews
 const fetchBusinessReviews = async (businessId: string) => {
@@ -217,8 +154,9 @@ export default async function BusinessProfilePage({
     error: businessError,
   } = useQuery({
     queryKey: ["businessProfile", businessId],
-    queryFn: () => fetchBusinessDetails(businessId),
+    queryFn: () => getBusinessDetails(businessId),
     retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 
   // Fetch business reviews
@@ -390,6 +328,14 @@ export default async function BusinessProfilePage({
                   }
                 >
                   View Analytics
+                </Button>
+                <Button
+                  className="w-full"
+                  onClick={() =>
+                    router.push(`/business/${businessId}/profile/edit`)
+                  }
+                >
+                  Edit Profile
                 </Button>
                 <Button
                   className="w-full"

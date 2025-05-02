@@ -30,7 +30,7 @@ interface InventoryEditModalProps {
   isOpen: boolean;
   onClose: () => void;
   product: Product;
-  onUpdate: (productId: string, inventory: number) => void;
+  onUpdate: (productId: string, inventory: number, reason?: string) => void;
 }
 
 export function InventoryEditModal({
@@ -40,8 +40,9 @@ export function InventoryEditModal({
   onUpdate,
 }: InventoryEditModalProps) {
   const [inventory, setInventory] = useState(product.inventory);
+  const [reason, setReason] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
-  
+
   // Handle inventory change
   const handleInventoryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
@@ -49,29 +50,29 @@ export function InventoryEditModal({
       setInventory(value);
     }
   };
-  
+
   // Increase inventory
   const increaseInventory = () => {
     setInventory(inventory + 1);
   };
-  
+
   // Decrease inventory
   const decreaseInventory = () => {
     if (inventory > 0) {
       setInventory(inventory - 1);
     }
   };
-  
+
   // Handle update
   const handleUpdate = async () => {
     if (inventory === product.inventory) {
       onClose();
       return;
     }
-    
+
     try {
       setIsUpdating(true);
-      await onUpdate(product._id, inventory);
+      await onUpdate(product._id, inventory, reason);
       onClose();
     } catch (error) {
       console.error("Failed to update inventory:", error);
@@ -79,7 +80,7 @@ export function InventoryEditModal({
       setIsUpdating(false);
     }
   };
-  
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
@@ -89,7 +90,7 @@ export function InventoryEditModal({
             Update the inventory level for {product.name}.
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-6 mt-4">
           {/* Product Information */}
           <div className="flex items-center gap-3">
@@ -113,9 +114,9 @@ export function InventoryEditModal({
               </p>
             </div>
           </div>
-          
+
           <Separator />
-          
+
           {/* Inventory Input */}
           <div className="space-y-2">
             <Label htmlFor="inventory">New Inventory Level</Label>
@@ -147,7 +148,18 @@ export function InventoryEditModal({
               </Button>
             </div>
           </div>
-          
+
+          {/* Reason Input */}
+          <div className="space-y-2">
+            <Label htmlFor="reason">Reason for Update (Optional)</Label>
+            <Input
+              id="reason"
+              placeholder="e.g., New shipment, Inventory correction"
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+            />
+          </div>
+
           {/* Inventory Change Summary */}
           <div className="bg-muted/50 p-3 rounded-md">
             <div className="flex justify-between text-sm">
@@ -161,20 +173,22 @@ export function InventoryEditModal({
             <Separator className="my-2" />
             <div className="flex justify-between font-medium">
               <span>Change:</span>
-              <span className={
-                inventory > product.inventory 
-                  ? "text-green-600" 
-                  : inventory < product.inventory 
-                  ? "text-red-600" 
-                  : ""
-              }>
+              <span
+                className={
+                  inventory > product.inventory
+                    ? "text-green-600"
+                    : inventory < product.inventory
+                    ? "text-red-600"
+                    : ""
+                }
+              >
                 {inventory > product.inventory && "+"}
                 {inventory - product.inventory}
               </span>
             </div>
           </div>
         </div>
-        
+
         <DialogFooter className="mt-6">
           <Button variant="outline" onClick={onClose}>
             Cancel
