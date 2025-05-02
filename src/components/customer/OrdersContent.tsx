@@ -13,6 +13,7 @@ import {
   MapPin,
   Truck,
   Calendar,
+  CreditCard,
 } from "lucide-react";
 import dayjs from "dayjs";
 import { Button } from "@/components/ui/button";
@@ -30,6 +31,8 @@ import {
 import CustomerDashboardLayout from "@/components/layout/CustomerDashboardLayout";
 import { orderApi } from "@/services/order";
 import { toast } from "react-hot-toast";
+import PaymentButton from "@/components/payment/PaymentButton";
+import PaymentStatus from "@/components/payment/PaymentStatus";
 
 interface OrdersContentProps {
   customerId: string;
@@ -195,6 +198,9 @@ export default function OrdersContent({ customerId }: OrdersContentProps) {
                             Placed on{" "}
                             {dayjs(order.createdAt).format("MMM D, YYYY")}
                           </p>
+                          <div className="mt-2">
+                            <PaymentStatus orderId={order._id} />
+                          </div>
                         </div>
                         <div className="text-right">
                           <p className="font-medium text-lg">
@@ -257,6 +263,15 @@ export default function OrdersContent({ customerId }: OrdersContentProps) {
                         >
                           View Details
                         </Button>
+                        {order.status === "pending_payment" && (
+                          <PaymentButton
+                            type="order"
+                            id={order._id}
+                            onSuccess={(checkoutUrl) => {
+                              window.location.href = checkoutUrl;
+                            }}
+                          />
+                        )}
                         {order.status === "delivered" && (
                           <Button className="bg-orange-600 hover:bg-orange-700">
                             Leave Review
