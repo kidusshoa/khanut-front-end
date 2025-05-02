@@ -23,6 +23,7 @@ import {
   Briefcase,
   ShoppingCart,
   Search,
+  RefreshCw,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import {
@@ -87,17 +88,28 @@ export default function CustomerDashboardContent({
     queryFn: () => orderApi.getCustomerOrders(customerId, { limit: 3 }),
   });
 
+  // State for recommendation method
+  const [recommendationMethod, setRecommendationMethod] =
+    useState<string>("hybrid");
+
   // Fetch recommended services
-  const { data: recommendedServices, isLoading: isServicesLoading } = useQuery({
-    queryKey: ["recommendedServices", customerId],
+  const {
+    data: recommendedServices,
+    isLoading: isServicesLoading,
+    refetch: refetchRecommendations,
+  } = useQuery({
+    queryKey: ["recommendedServices", customerId, recommendationMethod],
     queryFn: async () => {
       try {
         // Try to get personalized recommendations
-        const response = await fetch(`/api/customer/recommended?limit=4`, {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        });
+        const response = await fetch(
+          `/api/customer/recommended?limit=4&method=${recommendationMethod}`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
         if (!response.ok) {
           throw new Error("Failed to fetch recommendations");
@@ -116,6 +128,9 @@ export default function CustomerDashboardContent({
             // Add business info to the service
             businessServices[0].businessName = business.name;
             businessServices[0].businessId = business._id;
+            businessServices[0].predictionScore = business.predictionScore;
+            businessServices[0].recommendationMethod =
+              business.recommendationMethod || recommendationMethod;
             services.push(businessServices[0]);
           }
         }
@@ -518,10 +533,34 @@ export default function CustomerDashboardContent({
 
         {/* Recommended Services */}
         <div>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-bold tracking-tight">
-              Recommended for you
-            </h2>
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
+            <div className="flex flex-col md:flex-row md:items-center gap-4">
+              <h2 className="text-2xl font-bold tracking-tight">
+                Recommended for you
+              </h2>
+              <div className="flex items-center space-x-2">
+                <select
+                  value={recommendationMethod}
+                  onChange={(e) => {
+                    setRecommendationMethod(e.target.value);
+                    refetchRecommendations();
+                  }}
+                  className="h-8 rounded-md border border-input bg-background px-3 py-1 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <option value="hybrid">Hybrid Recommendations</option>
+                  <option value="collaborative">Based on Similar Users</option>
+                  <option value="content">Based on Your Interests</option>
+                </select>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => refetchRecommendations()}
+                  className="h-8 w-8 p-0"
+                >
+                  <RefreshCw className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
             <Button variant="ghost" size="sm" asChild>
               <Link
                 href={`/customer/${customerId}/services`}
@@ -590,8 +629,22 @@ export default function CustomerDashboardContent({
                           {formatCurrency(service.price)}
                         </p>
                         <div className="flex items-center">
-                          <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                          <span className="text-sm ml-1">4.8</span>
+                          {service.predictionScore ? (
+                            <div
+                              className="flex items-center"
+                              title={`Prediction score: ${service.predictionScore}`}
+                            >
+                              <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                              <span className="text-sm ml-1">
+                                {service.predictionScore.toFixed(1)}
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex items-center">
+                              <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                              <span className="text-sm ml-1">4.8</span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
