@@ -1,4 +1,7 @@
 import api from "./api";
+import { getAuthToken } from "@/lib/auth";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 interface PaginationParams {
   page?: number;
@@ -10,6 +13,13 @@ interface PaginationParams {
   maxRating?: number;
   startDate?: string;
   endDate?: string;
+}
+
+export interface ReviewData {
+  businessId: string;
+  serviceId?: string;
+  rating: number;
+  comment: string;
 }
 
 export const reviewApi = {
@@ -106,16 +116,29 @@ export const reviewApi = {
   },
 
   // Create a new review
-  createReview: async (reviewData: {
-    serviceId: string;
-    businessId: string;
-    customerId: string;
-    rating: number;
-    comment: string;
-  }) => {
+  createReview: async (reviewData: ReviewData) => {
     try {
-      const response = await api.post(`/reviews`, reviewData);
-      return response.data;
+      const token = await getAuthToken();
+
+      if (!token) {
+        throw new Error("Authentication required to submit a review");
+      }
+
+      const response = await fetch(`${API_URL}/api/reviews`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(reviewData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to submit review");
+      }
+
+      return response.json();
     } catch (error) {
       console.error("Error creating review:", error);
       throw error;

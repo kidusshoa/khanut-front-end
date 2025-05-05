@@ -40,11 +40,11 @@ import { signOut } from "next-auth/react";
 import { authService } from "@/services/auth";
 import { userService } from "@/services/user";
 import { Badge } from "@/components/ui/badge";
-import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
+import { NotificationDropdown } from "@/components/customer/NotificationDropdown";
 
 interface CustomerDashboardLayoutProps {
   children: React.ReactNode;
-  customerId: string;
+  customerId?: string;
 }
 
 export default function CustomerDashboardLayout({
@@ -59,6 +59,9 @@ export default function CustomerDashboardLayout({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [cartCount, setCartCount] = useState(0);
   const [userProfile, setUserProfile] = useState<any>(null);
+
+  // Get customerId from session if not provided
+  const userId = customerId || session?.user?.id;
 
   // Check if we're on a business details page
   const isBusinessPage = pathname.includes("/businesses/");
@@ -168,59 +171,59 @@ export default function CustomerDashboardLayout({
     {
       title: "Dashboard",
       icon: <Home className="h-5 w-5" />,
-      href: `/customer/${customerId}`,
-      active: pathname === `/customer/${customerId}`,
+      href: `/customer/${userId}`,
+      active: pathname === `/customer/${userId}`,
     },
     {
       title: "Search",
       icon: <Search className="h-5 w-5" />,
-      href: `/customer/${customerId}/search`,
+      href: `/customer/${userId}/search`,
       active:
-        pathname === `/customer/${customerId}/search` ||
-        pathname.startsWith(`/customer/${customerId}/businesses/`) ||
-        pathname.startsWith(`/customer/${customerId}/services/`),
+        pathname === `/customer/${userId}/search` ||
+        pathname.startsWith(`/customer/${userId}/businesses/`) ||
+        pathname.startsWith(`/customer/${userId}/services/`),
     },
     {
       title: "Browse Services",
       icon: <Grid className="h-5 w-5" />,
-      href: `/customer/${customerId}/services`,
+      href: `/customer/${userId}/services`,
       active:
-        pathname === `/customer/${customerId}/services` ||
-        pathname.startsWith(`/customer/${customerId}/services/`),
+        pathname === `/customer/${userId}/services` ||
+        pathname.startsWith(`/customer/${userId}/services/`),
     },
     {
       title: "Appointments",
       icon: <Calendar className="h-5 w-5" />,
-      href: `/customer/${customerId}/appointments`,
+      href: `/customer/${userId}/appointments`,
       active:
-        pathname === `/customer/${customerId}/appointments` ||
-        pathname.startsWith(`/customer/${customerId}/appointments/`),
+        pathname === `/customer/${userId}/appointments` ||
+        pathname.startsWith(`/customer/${userId}/appointments/`),
     },
     {
       title: "Orders",
       icon: <ShoppingBag className="h-5 w-5" />,
-      href: `/customer/${customerId}/orders`,
+      href: `/customer/${userId}/orders`,
       active:
-        pathname === `/customer/${customerId}/orders` ||
-        pathname.startsWith(`/customer/${customerId}/orders/`),
+        pathname === `/customer/${userId}/orders` ||
+        pathname.startsWith(`/customer/${userId}/orders/`),
     },
     {
       title: "Favorites",
       icon: <Heart className="h-5 w-5" />,
-      href: `/customer/${customerId}/favorites`,
-      active: pathname === `/customer/${customerId}/favorites`,
+      href: `/customer/${userId}/favorites`,
+      active: pathname === `/customer/${userId}/favorites`,
     },
     {
       title: "Nearby Services",
       icon: <MapPin className="h-5 w-5" />,
-      href: `/customer/${customerId}/nearby`,
-      active: pathname === `/customer/${customerId}/nearby`,
+      href: `/customer/${userId}/nearby`,
+      active: pathname === `/customer/${userId}/nearby`,
     },
     {
       title: "Settings",
       icon: <Settings className="h-5 w-5" />,
-      href: `/customer/${customerId}/settings`,
-      active: pathname === `/customer/${customerId}/settings`,
+      href: `/customer/${userId}/settings`,
+      active: pathname === `/customer/${userId}/settings`,
     },
   ];
 
@@ -413,7 +416,7 @@ export default function CustomerDashboardLayout({
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => router.push(`/customer/${customerId}/search`)}
+              onClick={() => router.push(`/customer/${userId}/search`)}
             >
               <Search className="h-5 w-5" />
             </Button>
@@ -423,7 +426,7 @@ export default function CustomerDashboardLayout({
               variant="ghost"
               size="icon"
               className="relative"
-              onClick={() => router.push(`/customer/${customerId}/cart`)}
+              onClick={() => router.push(`/customer/${userId}/cart`)}
             >
               <ShoppingBag className="h-5 w-5" />
               {cartCount > 0 && (
@@ -493,9 +496,7 @@ export default function CustomerDashboardLayout({
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href={`/customer/${customerId}/settings`}>
-                    Settings
-                  </Link>
+                  <Link href={`/customer/${userId}/settings`}>Settings</Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   onClick={async () => {

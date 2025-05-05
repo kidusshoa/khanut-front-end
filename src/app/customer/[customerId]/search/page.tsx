@@ -19,6 +19,9 @@ import { BusinessCard } from "@/components/business/BusinessCard";
 import { ServiceCard } from "@/components/business/ServiceCard";
 import CustomerDashboardLayout from "@/components/layout/CustomerDashboardLayout";
 import SearchHistory from "@/components/customer/SearchHistory";
+import AdvancedSearchFilters, {
+  SearchFilters,
+} from "@/components/customer/AdvancedSearchFilters";
 import { searchApi } from "@/services/search";
 
 import { SearchResultsSkeleton } from "@/components/search/SearchResultsSkeleton";
@@ -32,7 +35,18 @@ export default function CustomerSearchPage() {
   const initialQuery = searchParams.get("q") || "";
   const initialCategory = searchParams.get("category") || "";
   const [searchQuery, setSearchQuery] = useState(initialQuery);
-  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
+
+  // Advanced search filters
+  const [searchFilters, setSearchFilters] = useState<SearchFilters>({
+    category: initialCategory || undefined,
+    serviceTypes: [],
+    minRating: undefined,
+    maxRating: undefined,
+    minPrice: undefined,
+    maxPrice: undefined,
+    sortBy: undefined,
+    order: "desc",
+  });
 
   const [categories, setCategories] = useState<string[]>([]);
 
@@ -85,7 +99,7 @@ export default function CustomerSearchPage() {
     isLoading,
     refetch,
   } = useQuery<SearchResults>({
-    queryKey: ["search", searchQuery],
+    queryKey: ["search", searchQuery, searchFilters],
     queryFn: async () => {
       if (!searchQuery.trim()) {
         return {
@@ -97,15 +111,11 @@ export default function CustomerSearchPage() {
         } as SearchResults;
       }
 
-      // Update the searchApi call to include category if it exists
-      const result = await searchApi.searchAll({ query: searchQuery });
-
-      // Client-side filtering by category if needed
-      if (selectedCategory && result.businesses) {
-        result.businesses = result.businesses.filter(
-          (b) => b.category === selectedCategory
-        );
-      }
+      // Use the advanced search API with all filters
+      const result = await searchApi.searchAll({
+        query: searchQuery,
+        ...searchFilters,
+      });
 
       // Extract unique categories from search results
       if (result?.businesses?.length > 0) {
@@ -124,17 +134,23 @@ export default function CustomerSearchPage() {
     enabled: !!searchQuery.trim(),
   });
 
-  // Update URL when search query or category changes
+  // Update URL when search query or filters change
   useEffect(() => {
     if (searchQuery) {
       const queryParams = new URLSearchParams();
       queryParams.set("q", searchQuery);
-      if (selectedCategory) {
-        queryParams.set("category", selectedCategory);
+
+      // Add filters to URL
+      if (searchFilters.category) {
+        queryParams.set("category", searchFilters.category);
       }
+
+      // Add other filters as needed
+      // This keeps the URL clean with just the essential parameters
+
       router.push(`/customer/${customerId}/search?${queryParams.toString()}`);
     }
-  }, [searchQuery, selectedCategory, router, customerId]);
+  }, [searchQuery, searchFilters.category, router, customerId]);
 
   // Handle search form submission
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
@@ -176,49 +192,28 @@ export default function CustomerSearchPage() {
             </Button>
           </div>
 
-          {/* Category filter */}
-          {categories.length > 0 && (
-            <div className="flex items-center gap-2">
-              <div className="flex items-center text-sm text-muted-foreground">
-                <Filter className="h-4 w-4 mr-1" />
-                <span>Filter by category:</span>
-              </div>
-              <Select
-                value={selectedCategory}
-                onValueChange={setSelectedCategory}
-              >
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="All categories" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All categories</SelectItem>
-                  {categories.map((category) => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {selectedCategory && (
-                <Badge
-                  variant="outline"
-                  className="bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400 flex items-center gap-1"
-                >
-                  <Tag className="h-3 w-3" />
-                  {selectedCategory}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-4 w-4 p-0 ml-1 hover:bg-purple-200 dark:hover:bg-purple-900/30"
-                    onClick={() => setSelectedCategory("")}
-                  >
-                    ×
-                  </Button>
-                </Badge>
-              )}
-            </div>
-          )}
+          {/* Advanced Search Filters */}
+          <AdvancedSearchFilters
+            filters={searchFilters}
+            categories={categories}
+            onFilterChange={(newFilters) => {
+              setSearchFilters(newFilters);
+              refetch();
+            }}
+            onClearFilters={() => {
+              setSearchFilters({
+                category: undefined,
+                serviceTypes: [],
+                minRating: undefined,
+                maxRating: undefined,
+                minPrice: undefined,
+                maxPrice: undefined,
+                sortBy: undefined,
+                order: "desc",
+              });
+              refetch();
+            }}
+          />
 
           {/* Search History */}
           <SearchHistory

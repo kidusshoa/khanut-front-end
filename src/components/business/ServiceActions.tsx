@@ -33,7 +33,7 @@ import {
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
 import { toast } from "react-hot-toast";
-import { format } from "date-fns";
+import dayjs from "dayjs";
 
 interface ServiceActionsProps {
   service: {
@@ -72,7 +72,7 @@ export function ServiceActions({ service }: ServiceActionsProps) {
     const { startTime, endTime } = service.availability;
     const slots = [];
 
-    const start = parseInt(startTime.split(":")[0]);
+    const start = parseInt(startTime?.split(":")?.[0] || "0");
     const end = parseInt(endTime.split(":")[0]);
 
     for (let hour = start; hour < end; hour++) {
@@ -124,7 +124,9 @@ export function ServiceActions({ service }: ServiceActionsProps) {
 
     // Book appointment logic would go here
     toast.success(
-      `Appointment booked for ${format(selectedDate, "PPP")} at ${selectedTime}`
+      `Appointment booked for ${dayjs(selectedDate).format(
+        "YYYY-MM-DD"
+      )} at ${selectedTime}`
     );
     setIsBookModalOpen(false);
   };
@@ -162,7 +164,7 @@ export function ServiceActions({ service }: ServiceActionsProps) {
                       >
                         <CalendarDays className="mr-2 h-4 w-4" />
                         {selectedDate
-                          ? format(selectedDate, "PPP")
+                          ? dayjs(selectedDate).format("YYYY-MM-DD")
                           : "Select a date"}
                       </Button>
                     </PopoverTrigger>

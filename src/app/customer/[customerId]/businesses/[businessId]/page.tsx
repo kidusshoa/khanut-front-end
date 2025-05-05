@@ -42,7 +42,7 @@ import { Button } from "@/components/ui/button";
 import { businessDetailApi } from "@/services/businessDetail";
 import { ServiceCard } from "@/components/business/ServiceCard";
 import { BusinessMap } from "@/components/business/BusinessMap";
-import { ReviewForm } from "@/components/business/ReviewForm";
+import { ReviewForm } from "@/components/customer/ReviewForm";
 import { SimilarBusinesses } from "@/components/business/SimilarBusinesses";
 import { FallbackImage } from "@/components/ui/fallback-image";
 import { FavoriteButton } from "@/components/business/FavoriteButton";
@@ -696,7 +696,6 @@ export default function CustomerBusinessDetailPage() {
             <CardContent>
               <ReviewForm
                 businessId={businessId}
-                forceLoggedIn={true} // Force logged in state since we're in a customer route
                 onReviewSubmitted={() => {
                   queryClient.invalidateQueries({
                     queryKey: ["businessReviews", businessId],

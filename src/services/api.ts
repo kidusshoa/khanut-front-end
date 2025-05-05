@@ -45,37 +45,56 @@ api.interceptors.response.use(
 
     // Handle 401 Unauthorized errors
     if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
+      // Check if the error is due to token expiration
+      const isTokenExpired =
+        error.response?.data?.code === "TOKEN_EXPIRED" ||
+        (error.response?.data?.message &&
+          (error.response?.data?.message.includes("expired") ||
+            error.response?.data?.message.includes("Token expired")));
 
-      try {
-        // Try to refresh the token
-        const refreshToken = Cookies.get("refresh-token");
+      if (isTokenExpired) {
+        console.log("Token expired, attempting to refresh...");
+        originalRequest._retry = true;
 
-        if (refreshToken) {
-          const response = await axios.post(`${API_URL}/auth/refresh`, {
-            token: refreshToken,
-          });
+        try {
+          // Try to refresh the token
+          const refreshToken = Cookies.get("refresh-token");
 
-          const { accessToken } = response.data;
+          if (refreshToken) {
+            const response = await axios.post(`${API_URL}/auth/refresh`, {
+              token: refreshToken,
+            });
 
-          // Update the token in cookies
-          Cookies.set("client-token", accessToken);
+            const { accessToken } = response.data;
 
-          // Update the Authorization header
-          api.defaults.headers.common[
-            "Authorization"
-          ] = `Bearer ${accessToken}`;
+            // Update the token in cookies
+            Cookies.set("client-token", accessToken);
 
-          // Retry the original request
-          return api(originalRequest);
-        } else {
-          // No refresh token, logout
+            // Update the Authorization header
+            api.defaults.headers.common[
+              "Authorization"
+            ] = `Bearer ${accessToken}`;
+
+            // Retry the original request
+            return api(originalRequest);
+          } else {
+            console.log("No refresh token available, logging out");
+            // No refresh token, logout
+            await handleLogout();
+          }
+        } catch (refreshError) {
+          console.error("Token refresh failed:", refreshError);
+          // Refresh token failed, logout
           await handleLogout();
+          return Promise.reject(refreshError);
         }
-      } catch (refreshError) {
-        // Refresh token failed, logout
+      } else {
+        // Other 401 error, not related to token expiration
+        console.log(
+          "Unauthorized error (not token expiration):",
+          error.response?.data
+        );
         await handleLogout();
-        return Promise.reject(refreshError);
       }
     }
 

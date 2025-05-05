@@ -45,19 +45,8 @@ import Link from "next/link";
 import Image from "next/image";
 import SearchBar from "./SearchBar";
 
-// Mock API calls - replace with actual API calls
-const fetchDashboardStats = async (customerId: string) => {
-  // Simulate API call
-  await new Promise((resolve) => setTimeout(resolve, 1000));
-
-  return {
-    totalAppointments: 5,
-    upcomingAppointments: 2,
-    totalOrders: 8,
-    pendingOrders: 1,
-    favoriteServices: 12,
-  };
-};
+// Import dashboard API
+import { dashboardApi } from "@/services/dashboard";
 
 interface CustomerDashboardContentProps {
   customerId: string;
@@ -69,7 +58,8 @@ export default function CustomerDashboardContent({
   // Fetch dashboard stats
   const { data: stats, isLoading: isStatsLoading } = useQuery({
     queryKey: ["customerStats", customerId],
-    queryFn: () => fetchDashboardStats(customerId),
+    queryFn: dashboardApi.getDashboardStats,
+    enabled: !!session?.user?.id,
   });
 
   // Fetch upcoming appointments
@@ -94,28 +84,24 @@ export default function CustomerDashboardContent({
 
   // Fetch recommended services
   const {
-    data: recommendedServices,
-    isLoading: isServicesLoading,
+    data: recommendedBusinesses,
+    isLoading: isBusinessesLoading,
     refetch: refetchRecommendations,
   } = useQuery({
-    queryKey: ["recommendedServices", customerId, recommendationMethod],
+    queryKey: ["recommendedBusinesses", customerId, recommendationMethod],
+    queryFn: () =>
+      dashboardApi.getRecommendedBusinesses(4, recommendationMethod as any),
+    enabled: !!session?.user?.id,
+  });
+
+  // Fetch services for recommended businesses
+  const { data: recommendedServices, isLoading: isServicesLoading } = useQuery({
+    queryKey: ["recommendedServices", recommendedBusinesses],
     queryFn: async () => {
       try {
-        // Try to get personalized recommendations
-        const response = await fetch(
-          `/api/customer/recommended?limit=4&method=${recommendationMethod}`,
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch recommendations");
+        if (!recommendedBusinesses || recommendedBusinesses.length === 0) {
+          return await serviceApi.getAllServices({ limit: 4 });
         }
-
-        const recommendedBusinesses = await response.json();
 
         // For each recommended business, get their top service
         const services = [];
@@ -130,7 +116,7 @@ export default function CustomerDashboardContent({
             businessServices[0].businessId = business._id;
             businessServices[0].predictionScore = business.predictionScore;
             businessServices[0].recommendationMethod =
-              business.recommendationMethod || recommendationMethod;
+              business.recommendationMethod;
             services.push(businessServices[0]);
           }
         }
@@ -139,11 +125,15 @@ export default function CustomerDashboardContent({
           ? services
           : await serviceApi.getAllServices({ limit: 4 });
       } catch (error) {
-        console.error("Error fetching recommendations:", error);
+        console.error(
+          "Error fetching services for recommended businesses:",
+          error
+        );
         // Fallback to regular service listing
         return serviceApi.getAllServices({ limit: 4 });
       }
     },
+    enabled: !!recommendedBusinesses && recommendedBusinesses.length > 0,
   });
 
   const formatCurrency = (amount: number) => {

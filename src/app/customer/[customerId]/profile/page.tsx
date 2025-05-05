@@ -3,36 +3,45 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Calendar, 
-  Edit, 
-  Save, 
+import {
+  User,
+  Mail,
+  Phone,
+  MapPin,
+  Calendar,
+  Edit,
+  Save,
   X,
   ShieldCheck,
   Heart,
   Clock,
-  Settings
+  Settings,
 } from "lucide-react";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LogoutButton } from "@/components/ui/logout-button";
-import { userService } from "@/services/user";
+import { ProfilePictureUpload } from "@/components/customer/ProfilePictureUpload";
+import { userService, CustomerProfile } from "@/services/user";
 import { toast } from "react-hot-toast";
 
-export default function CustomerProfilePage({ params }: { params: { customerId: string } }) {
+export default function CustomerProfilePage({
+  params,
+}: {
+  params: { customerId: string };
+}) {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [profile, setProfile] = useState<any>(null);
+  const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -129,7 +138,9 @@ export default function CustomerProfilePage({ params }: { params: { customerId: 
           <Button
             variant="outline"
             className="gap-2"
-            onClick={() => router.push(`/customer/${params.customerId}/settings`)}
+            onClick={() =>
+              router.push(`/customer/${params.customerId}/settings`)
+            }
           >
             <Settings className="h-4 w-4" />
             Settings
@@ -158,12 +169,15 @@ export default function CustomerProfilePage({ params }: { params: { customerId: 
           <Card>
             <CardHeader className="relative pb-2">
               <div className="flex flex-col items-center">
-                <Avatar className="h-24 w-24 mb-4">
-                  <AvatarImage src={profile?.profilePicture || ""} alt={profile?.name} />
-                  <AvatarFallback className="bg-orange-100 text-orange-600 text-xl">
-                    {profile?.name?.charAt(0).toUpperCase() || "U"}
-                  </AvatarFallback>
-                </Avatar>
+                <ProfilePictureUpload
+                  currentImage={profile?.profilePicture}
+                  name={profile?.name}
+                  onUploadSuccess={(imageUrl) => {
+                    setProfile((prev) =>
+                      prev ? { ...prev, profilePicture: imageUrl } : null
+                    );
+                  }}
+                />
                 <CardTitle className="text-xl">{profile?.name}</CardTitle>
                 <CardDescription className="flex items-center gap-1 mt-1">
                   <Mail className="h-3.5 w-3.5" />
@@ -250,14 +264,18 @@ export default function CustomerProfilePage({ params }: { params: { customerId: 
                       </p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">Email Address</p>
+                      <p className="text-sm text-muted-foreground">
+                        Email Address
+                      </p>
                       <p className="font-medium flex items-center gap-2">
                         <Mail className="h-4 w-4 text-orange-500" />
                         {profile?.email}
                       </p>
                     </div>
                     <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">Phone Number</p>
+                      <p className="text-sm text-muted-foreground">
+                        Phone Number
+                      </p>
                       <p className="font-medium flex items-center gap-2">
                         <Phone className="h-4 w-4 text-orange-500" />
                         {profile?.phone || "Not provided"}
@@ -273,15 +291,20 @@ export default function CustomerProfilePage({ params }: { params: { customerId: 
                   </div>
                   <div className="pt-2 border-t">
                     <div className="space-y-1">
-                      <p className="text-sm text-muted-foreground">Member Since</p>
+                      <p className="text-sm text-muted-foreground">
+                        Member Since
+                      </p>
                       <p className="font-medium flex items-center gap-2">
                         <Calendar className="h-4 w-4 text-orange-500" />
                         {profile?.createdAt
-                          ? new Date(profile.createdAt).toLocaleDateString("en-US", {
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            })
+                          ? new Date(profile.createdAt).toLocaleDateString(
+                              "en-US",
+                              {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              }
+                            )
                           : "Unknown"}
                       </p>
                     </div>

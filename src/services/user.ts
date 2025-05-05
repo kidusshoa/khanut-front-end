@@ -1,26 +1,79 @@
 import api from "./api";
+import { getAuthToken } from "@/lib/auth";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+export interface CustomerProfile {
+  _id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  location?: string;
+  profilePicture?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProfileUpdateData {
+  name?: string;
+  phone?: string;
+  location?: string;
+  currentPassword?: string;
+  newPassword?: string;
+}
 
 export const userService = {
-  async getCustomerProfile() {
+  async getCustomerProfile(): Promise<CustomerProfile> {
     try {
-      const response = await api.get(`/customer/profile`);
-      return response.data;
+      const token = await getAuthToken();
+
+      if (!token) {
+        throw new Error("Authentication required to fetch profile");
+      }
+
+      const response = await fetch(`${API_URL}/api/customer/profile`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to fetch profile");
+      }
+
+      return await response.json();
     } catch (error) {
       console.error("Error fetching customer profile:", error);
       throw error;
     }
   },
 
-  async updateCustomerProfile(data: {
-    name?: string;
-    phone?: string;
-    location?: string;
-    currentPassword?: string;
-    newPassword?: string;
-  }) {
+  async updateCustomerProfile(data: ProfileUpdateData) {
     try {
-      const response = await api.put(`/customer/profile`, data);
-      return response.data;
+      const token = await getAuthToken();
+
+      if (!token) {
+        throw new Error("Authentication required to update profile");
+      }
+
+      const response = await fetch(`${API_URL}/api/customer/profile`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update profile");
+      }
+
+      return await response.json();
     } catch (error) {
       console.error("Error updating customer profile:", error);
       throw error;
@@ -29,12 +82,29 @@ export const userService = {
 
   async updateProfilePicture(formData: FormData) {
     try {
-      const response = await api.put(`/customer/profile/picture`, formData, {
+      const token = await getAuthToken();
+
+      if (!token) {
+        throw new Error("Authentication required to update profile picture");
+      }
+
+      const response = await fetch(`${API_URL}/api/customer/profile/picture`, {
+        method: "PUT",
         headers: {
-          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+          // Don't set Content-Type here, the browser will set it with the boundary parameter
         },
+        body: formData,
       });
-      return response.data;
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.message || "Failed to update profile picture"
+        );
+      }
+
+      return await response.json();
     } catch (error) {
       console.error("Error updating profile picture:", error);
       throw error;

@@ -4,6 +4,49 @@ import {
 } from "@/lib/validations/service";
 import api from "./api";
 import { RecurringAppointment } from "@/lib/types/staff";
+import { getAuthToken } from "@/lib/auth";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
+export interface TimeSlot {
+  startTime: string;
+  endTime: string;
+}
+
+export interface Appointment {
+  _id: string;
+  serviceId:
+    | string
+    | {
+        _id: string;
+        name: string;
+        price: number;
+        duration: number;
+      };
+  businessId:
+    | string
+    | {
+        _id: string;
+        name: string;
+      };
+  customerId:
+    | string
+    | {
+        _id: string;
+        name: string;
+        email: string;
+      };
+  staffId?: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  status: "pending" | "confirmed" | "cancelled" | "completed";
+  notes?: string;
+  isRecurring?: boolean;
+  recurringId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface PaginationParams {
   page?: number;
@@ -22,32 +65,80 @@ export const appointmentApi = {
   getBusinessAppointments: async (
     businessId: string,
     params: PaginationParams = {}
-  ) => {
+  ): Promise<Appointment[]> => {
     try {
-      const {
-        page = 1,
-        limit = 10,
-        sort,
-        order,
-        search,
-        status,
-        startDate,
-        endDate,
-        date,
-      } = params;
+      // First try using the fetch API with authentication
+      try {
+        const token = await getAuthToken();
 
-      let url = `/appointments/business/${businessId}?page=${page}&limit=${limit}`;
+        if (!token) {
+          throw new Error("Authentication required");
+        }
 
-      if (sort) url += `&sort=${sort}`;
-      if (order) url += `&order=${order}`;
-      if (search) url += `&search=${search}`;
-      if (status) url += `&status=${status}`;
-      if (startDate) url += `&startDate=${startDate}`;
-      if (endDate) url += `&endDate=${endDate}`;
-      if (date) url += `&date=${date}`;
+        const {
+          page = 1,
+          limit = 10,
+          sort,
+          order,
+          search,
+          status,
+          startDate,
+          endDate,
+          date,
+        } = params;
 
-      const response = await api.get(url);
-      return response.data;
+        let url = `${API_URL}/api/appointments/business/${businessId}?page=${page}&limit=${limit}`;
+
+        if (sort) url += `&sort=${sort}`;
+        if (order) url += `&order=${order}`;
+        if (search) url += `&search=${search}`;
+        if (status) url += `&status=${status}`;
+        if (startDate) url += `&startDate=${startDate}`;
+        if (endDate) url += `&endDate=${endDate}`;
+        if (date) url += `&date=${date}`;
+
+        const response = await fetch(url, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch business appointments");
+        }
+
+        return await response.json();
+      } catch (fetchError) {
+        console.warn("Fetch API failed, falling back to axios:", fetchError);
+
+        // Fallback to axios if fetch fails
+        const {
+          page = 1,
+          limit = 10,
+          sort,
+          order,
+          search,
+          status,
+          startDate,
+          endDate,
+          date,
+        } = params;
+
+        let url = `/appointments/business/${businessId}?page=${page}&limit=${limit}`;
+
+        if (sort) url += `&sort=${sort}`;
+        if (order) url += `&order=${order}`;
+        if (search) url += `&search=${search}`;
+        if (status) url += `&status=${status}`;
+        if (startDate) url += `&startDate=${startDate}`;
+        if (endDate) url += `&endDate=${endDate}`;
+        if (date) url += `&date=${date}`;
+
+        const response = await api.get(url);
+        return response.data;
+      }
     } catch (error) {
       console.error("Error fetching business appointments:", error);
       throw error;
@@ -58,28 +149,72 @@ export const appointmentApi = {
   getCustomerAppointments: async (
     customerId: string,
     params: PaginationParams = {}
-  ) => {
+  ): Promise<Appointment[]> => {
     try {
-      const {
-        page = 1,
-        limit = 10,
-        sort,
-        order,
-        status,
-        startDate,
-        endDate,
-      } = params;
+      // First try using the fetch API with authentication
+      try {
+        const token = await getAuthToken();
 
-      let url = `/appointments/customer/${customerId}?page=${page}&limit=${limit}`;
+        if (!token) {
+          throw new Error("Authentication required");
+        }
 
-      if (sort) url += `&sort=${sort}`;
-      if (order) url += `&order=${order}`;
-      if (status) url += `&status=${status}`;
-      if (startDate) url += `&startDate=${startDate}`;
-      if (endDate) url += `&endDate=${endDate}`;
+        const {
+          page = 1,
+          limit = 10,
+          sort,
+          order,
+          status,
+          startDate,
+          endDate,
+        } = params;
 
-      const response = await api.get(url);
-      return response.data;
+        let url = `${API_URL}/api/appointments/customer/${customerId}?page=${page}&limit=${limit}`;
+
+        if (sort) url += `&sort=${sort}`;
+        if (order) url += `&order=${order}`;
+        if (status) url += `&status=${status}`;
+        if (startDate) url += `&startDate=${startDate}`;
+        if (endDate) url += `&endDate=${endDate}`;
+
+        const response = await fetch(url, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch customer appointments");
+        }
+
+        return await response.json();
+      } catch (fetchError) {
+        console.warn("Fetch API failed, falling back to axios:", fetchError);
+
+        // Fallback to axios if fetch fails
+        const {
+          page = 1,
+          limit = 10,
+          sort,
+          order,
+          status,
+          startDate,
+          endDate,
+        } = params;
+
+        let url = `/appointments/customer/${customerId}?page=${page}&limit=${limit}`;
+
+        if (sort) url += `&sort=${sort}`;
+        if (order) url += `&order=${order}`;
+        if (status) url += `&status=${status}`;
+        if (startDate) url += `&startDate=${startDate}`;
+        if (endDate) url += `&endDate=${endDate}`;
+
+        const response = await api.get(url);
+        return response.data;
+      }
     } catch (error) {
       console.error("Error fetching customer appointments:", error);
       throw error;
@@ -87,10 +222,39 @@ export const appointmentApi = {
   },
 
   // Get appointment by ID
-  getAppointmentById: async (appointmentId: string) => {
+  getAppointmentById: async (appointmentId: string): Promise<Appointment> => {
     try {
-      const response = await api.get(`/appointments/${appointmentId}`);
-      return response.data;
+      // First try using the fetch API with authentication
+      try {
+        const token = await getAuthToken();
+
+        if (!token) {
+          throw new Error("Authentication required");
+        }
+
+        const response = await fetch(
+          `${API_URL}/api/appointments/${appointmentId}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch appointment details");
+        }
+
+        return await response.json();
+      } catch (fetchError) {
+        console.warn("Fetch API failed, falling back to axios:", fetchError);
+
+        // Fallback to axios if fetch fails
+        const response = await api.get(`/appointments/${appointmentId}`);
+        return response.data;
+      }
     } catch (error) {
       console.error("Error fetching appointment:", error);
       throw error;
@@ -157,13 +321,39 @@ export const appointmentApi = {
     serviceId: string,
     date: string,
     staffId?: string
-  ) => {
+  ): Promise<{
+    available: boolean;
+    timeSlots: TimeSlot[];
+    message?: string;
+  }> => {
     try {
-      let url = `/appointments/available?serviceId=${serviceId}&date=${date}`;
-      if (staffId) url += `&staffId=${staffId}`;
+      // First try using the fetch API
+      try {
+        let url = `${API_URL}/api/appointments/available/${serviceId}/${date}`;
+        if (staffId) url += `?staffId=${staffId}`;
 
-      const response = await api.get(url);
-      return response.data;
+        const response = await fetch(url, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch available time slots");
+        }
+
+        return await response.json();
+      } catch (fetchError) {
+        console.warn("Fetch API failed, falling back to axios:", fetchError);
+
+        // Fallback to axios if fetch fails
+        let url = `/appointments/available?serviceId=${serviceId}&date=${date}`;
+        if (staffId) url += `&staffId=${staffId}`;
+
+        const response = await api.get(url);
+        return response.data;
+      }
     } catch (error) {
       console.error("Error fetching available time slots:", error);
       throw error;
