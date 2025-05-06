@@ -1,16 +1,21 @@
 "use client";
 
-import { useSession } from "next-auth/react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { TwoFactorInput, twoFactorSchema } from "@/lib/validations/auth";
 import { Loader2 } from "lucide-react";
-import { useEffect } from "react";
+import { useAuthStore } from "@/store/authStore";
+import { authService } from "@/services/auth";
 
 export function BusinessTwoFactorVerification() {
-  const { data: session, update } = useSession();
   const router = useRouter();
+  const { tempEmail, tempRole, setUser, setAccessToken } = useAuthStore();
+
+  const [resendCount, setResendCount] = useState(0);
+  const [resendDisabled, setResendDisabled] = useState(false);
+  const [countdown, setCountdown] = useState(30);
 
   const {
     register,
@@ -21,58 +26,51 @@ export function BusinessTwoFactorVerification() {
     resolver: zodResolver(twoFactorSchema),
   });
 
-  // Redirect if no session exists
-  useEffect(() => {
-    if (!session?.user) {
-      router.push("/register/business");
-    }
-  }, [session, router]);
-
-  const onSubmit = async (data: TwoFactorInput) => {
-    if (!session?.user) {
-      router.push("/register/business");
+  const handleResend = async () => {
+    if (resendCount >= 3) {
+      router.push("/register/business-owner");
       return;
     }
 
-    // Type assertion to access the extended user properties
-    const user = session.user as {
-      tempEmail?: string;
-      tempRole?: string;
-    } & typeof session.user;
-
-    if (!user.tempEmail || user.tempRole !== "business") {
-      router.push("/register/business");
+    if (!tempEmail) {
+      router.push("/register/business-owner");
       return;
     }
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/verify`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: user.tempEmail,
-            code: data.code,
-          }),
+      await authService.resendCode(tempEmail);
+      setResendCount((prev) => prev + 1);
+      setResendDisabled(true);
+
+      let count = 30;
+      const timer = setInterval(() => {
+        count--;
+        setCountdown(count);
+        if (count === 0) {
+          setResendDisabled(false);
+          clearInterval(timer);
         }
-      );
+      }, 1000);
+    } catch (error) {
+      console.error("Failed to resend code:", error);
+    }
+  };
 
-      if (!response.ok) {
-        throw new Error("Verification failed");
-      }
+  const onSubmit = async (data: TwoFactorInput) => {
+    if (!tempEmail || tempRole !== "business") {
+      router.push("/register/business-owner");
+      return;
+    }
 
-      const result = await response.json();
+    try {
+      // Use the authService instead of direct fetch
+      const result = await authService.verify2FA(tempEmail, data.code);
 
-      // Update session with new data
-      await update({
-        ...session,
-        user: result.user,
-        accessToken: result.accessToken,
-      });
+      // Update auth store with user data and token
+      setUser(result.user);
+      setAccessToken(result.accessToken);
 
+      // Redirect to business registration page
       router.push(`/business/register/${result.user.id}`);
     } catch (error) {
       setError("code", {
@@ -81,15 +79,6 @@ export function BusinessTwoFactorVerification() {
       });
     }
   };
-
-  // Show loading state or redirect if no session
-  if (!session?.user) {
-    return (
-      <div className="flex justify-center items-center">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -131,6 +120,18 @@ export function BusinessTwoFactorVerification() {
           )}
         </button>
       </form>
+
+      <div className="text-center mt-4">
+        <button
+          onClick={handleResend}
+          disabled={resendDisabled || resendCount >= 3}
+          className="text-indigo-600 hover:text-indigo-500 disabled:opacity-50"
+        >
+          {resendDisabled
+            ? `Resend code in ${countdown}s`
+            : `Resend code (${3 - resendCount} attempts remaining)`}
+        </button>
+      </div>
     </div>
   );
 }

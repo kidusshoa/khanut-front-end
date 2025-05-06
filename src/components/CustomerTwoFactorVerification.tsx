@@ -7,10 +7,15 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { TwoFactorInput, twoFactorSchema } from "@/lib/validations/auth";
 import { Loader2 } from "lucide-react";
+import { authService } from "@/services/auth";
 
 export function CustomerTwoFactorVerification() {
   const router = useRouter();
   const { tempEmail, tempRole, setUser, setAccessToken } = useAuthStore();
+
+  const [resendCount, setResendCount] = useState(0);
+  const [resendDisabled, setResendDisabled] = useState(false);
+  const [countdown, setCountdown] = useState(30);
 
   const {
     register,
@@ -21,6 +26,36 @@ export function CustomerTwoFactorVerification() {
     resolver: zodResolver(twoFactorSchema),
   });
 
+  const handleResend = async () => {
+    if (resendCount >= 3) {
+      router.push("/register/customer");
+      return;
+    }
+
+    if (!tempEmail) {
+      router.push("/register/customer");
+      return;
+    }
+
+    try {
+      await authService.resendCode(tempEmail);
+      setResendCount((prev) => prev + 1);
+      setResendDisabled(true);
+
+      let count = 30;
+      const timer = setInterval(() => {
+        count--;
+        setCountdown(count);
+        if (count === 0) {
+          setResendDisabled(false);
+          clearInterval(timer);
+        }
+      }, 1000);
+    } catch (error) {
+      console.error("Failed to resend code:", error);
+    }
+  };
+
   const onSubmit = async (data: TwoFactorInput) => {
     if (!tempEmail || tempRole !== "customer") {
       router.push("/register/customer");
@@ -28,25 +63,8 @@ export function CustomerTwoFactorVerification() {
     }
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/verify`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: tempEmail,
-            code: data.code,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Verification failed");
-      }
-
-      const result = await response.json();
+      // Use the authService instead of direct fetch
+      const result = await authService.verify2FA(tempEmail, data.code);
       setUser(result.user);
       setAccessToken(result.accessToken);
 
@@ -100,6 +118,18 @@ export function CustomerTwoFactorVerification() {
           )}
         </button>
       </form>
+
+      <div className="text-center mt-4">
+        <button
+          onClick={handleResend}
+          disabled={resendDisabled || resendCount >= 3}
+          className="text-indigo-600 hover:text-indigo-500 disabled:opacity-50"
+        >
+          {resendDisabled
+            ? `Resend code in ${countdown}s`
+            : `Resend code (${3 - resendCount} attempts remaining)`}
+        </button>
+      </div>
     </div>
   );
 }

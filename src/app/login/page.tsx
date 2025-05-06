@@ -5,22 +5,16 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { signIn, useSession } from "next-auth/react";
-import { Loader2 } from "lucide-react";
-import * as z from "zod";
+import { Loader2, Mail, Lock, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import Cookies from "js-cookie";
 import axios from "axios";
-
-const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(1, "Password is required"),
-});
-
-type LoginInput = z.infer<typeof loginSchema>;
+import { loginSchema, LoginInput } from "@/lib/validations/auth";
 
 export default function LoginPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const { data: session } = useSession();
 
   const {
@@ -46,12 +40,23 @@ export default function LoginPage() {
 
       // If API login is successful, store the token in cookies
       if (apiResponse.data && apiResponse.data.accessToken) {
-        // Store tokens in cookies
+        // Store tokens in cookies with expiration based on "Remember me"
+        const expirationDays = rememberMe ? 30 : 1;
         Cookies.set("client-token", apiResponse.data.accessToken, {
-          expires: 7,
+          expires: expirationDays,
+          sameSite: "strict",
+          secure: process.env.NODE_ENV === "production",
         });
-        Cookies.set("user-role", apiResponse.data.role, { expires: 7 });
-        Cookies.set("user-id", apiResponse.data.userId, { expires: 7 });
+        Cookies.set("user-role", apiResponse.data.role, {
+          expires: expirationDays,
+          sameSite: "strict",
+          secure: process.env.NODE_ENV === "production",
+        });
+        Cookies.set("user-id", apiResponse.data.userId, {
+          expires: expirationDays,
+          sameSite: "strict",
+          secure: process.env.NODE_ENV === "production",
+        });
 
         // Get user info from API response
         const role = apiResponse.data.role;
@@ -168,44 +173,107 @@ export default function LoginPage() {
               >
                 Email address
               </label>
-              <div className="mt-1">
+              <div className="mt-1 relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail className="h-5 w-5 text-gray-400" />
+                </div>
                 <input
                   {...register("email")}
                   type="email"
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                  placeholder="you@example.com"
+                  autoComplete="email"
+                  className={`appearance-none block w-full pl-10 px-3 py-2 border ${
+                    errors.email ? "border-red-300" : "border-gray-300"
+                  } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm`}
                 />
                 {errors.email && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors.email.message}
-                  </p>
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <AlertCircle className="h-5 w-5 text-red-500" />
+                  </div>
                 )}
               </div>
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.email.message}
+                </p>
+              )}
             </div>
 
             <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700"
-              >
-                Password
-              </label>
-              <div className="mt-1">
+              <div className="flex justify-between">
+                <label
+                  htmlFor="password"
+                  className="block text-sm font-medium text-gray-700"
+                >
+                  Password
+                </label>
+                <div className="text-sm">
+                  <Link
+                    href="/forgot-password"
+                    className="font-medium text-orange-600 hover:text-orange-500"
+                  >
+                    Forgot your password?
+                  </Link>
+                </div>
+              </div>
+              <div className="mt-1 relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400" />
+                </div>
                 <input
                   {...register("password")}
                   type="password"
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm"
+                  autoComplete="current-password"
+                  className={`appearance-none block w-full pl-10 px-3 py-2 border ${
+                    errors.password ? "border-red-300" : "border-gray-300"
+                  } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm`}
                 />
                 {errors.password && (
-                  <p className="mt-1 text-sm text-red-600">
-                    {errors.password.message}
-                  </p>
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                    <AlertCircle className="h-5 w-5 text-red-500" />
+                  </div>
                 )}
               </div>
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.password.message}
+                </p>
+              )}
             </div>
 
             {errors.root && (
-              <p className="text-sm text-red-600">{errors.root.message}</p>
+              <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <AlertCircle className="h-5 w-5 text-red-400" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-700">
+                      {errors.root.message}
+                    </p>
+                  </div>
+                </div>
+              </div>
             )}
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  id="remember-me"
+                  name="remember-me"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                />
+                <label
+                  htmlFor="remember-me"
+                  className="ml-2 block text-sm text-gray-900"
+                >
+                  Remember me
+                </label>
+              </div>
+            </div>
 
             <div>
               <button

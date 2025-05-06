@@ -35,6 +35,7 @@ export default function CustomerRegistrationPage() {
         {
           name: data.name,
           email: data.email,
+          phone: data.phone,
           password: data.password,
           role: "customer",
         }
@@ -116,6 +117,30 @@ export default function CustomerRegistrationPage() {
                 {errors.email && (
                   <p className="mt-2 text-sm text-red-600">
                     {errors.email.message}
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <label
+                htmlFor="phone"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Phone Number
+              </label>
+              <div className="mt-1">
+                <input
+                  {...register("phone")}
+                  type="tel"
+                  placeholder="+251912345678"
+                  className={`appearance-none block w-full px-3 py-2 border rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm ${
+                    errors.phone ? "border-red-300" : "border-gray-300"
+                  }`}
+                />
+                {errors.phone && (
+                  <p className="mt-2 text-sm text-red-600">
+                    {errors.phone.message}
                   </p>
                 )}
               </div>

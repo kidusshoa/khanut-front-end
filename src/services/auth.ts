@@ -46,4 +46,27 @@ export const authService = {
     const response = await api.get("/business/status");
     return response.data;
   },
+
+  // Password reset methods
+  async forgotPassword(email: string) {
+    const response = await api.post("/auth/forgot-password", { email });
+    return response.data;
+  },
+
+  async validateResetToken(token: string, userId: string) {
+    const response = await api.post("/auth/validate-reset-token", {
+      token,
+      userId,
+    });
+    return response.data;
+  },
+
+  async resetPassword(token: string, userId: string, password: string) {
+    const response = await api.post("/auth/reset-password", {
+      token,
+      userId,
+      password,
+    });
+    return response.data;
+  },
 };
