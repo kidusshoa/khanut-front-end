@@ -22,7 +22,8 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { serviceApi } from "@/services/service";
 import { AddServiceModal } from "@/components/business/AddServiceModal";
 import { toast } from "react-hot-toast";
-import { format } from "date-fns";
+import dayjs from "dayjs";
+// Replaced date-fns with dayjs
 
 interface Service {
   _id: string;
@@ -215,7 +216,7 @@ export default function BusinessServicesPage({
       accessorKey: "createdAt",
       header: "Created",
       cell: ({ row }) =>
-        format(new Date(row.original.createdAt), "MMM d, yyyy"),
+        dayjs(new Date(row.original.createdAt)).format("MMM D, YYYY"),
     },
     {
       id: "actions",

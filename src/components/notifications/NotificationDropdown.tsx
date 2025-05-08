@@ -14,7 +14,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
-import { formatDistanceToNow } from "date-fns";
+import dayjs from "dayjs";
+// Replaced date-fns with dayjs
 import { cn } from "@/lib/utils";
 import { useNotifications, Notification } from "./NotificationProvider";
 import { useRouter } from "next/navigation";

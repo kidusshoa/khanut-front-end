@@ -15,7 +15,8 @@ import {
   Filter,
   CalendarRange
 } from "lucide-react";
-import { format } from "date-fns";
+import dayjs from "dayjs";
+// Replaced date-fns with dayjs
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -86,7 +87,7 @@ export function OrderList({ customerId }: OrderListProps) {
   // Format date helper
   const formatDate = (dateString: string) => {
     try {
-      return format(new Date(dateString), "PPP");
+      return dayjs(new Date(dateString)).format("PPP");
     } catch (error) {
       return "Invalid date";
     }

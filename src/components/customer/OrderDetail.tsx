@@ -16,7 +16,8 @@ import {
   ChevronRight,
   ExternalLink
 } from "lucide-react";
-import { format } from "date-fns";
+import dayjs from "dayjs";
+// Replaced date-fns with dayjs
 import { 
   Card, 
   CardContent, 
@@ -57,7 +58,7 @@ export function OrderDetail({ order, customerId, onOrderUpdate }: OrderDetailPro
   // Format date helper
   const formatDate = (dateString: string) => {
     try {
-      return format(new Date(dateString), "PPP p");
+      return dayjs(new Date(dateString)).format("PPP p");
     } catch (error) {
       return "Invalid date";
     }

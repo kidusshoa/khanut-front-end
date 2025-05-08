@@ -17,7 +17,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { format, parseISO } from "date-fns";
+import dayjs from "dayjs";
+// Replaced date-fns with dayjs
 import {
   Clock,
   Calendar,
@@ -159,7 +160,7 @@ export function AppointmentDetailsModal({
     }
   };
   
-  const appointmentDate = parseISO(appointment.appointmentDate);
+  const appointmentDate = dayjs(appointment.appointmentDate);
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -182,10 +183,10 @@ export function AppointmentDetailsModal({
               <CalendarClock className="h-5 w-5 text-muted-foreground" />
               <div>
                 <div className="font-medium">
-                  {format(appointmentDate, "EEEE, MMMM d, yyyy")}
+                  {dayjs(appointmentDate).format("EEEE, MMMM d, yyyy")}
                 </div>
                 <div className="text-sm text-muted-foreground">
-                  {format(appointmentDate, "h:mm a")}
+                  {dayjs(appointmentDate).format("h:mm A")}
                 </div>
               </div>
             </div>
@@ -262,10 +263,10 @@ export function AppointmentDetailsModal({
             <h3 className="font-medium text-sm text-muted-foreground">Booking Information</h3>
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div className="text-muted-foreground">Booked on:</div>
-              <div>{format(parseISO(appointment.createdAt), "MMM d, yyyy")}</div>
+              <div>{dayjs(dayjs(appointment.createdAt)).format("MMM D, YYYY")}</div>
               
               <div className="text-muted-foreground">Last updated:</div>
-              <div>{format(parseISO(appointment.updatedAt), "MMM d, yyyy")}</div>
+              <div>{dayjs(dayjs(appointment.updatedAt)).format("MMM D, YYYY")}</div>
             </div>
           </div>
         </div>

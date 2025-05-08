@@ -24,7 +24,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import dayjs from "dayjs";
 
 import { getBusinessDetails } from "@/services/businessApi";
 
@@ -394,9 +394,7 @@ export default async function BusinessProfilePage({
                         <h3 className="text-sm font-medium text-muted-foreground">
                           Member Since
                         </h3>
-                        <p>
-                          {format(new Date(business.createdAt), "MMMM yyyy")}
-                        </p>
+                        <p>{dayjs(business.createdAt).format("MMMM YYYY")}</p>
                       </div>
                       <div>
                         <h3 className="text-sm font-medium text-muted-foreground">
@@ -693,9 +691,8 @@ export default async function BusinessProfilePage({
                                   {review.authorId.name}
                                 </div>
                                 <div className="text-sm text-muted-foreground">
-                                  {format(
-                                    new Date(review.createdAt),
-                                    "MMMM d, yyyy"
+                                  {dayjs(review.createdAt).format(
+                                    "MMMM D, YYYY"
                                   )}
                                 </div>
                               </div>

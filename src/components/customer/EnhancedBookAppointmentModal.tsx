@@ -59,7 +59,8 @@ import { appointmentApi } from "@/services/appointment";
 import { staffApi } from "@/services/staff";
 import { paymentApi } from "@/services/payment";
 import { toast } from "@/components/ui/use-toast";
-import { format, addDays, addWeeks, addMonths } from "date-fns";
+import dayjs from "dayjs";
+// Replaced date-fns with dayjs
 import { cn } from "@/lib/utils";
 import { Staff } from "@/lib/types/staff";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -182,7 +183,7 @@ export function EnhancedBookAppointmentModal({
       
       try {
         setIsLoadingTimeSlots(true);
-        const formattedDate = format(selectedDate, "yyyy-MM-dd");
+        const formattedDate = dayjs(selectedDate).format("YYYY-MM-DD");
         form.setValue("date", formattedDate);
         
         const response = await appointmentApi.getAvailableTimeSlots(
@@ -260,7 +261,7 @@ export function EnhancedBookAppointmentModal({
     if (!recurrenceEndDate) {
       const lastDate = dates[dates.length - 1];
       setRecurrenceEndDate(lastDate);
-      form.setValue("recurrenceEndDate", format(lastDate, "yyyy-MM-dd"));
+      form.setValue("recurrenceEndDate", dayjs(lastDate).format("YYYY-MM-DD"));
     }
   }, [selectedDate, isRecurring, recurrencePattern, recurrenceEndDate, form]);
 
@@ -290,7 +291,7 @@ export function EnhancedBookAppointmentModal({
   const handleRecurrenceEndDateChange = (date: Date | undefined) => {
     setRecurrenceEndDate(date);
     if (date) {
-      form.setValue("recurrenceEndDate", format(date, "yyyy-MM-dd"));
+      form.setValue("recurrenceEndDate", dayjs(date).format("YYYY-MM-DD"));
     } else {
       form.setValue("recurrenceEndDate", "");
     }
@@ -357,7 +358,7 @@ export function EnhancedBookAppointmentModal({
     
     // Disable days not available for the service
     if (service?.availability?.days) {
-      const dayName = format(date, "EEEE").toLowerCase();
+      const dayName = dayjs(date).format("dddd").toLowerCase();
       return !service.availability.days.includes(dayName);
     }
     
@@ -429,7 +430,7 @@ export function EnhancedBookAppointmentModal({
                                   )}
                                 >
                                   <CalendarIcon className="mr-2 h-4 w-4" />
-                                  {selectedDate ? format(selectedDate, "PPP") : "Select a date"}
+                                  {selectedDate ? dayjs(selectedDate).format("PPP") : "Select a date"}
                                 </Button>
                               </FormControl>
                             </PopoverTrigger>
@@ -440,7 +441,7 @@ export function EnhancedBookAppointmentModal({
                                 onSelect={(date) => {
                                   setSelectedDate(date);
                                   if (date) {
-                                    field.onChange(format(date, "yyyy-MM-dd"));
+                                    field.onChange(dayjs(date).format("YYYY-MM-DD"));
                                   }
                                 }}
                                 disabled={disabledDays}
@@ -648,7 +649,7 @@ export function EnhancedBookAppointmentModal({
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {recurrenceEndDate ? format(recurrenceEndDate, "PPP") : "Select end date"}
+                      {recurrenceEndDate ? dayjs(recurrenceEndDate).format("PPP") : "Select end date"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
@@ -682,7 +683,7 @@ export function EnhancedBookAppointmentModal({
                             <div className="bg-orange-100 dark:bg-orange-900 rounded-full p-1.5">
                               <CalendarIcon className="h-4 w-4 text-orange-600 dark:text-orange-300" />
                             </div>
-                            <span>{format(date, "EEEE, MMMM d, yyyy")}</span>
+                            <span>{dayjs(date).format("EEEE, MMMM d, yyyy")}</span>
                           </div>
                         ))}
                       </div>

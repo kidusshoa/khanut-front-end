@@ -3,7 +3,10 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { format, addDays, isBefore, isToday, parseISO } from "date-fns";
+import dayjs from "dayjs";
+import isToday from "dayjs/plugin/isToday";
+dayjs.extend(isToday);
+// Replaced date-fns with dayjs
 import { Calendar as CalendarIcon, Clock, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -58,7 +61,7 @@ export function AppointmentBooking({
       setSelectedTimeSlot(null);
 
       try {
-        const formattedDate = format(date, "yyyy-MM-dd");
+        const formattedDate = dayjs(date).format("YYYY-MM-DD");
         const response = await appointmentApi.getAvailableTimeSlots(serviceId, formattedDate);
         
         if (response.available) {
@@ -93,7 +96,7 @@ export function AppointmentBooking({
     setError(null);
 
     try {
-      const formattedDate = format(date, "yyyy-MM-dd");
+      const formattedDate = dayjs(date).format("YYYY-MM-DD");
       
       // Create appointment
       const appointmentData = {
@@ -152,7 +155,7 @@ export function AppointmentBooking({
 
   // Disable past dates in calendar
   const disabledDates = (date: Date) => {
-    return isBefore(date, new Date()) && !isToday(date);
+    return isBefore(date, new Date()) && !dayjs(date).isToday();
   };
 
   return (
@@ -177,7 +180,7 @@ export function AppointmentBooking({
               )}
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
-              {date ? format(date, "PPP") : "Select a date"}
+              {date ? dayjs(date).format("PPP") : "Select a date"}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0">
@@ -249,7 +252,7 @@ export function AppointmentBooking({
             <span>{serviceName}</span>
             
             <span className="text-muted-foreground">Date:</span>
-            <span>{date ? format(date, "PPP") : "Not selected"}</span>
+            <span>{date ? dayjs(date).format("PPP") : "Not selected"}</span>
             
             <span className="text-muted-foreground">Time:</span>
             <span>

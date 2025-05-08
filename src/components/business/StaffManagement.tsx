@@ -78,7 +78,8 @@ import {
 import { staffApi } from "@/services/staff";
 import { toast } from "@/components/ui/use-toast";
 import { Staff } from "@/lib/types/staff";
-import { format } from "date-fns";
+import dayjs from "dayjs";
+// Replaced date-fns with dayjs
 import { cn } from "@/lib/utils";
 
 // Staff form schema

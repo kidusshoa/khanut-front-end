@@ -13,7 +13,7 @@ import {
   Search,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 import { recurringAppointmentApi } from "@/services/recurringAppointment";
 import { RecurringAppointment } from "@/lib/types/staff";
 import {
@@ -26,7 +26,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { format, parseISO } from "date-fns";
+import dayjs from "dayjs";
 import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
 
@@ -149,13 +149,13 @@ export default function RecurringAppointmentsPage({
       case "weekly":
         return `Weekly on ${
           dayOfWeek !== undefined
-            ? format(new Date(2023, 0, 1 + dayOfWeek), "EEEE")
+            ? dayjs(new Date(2023, 0, 1 + dayOfWeek)).format("dddd")
             : ""
         }`;
       case "biweekly":
         return `Every 2 weeks on ${
           dayOfWeek !== undefined
-            ? format(new Date(2023, 0, 1 + dayOfWeek), "EEEE")
+            ? dayjs(new Date(2023, 0, 1 + dayOfWeek)).format("dddd")
             : ""
         }`;
       case "monthly":
@@ -296,10 +296,7 @@ export default function RecurringAppointmentsPage({
                           <Calendar className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm">
                             From:{" "}
-                            {format(
-                              parseISO(appointment.startDate),
-                              "MMM d, yyyy"
-                            )}
+                            {dayjs(appointment.startDate).format("MMM D, YYYY")}
                           </span>
                         </div>
                         {appointment.endDate && (
@@ -307,10 +304,7 @@ export default function RecurringAppointmentsPage({
                             <Calendar className="h-4 w-4 text-muted-foreground" />
                             <span className="text-sm">
                               To:{" "}
-                              {format(
-                                parseISO(appointment.endDate),
-                                "MMM d, yyyy"
-                              )}
+                              {dayjs(appointment.endDate).format("MMM D, YYYY")}
                             </span>
                           </div>
                         )}

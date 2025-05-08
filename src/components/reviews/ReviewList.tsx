@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { reviewApi } from "@/services/review";
-import { formatDistanceToNow } from "date-fns";
+import dayjs from "dayjs";
+// Replaced date-fns with dayjs
 import { toast } from "react-hot-toast";
 import { WriteReviewModal } from "./WriteReviewModal";
 

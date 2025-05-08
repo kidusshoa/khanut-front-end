@@ -37,7 +37,7 @@ import { DataTable } from "@/components/ui/data-table/DataTable";
 import { ColumnDef } from "@tanstack/react-table";
 import { useToast } from "@/components/ui/use-toast";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
+import dayjs from "dayjs";
 import { InventoryEditModal } from "@/components/business/InventoryEditModal";
 import {
   AlertDialog,
@@ -134,7 +134,7 @@ export default function BusinessInventoryPage({
 
       // Filter out_of_stock if needed
       if (activeTab === "out_of_stock") {
-        return inventoryProducts.filter((p) => p.stock === 0);
+        return inventoryProducts.filter((p: any) => p.stock === 0);
       }
 
       return inventoryProducts;
@@ -457,8 +457,7 @@ export default function BusinessInventoryPage({
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
       ),
-      cell: ({ row }) =>
-        format(new Date(row.original.createdAt), "MMM d, yyyy"),
+      cell: ({ row }) => dayjs(row.original.createdAt).format("MMM D, YYYY"),
     },
     {
       id: "actions",

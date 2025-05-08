@@ -17,7 +17,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { format } from "date-fns";
+import dayjs from "dayjs";
+// Replaced date-fns with dayjs
 import {
   Clock,
   Package,
@@ -213,7 +214,7 @@ export function OrderDetailsModal({
             {getStatusBadge(order.status)}
           </DialogTitle>
           <DialogDescription>
-            Placed on {format(new Date(order.createdAt), "MMMM d, yyyy 'at' h:mm a")}
+            Placed on {dayjs(new Date(order.createdAt)).format("MMMM d, yyyy 'at' h:mm a")}
           </DialogDescription>
         </DialogHeader>
         

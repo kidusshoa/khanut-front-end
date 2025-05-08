@@ -13,7 +13,8 @@ import {
   XCircle,
   Loader2
 } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
+import dayjs from "dayjs";
+// Replaced date-fns with dayjs
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";

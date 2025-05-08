@@ -16,7 +16,8 @@ import {
   ExternalLink,
   Pencil
 } from "lucide-react";
-import { format, parseISO, isToday, isFuture, isPast } from "date-fns";
+import dayjs from "dayjs";
+// Replaced date-fns with dayjs
 import { 
   Card, 
   CardContent, 
@@ -61,8 +62,8 @@ export function AppointmentDetail({
   // Format date helper
   const formatDate = (dateString: string) => {
     try {
-      const date = parseISO(dateString);
-      return format(date, "PPP");
+      const date = dayjs(dateString);
+      return dayjs(date).format("PPP");
     } catch (error) {
       return "Invalid date";
     }
@@ -200,7 +201,7 @@ export function AppointmentDetail({
   // Check if appointment is in the future
   const isUpcoming = () => {
     try {
-      const appointmentDate = parseISO(appointment.date);
+      const appointmentDate = dayjs(appointment.date);
       const [hours, minutes] = appointment.startTime.split(":");
       const appointmentDateTime = new Date(appointmentDate);
       appointmentDateTime.setHours(parseInt(hours), parseInt(minutes));

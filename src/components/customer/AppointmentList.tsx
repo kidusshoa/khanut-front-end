@@ -13,7 +13,10 @@ import {
   Filter,
   CalendarRange
 } from "lucide-react";
-import { format, parseISO, isToday, isFuture, isPast } from "date-fns";
+import dayjs from "dayjs";
+import isToday from "dayjs/plugin/isToday";
+dayjs.extend(isToday);
+// Replaced date-fns with dayjs
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -91,11 +94,11 @@ export function AppointmentList({ customerId }: AppointmentListProps) {
   // Format date helper
   const formatDate = (dateString: string) => {
     try {
-      const date = parseISO(dateString);
-      if (isToday(date)) {
+      const date = dayjs(dateString);
+      if (dayjs(date).isToday()) {
         return "Today";
       }
-      return format(date, "PPP");
+      return dayjs(date).format("PPP");
     } catch (error) {
       return "Invalid date";
     }
@@ -116,7 +119,7 @@ export function AppointmentList({ customerId }: AppointmentListProps) {
 
   // Get status badge
   const getStatusBadge = (status: string, date: string, startTime: string) => {
-    const appointmentDate = parseISO(date);
+    const appointmentDate = dayjs(date);
     const [hours, minutes] = startTime.split(":");
     const appointmentDateTime = new Date(appointmentDate);
     appointmentDateTime.setHours(parseInt(hours), parseInt(minutes));

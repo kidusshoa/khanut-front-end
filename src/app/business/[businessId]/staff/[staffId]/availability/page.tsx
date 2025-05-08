@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StaffAvailabilityCalendar } from "@/components/business/StaffAvailabilityCalendar";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 import { staffApi } from "@/services/staff";
 import { Staff } from "@/lib/types/staff";
 

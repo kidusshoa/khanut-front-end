@@ -28,7 +28,8 @@ import {
   DialogDescription,
   DialogFooter
 } from "@/components/ui/dialog";
-import { formatDistanceToNow, format } from "date-fns";
+import dayjs from "dayjs";
+// Replaced date-fns with dayjs
 import { userService } from "@/services/user";
 import { toast } from "@/components/ui/use-toast";
 
@@ -317,7 +318,7 @@ export default function NotificationsPage() {
                         {notification.message}
                       </p>
                       <p className="text-xs text-muted-foreground mt-2">
-                        {format(new Date(notification.createdAt), "PPP p")}
+                        {dayjs(new Date(notification.createdAt)).format("PPP p")}
                       </p>
                     </div>
                     <Button

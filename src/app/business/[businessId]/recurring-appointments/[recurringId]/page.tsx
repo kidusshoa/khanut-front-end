@@ -16,7 +16,7 @@ import {
   PauseCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 import { recurringAppointmentApi } from "@/services/recurringAppointment";
 import { RecurringAppointment } from "@/lib/types/staff";
 import {
@@ -27,7 +27,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { format, parseISO } from "date-fns";
+import dayjs from "dayjs";
+// Replaced date-fns with dayjs
 import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
 import {
@@ -178,13 +179,13 @@ export default function RecurringAppointmentDetailsPage({
       case "weekly":
         return `Weekly on ${
           dayOfWeek !== undefined
-            ? format(new Date(2023, 0, 1 + dayOfWeek), "EEEE")
+            ? dayjs(2023, 0, 1 + dayOfWeek).format("dddd")
             : ""
         }`;
       case "biweekly":
         return `Every 2 weeks on ${
           dayOfWeek !== undefined
-            ? format(new Date(2023, 0, 1 + dayOfWeek), "EEEE")
+            ? dayjs(2023, 0, 1 + dayOfWeek).format("dddd")
             : ""
         }`;
       case "monthly":
@@ -275,7 +276,7 @@ export default function RecurringAppointmentDetailsPage({
                 <p className="text-muted-foreground">
                   Created on{" "}
                   {format(
-                    parseISO(recurringAppointment.createdAt),
+                    dayjs(recurringAppointment.createdAt),
                     "MMMM d, yyyy"
                   )}
                 </p>
@@ -362,7 +363,7 @@ export default function RecurringAppointmentDetailsPage({
                       <span>
                         From:{" "}
                         {format(
-                          parseISO(recurringAppointment.startDate),
+                          dayjs(recurringAppointment.startDate),
                           "MMMM d, yyyy"
                         )}
                       </span>
@@ -373,7 +374,7 @@ export default function RecurringAppointmentDetailsPage({
                         <span>
                           To:{" "}
                           {format(
-                            parseISO(recurringAppointment.endDate),
+                            dayjs(recurringAppointment.endDate),
                             "MMMM d, yyyy"
                           )}
                         </span>
@@ -446,7 +447,7 @@ export default function RecurringAppointmentDetailsPage({
                               <TableRow key={appointment._id}>
                                 <TableCell>
                                   {format(
-                                    parseISO(appointment.date),
+                                    dayjs(appointment.date),
                                     "MMM d, yyyy"
                                   )}
                                 </TableCell>

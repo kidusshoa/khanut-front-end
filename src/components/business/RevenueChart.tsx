@@ -10,7 +10,8 @@ import {
   Legend,
 } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { format, subDays, subMonths } from "date-fns";
+import dayjs from "dayjs";
+// Replaced date-fns with dayjs
 
 // TypeScript interfaces
 interface RevenueData {
@@ -43,7 +44,7 @@ export function RevenueChart({ dateRange }: RevenueChartProps): React.ReactNode 
       for (let i = 6; i >= 0; i--) {
         const date = subDays(new Date(), i);
         data.push({
-          date: format(date, "EEE"),
+          date: dayjs(date).format("EEE"),
           revenue: Math.floor(Math.random() * 2000) + 200,
           orders: Math.floor(Math.random() * 15) + 3,
         });
@@ -54,7 +55,7 @@ export function RevenueChart({ dateRange }: RevenueChartProps): React.ReactNode 
         const weekStart = subDays(new Date(), i * 7 + 6);
         const weekEnd = subDays(new Date(), i * 7);
         data.push({
-          date: `${format(weekStart, "MMM d")} - ${format(weekEnd, "MMM d")}`,
+          date: `${dayjs(weekStart).format("MMM d")} - ${dayjs(weekEnd).format("MMM d")}`,
           revenue: Math.floor(Math.random() * 8000) + 1000,
           orders: Math.floor(Math.random() * 50) + 10,
         });
@@ -64,7 +65,7 @@ export function RevenueChart({ dateRange }: RevenueChartProps): React.ReactNode 
       for (let i = 11; i >= 0; i--) {
         const date = subMonths(new Date(), i);
         data.push({
-          date: format(date, "MMM"),
+          date: dayjs(date).format("MMM"),
           revenue: Math.floor(Math.random() * 25000) + 5000,
           orders: Math.floor(Math.random() * 200) + 50,
         });

@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StaffManagement } from "@/components/business/StaffManagement";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import DashboardLayout from "@/components/layout/DashboardLayout";
 
 export default function BusinessStaffPage({
   params,

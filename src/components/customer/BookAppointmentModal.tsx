@@ -22,7 +22,8 @@ import { appointmentBookingSchema } from "@/lib/validations/service";
 import { appointmentApi } from "@/services/appointment";
 import { paymentApi } from "@/services/payment";
 import { toast } from "react-hot-toast";
-import { format } from "date-fns";
+import dayjs from "dayjs";
+// Replaced date-fns with dayjs
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
@@ -97,7 +98,7 @@ export function BookAppointmentModal({
       
       try {
         setIsLoadingTimeSlots(true);
-        const formattedDate = format(selectedDate, "yyyy-MM-dd");
+        const formattedDate = dayjs(selectedDate).format("YYYY-MM-DD");
         setValue("date", formattedDate);
         
         const response = await appointmentApi.getAvailableTimeSlots(service._id, formattedDate);
@@ -175,7 +176,7 @@ export function BookAppointmentModal({
     
     // Disable days not available for the service
     if (service?.availability?.days) {
-      const dayName = format(date, "EEEE").toLowerCase();
+      const dayName = dayjs(date).format("dddd").toLowerCase();
       return !service.availability.days.includes(dayName);
     }
     
@@ -217,7 +218,7 @@ export function BookAppointmentModal({
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {selectedDate ? format(selectedDate, "PPP") : "Select a date"}
+                  {selectedDate ? dayjs(selectedDate).format("PPP") : "Select a date"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">

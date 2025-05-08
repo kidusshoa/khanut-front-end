@@ -58,7 +58,8 @@ import {
 import { staffApi } from "@/services/staff";
 import { toast } from "@/components/ui/use-toast";
 import { Staff, StaffAvailability } from "@/lib/types/staff";
-import { format, addDays, isSameDay, parseISO } from "date-fns";
+import dayjs from "dayjs";
+// Replaced date-fns with dayjs
 import { cn } from "@/lib/utils";
 
 // Unavailable dates form schema
@@ -137,7 +138,7 @@ export function StaffAvailabilityCalendar({
   const fetchStaffAvailability = async (date: Date) => {
     try {
       setIsLoading(true);
-      const formattedDate = format(date, "yyyy-MM-dd");
+      const formattedDate = dayjs(date).format("YYYY-MM-DD");
       const response = await staffApi.getStaffAvailability(staffId, formattedDate);
       setAvailabilityData(response);
     } catch (error) {
@@ -169,8 +170,8 @@ export function StaffAvailabilityCalendar({
   const handleAddUnavailableDates = async (values: UnavailableDatesFormValues) => {
     try {
       await staffApi.setStaffUnavailableDates(staffId, {
-        startDate: format(values.startDate, "yyyy-MM-dd"),
-        endDate: format(values.endDate, "yyyy-MM-dd"),
+        startDate: dayjs(values.startDate).format("YYYY-MM-DD"),
+        endDate: dayjs(values.endDate).format("YYYY-MM-DD"),
         reason: values.reason,
       });
       
@@ -323,9 +324,9 @@ export function StaffAvailabilityCalendar({
                       <div key={index} className="flex items-start justify-between border-b pb-3 last:border-0">
                         <div>
                           <div className="font-medium">
-                            {format(unavailable.startDate, "MMM d, yyyy")}
+                            {dayjs(unavailable.startDate).format("MMM D, YYYY")}
                             {!isSameDay(unavailable.startDate, unavailable.endDate) && (
-                              <> - {format(unavailable.endDate, "MMM d, yyyy")}</>
+                              <> - {dayjs(unavailable.endDate).format("MMM D, YYYY")}</>
                             )}
                           </div>
                           {unavailable.reason && (
@@ -390,7 +391,7 @@ export function StaffAvailabilityCalendar({
             <Card>
               <CardHeader>
                 <CardTitle>
-                  Availability for {format(selectedDate, "EEEE, MMMM d, yyyy")}
+                  Availability for {dayjs(selectedDate).format("EEEE, MMMM d, yyyy")}
                 </CardTitle>
                 <CardDescription>
                   {isDateUnavailable(selectedDate) ? (
@@ -496,7 +497,7 @@ export function StaffAvailabilityCalendar({
                             )}
                           >
                             {field.value ? (
-                              format(field.value, "PPP")
+                              dayjs(field.value).format("PPP")
                             ) : (
                               <span>Pick a date</span>
                             )}
@@ -536,7 +537,7 @@ export function StaffAvailabilityCalendar({
                             )}
                           >
                             {field.value ? (
-                              format(field.value, "PPP")
+                              dayjs(field.value).format("PPP")
                             ) : (
                               <span>Pick a date</span>
                             )}

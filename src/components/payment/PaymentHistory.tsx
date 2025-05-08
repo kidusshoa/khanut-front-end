@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { format } from "date-fns";
+import dayjs from "dayjs";
+// Replaced date-fns with dayjs
 import {
   Table,
   TableBody,
@@ -146,7 +147,7 @@ export default function PaymentHistory({ customerId }: PaymentHistoryProps) {
               {data.map((payment: any) => (
                 <TableRow key={payment._id}>
                   <TableCell>
-                    {format(new Date(payment.createdAt), "MMM d, yyyy")}
+                    {dayjs(new Date(payment.createdAt)).format("MMM D, YYYY")}
                   </TableCell>
                   <TableCell>
                     {payment.amount.toFixed(2)} {payment.currency}

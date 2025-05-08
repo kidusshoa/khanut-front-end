@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 import {
   Calendar,
   ShoppingBag,
@@ -55,6 +56,9 @@ interface CustomerDashboardContentProps {
 export default function CustomerDashboardContent({
   customerId,
 }: CustomerDashboardContentProps) {
+  // Get session
+  const { data: session } = useSession();
+
   // Fetch dashboard stats
   const { data: stats, isLoading: isStatsLoading } = useQuery({
     queryKey: ["customerStats", customerId],

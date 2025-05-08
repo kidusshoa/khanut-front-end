@@ -23,7 +23,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { format, addDays, startOfDay, isSameDay, parse } from "date-fns";
+import dayjs from "dayjs";
+// Replaced date-fns with dayjs
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import {
   Select,
@@ -244,7 +245,7 @@ export default function BookAppointmentPage({
     
     let current = start;
     while (current <= end) {
-      slots.push(format(current, "HH:mm"));
+      slots.push(dayjs(current).format("HH:mm"));
       // Add duration minutes to current time
       current = new Date(current.getTime() + duration * 60000);
     }
@@ -258,7 +259,7 @@ export default function BookAppointmentPage({
       return true; // If no days specified, all days are available
     }
     
-    const dayName = format(day, "EEEE"); // Get day name (Monday, Tuesday, etc.)
+    const dayName = dayjs(day).format("dddd"); // Get day name (Monday, Tuesday, etc.)
     return service.availability.days.includes(dayName);
   };
   
@@ -620,7 +621,7 @@ export default function BookAppointmentPage({
                   {date && (
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Date:</span>
-                      <span className="font-medium">{format(date, "MMMM d, yyyy")}</span>
+                      <span className="font-medium">{dayjs(date).format("MMMM D, YYYY")}</span>
                     </div>
                   )}
                   
