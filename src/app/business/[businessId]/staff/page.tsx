@@ -11,9 +11,23 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 export default function BusinessStaffPage({
   params,
 }: {
-  params: { businessId: string };
+  params: Promise<{ businessId: string }>;
 }) {
-  const businessId = params.businessId;
+  const [businessId, setBusinessId] = useState<string>("");
+
+  // Resolve params
+  useEffect(() => {
+    const resolveParams = async () => {
+      try {
+        const resolvedParams = await params;
+        setBusinessId(resolvedParams.businessId);
+      } catch (error) {
+        console.error("Error resolving params:", error);
+      }
+    };
+
+    resolveParams();
+  }, [params]);
   const router = useRouter();
   const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(true);
@@ -47,7 +61,7 @@ export default function BusinessStaffPage({
 
   if (isLoading) {
     return (
-      <DashboardLayout>
+      <DashboardLayout businessId={businessId}>
         <div className="flex items-center justify-center min-h-[50vh]">
           <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
         </div>
@@ -57,7 +71,7 @@ export default function BusinessStaffPage({
 
   if (!isAuthorized) {
     return (
-      <DashboardLayout>
+      <DashboardLayout businessId={businessId}>
         <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
           <h1 className="text-2xl font-bold">Unauthorized</h1>
           <p className="text-muted-foreground">
@@ -72,7 +86,7 @@ export default function BusinessStaffPage({
   }
 
   return (
-    <DashboardLayout>
+    <DashboardLayout businessId={businessId}>
       <div className="container mx-auto py-8 px-4">
         <div className="mb-6">
           <Button

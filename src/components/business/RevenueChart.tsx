@@ -9,9 +9,14 @@ import {
   ResponsiveContainer,
   Legend,
 } from "recharts";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import dayjs from "dayjs";
-// Replaced date-fns with dayjs
 
 // TypeScript interfaces
 interface RevenueData {
@@ -24,11 +29,13 @@ interface RevenueChartProps {
   dateRange: "today" | "week" | "month" | "year";
 }
 
-export function RevenueChart({ dateRange }: RevenueChartProps): React.ReactNode {
+export function RevenueChart({
+  dateRange,
+}: RevenueChartProps): React.ReactNode {
   // Generate mock data based on date range
   const generateMockData = (): RevenueData[] => {
     const data: RevenueData[] = [];
-    
+
     if (dateRange === "today") {
       // Hourly data for today
       for (let i = 0; i < 24; i++) {
@@ -42,7 +49,7 @@ export function RevenueChart({ dateRange }: RevenueChartProps): React.ReactNode 
     } else if (dateRange === "week") {
       // Daily data for the past week
       for (let i = 6; i >= 0; i--) {
-        const date = subDays(new Date(), i);
+        const date = dayjs().subtract(i, "day").toDate();
         data.push({
           date: dayjs(date).format("EEE"),
           revenue: Math.floor(Math.random() * 2000) + 200,
@@ -52,10 +59,16 @@ export function RevenueChart({ dateRange }: RevenueChartProps): React.ReactNode 
     } else if (dateRange === "month") {
       // Weekly data for the past month
       for (let i = 0; i < 4; i++) {
-        const weekStart = subDays(new Date(), i * 7 + 6);
-        const weekEnd = subDays(new Date(), i * 7);
+        const weekStart = dayjs()
+          .subtract(i * 7 + 6, "day")
+          .toDate();
+        const weekEnd = dayjs()
+          .subtract(i * 7, "day")
+          .toDate();
         data.push({
-          date: `${dayjs(weekStart).format("MMM d")} - ${dayjs(weekEnd).format("MMM d")}`,
+          date: `${dayjs(weekStart).format("MMM d")} - ${dayjs(weekEnd).format(
+            "MMM d"
+          )}`,
           revenue: Math.floor(Math.random() * 8000) + 1000,
           orders: Math.floor(Math.random() * 50) + 10,
         });
@@ -63,7 +76,7 @@ export function RevenueChart({ dateRange }: RevenueChartProps): React.ReactNode 
     } else if (dateRange === "year") {
       // Monthly data for the past year
       for (let i = 11; i >= 0; i--) {
-        const date = subMonths(new Date(), i);
+        const date = dayjs().subtract(i, "month").toDate();
         data.push({
           date: dayjs(date).format("MMM"),
           revenue: Math.floor(Math.random() * 25000) + 5000,
@@ -71,21 +84,21 @@ export function RevenueChart({ dateRange }: RevenueChartProps): React.ReactNode 
         });
       }
     }
-    
+
     return data;
   };
-  
+
   const data = generateMockData();
-  
+
   // Format currency for tooltip
   const formatCurrency = (value: number): string => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'ETB',
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "ETB",
       minimumFractionDigits: 2,
     }).format(value);
   };
-  
+
   // Custom tooltip
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -95,16 +108,14 @@ export function RevenueChart({ dateRange }: RevenueChartProps): React.ReactNode 
           <p className="text-sm text-orange-600">
             Revenue: {formatCurrency(payload[0].value)}
           </p>
-          <p className="text-sm text-blue-600">
-            Orders: {payload[1].value}
-          </p>
+          <p className="text-sm text-blue-600">Orders: {payload[1].value}</p>
         </div>
       );
     }
-    
+
     return null;
   };
-  
+
   return (
     <Card>
       <CardHeader>
@@ -129,20 +140,16 @@ export function RevenueChart({ dateRange }: RevenueChartProps): React.ReactNode 
               }}
             >
               <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-              <XAxis 
-                dataKey="date" 
-                tick={{ fontSize: 12 }}
-                tickMargin={10}
-              />
-              <YAxis 
+              <XAxis dataKey="date" tick={{ fontSize: 12 }} tickMargin={10} />
+              <YAxis
                 yAxisId="left"
                 tick={{ fontSize: 12 }}
                 tickFormatter={(value) => `${value.toLocaleString()}`}
                 tickMargin={10}
               />
-              <YAxis 
-                yAxisId="right" 
-                orientation="right" 
+              <YAxis
+                yAxisId="right"
+                orientation="right"
                 tick={{ fontSize: 12 }}
                 tickMargin={10}
               />

@@ -4,24 +4,24 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle 
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import {
   Form,
@@ -47,13 +47,13 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Loader2, 
-  CalendarIcon, 
-  Clock, 
-  Plus, 
+import {
+  Loader2,
+  CalendarIcon,
+  Clock,
+  Plus,
   X,
-  AlertCircle
+  AlertCircle,
 } from "lucide-react";
 import { staffApi } from "@/services/staff";
 import { toast } from "@/components/ui/use-toast";
@@ -83,20 +83,24 @@ export function StaffAvailabilityCalendar({
   const [staff, setStaff] = useState<Staff | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [availabilityData, setAvailabilityData] = useState<StaffAvailability | null>(null);
-  const [unavailableDates, setUnavailableDates] = useState<{
-    startDate: Date;
-    endDate: Date;
-    reason?: string;
-  }[]>([]);
-  const [isAddUnavailableDialogOpen, setIsAddUnavailableDialogOpen] = useState(false);
+  const [availabilityData, setAvailabilityData] =
+    useState<StaffAvailability | null>(null);
+  const [unavailableDates, setUnavailableDates] = useState<
+    {
+      startDate: Date;
+      endDate: Date;
+      reason?: string;
+    }[]
+  >([]);
+  const [isAddUnavailableDialogOpen, setIsAddUnavailableDialogOpen] =
+    useState(false);
 
   // Unavailable dates form
   const form = useForm<UnavailableDatesFormValues>({
     resolver: zodResolver(unavailableDatesSchema),
     defaultValues: {
       startDate: new Date(),
-      endDate: addDays(new Date(), 1),
+      endDate: dayjs().add(1, "day").toDate(),
       reason: "",
     },
   });
@@ -107,18 +111,18 @@ export function StaffAvailabilityCalendar({
       setIsLoading(true);
       const response = await staffApi.getStaffById(staffId);
       setStaff(response);
-      
+
       // Fetch unavailable dates (this would be a real API call in production)
       // For now, we'll use mock data
       setUnavailableDates([
         {
-          startDate: addDays(new Date(), 5),
-          endDate: addDays(new Date(), 7),
+          startDate: dayjs().add(5, "day").toDate(),
+          endDate: dayjs().add(7, "day").toDate(),
           reason: "Vacation",
         },
         {
-          startDate: addDays(new Date(), 15),
-          endDate: addDays(new Date(), 15),
+          startDate: dayjs().add(15, "day").toDate(),
+          endDate: dayjs().add(15, "day").toDate(),
           reason: "Personal day",
         },
       ]);
@@ -139,7 +143,10 @@ export function StaffAvailabilityCalendar({
     try {
       setIsLoading(true);
       const formattedDate = dayjs(date).format("YYYY-MM-DD");
-      const response = await staffApi.getStaffAvailability(staffId, formattedDate);
+      const response = await staffApi.getStaffAvailability(
+        staffId,
+        formattedDate
+      );
       setAvailabilityData(response);
     } catch (error) {
       console.error("Error fetching staff availability:", error);
@@ -167,19 +174,21 @@ export function StaffAvailabilityCalendar({
   }, [selectedDate, staffId]);
 
   // Add unavailable dates
-  const handleAddUnavailableDates = async (values: UnavailableDatesFormValues) => {
+  const handleAddUnavailableDates = async (
+    values: UnavailableDatesFormValues
+  ) => {
     try {
       await staffApi.setStaffUnavailableDates(staffId, {
         startDate: dayjs(values.startDate).format("YYYY-MM-DD"),
         endDate: dayjs(values.endDate).format("YYYY-MM-DD"),
         reason: values.reason,
       });
-      
+
       toast({
         title: "Success",
         description: "Unavailable dates added successfully",
       });
-      
+
       // Add to local state
       setUnavailableDates([
         ...unavailableDates,
@@ -189,7 +198,7 @@ export function StaffAvailabilityCalendar({
           reason: values.reason,
         },
       ]);
-      
+
       setIsAddUnavailableDialogOpen(false);
     } catch (error) {
       console.error("Error adding unavailable dates:", error);
@@ -209,7 +218,7 @@ export function StaffAvailabilityCalendar({
       const newUnavailableDates = [...unavailableDates];
       newUnavailableDates.splice(index, 1);
       setUnavailableDates(newUnavailableDates);
-      
+
       toast({
         title: "Success",
         description: "Unavailable date removed successfully",
@@ -233,7 +242,9 @@ export function StaffAvailabilityCalendar({
   };
 
   // Format time slots
-  const formatTimeSlots = (timeSlots: { startTime: string; endTime: string; isAvailable: boolean }[]) => {
+  const formatTimeSlots = (
+    timeSlots: { startTime: string; endTime: string; isAvailable: boolean }[]
+  ) => {
     return timeSlots.map((slot) => ({
       ...slot,
       formattedTime: `${slot.startTime} - ${slot.endTime}`,
@@ -244,13 +255,16 @@ export function StaffAvailabilityCalendar({
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Staff Availability</h2>
+          <h2 className="text-2xl font-bold tracking-tight">
+            Staff Availability
+          </h2>
           <p className="text-muted-foreground">
-            Manage availability and time off for {staff?.name || "this staff member"}
+            Manage availability and time off for{" "}
+            {staff?.name || "this staff member"}
           </p>
         </div>
-        
-        <Button 
+
+        <Button
           onClick={() => setIsAddUnavailableDialogOpen(true)}
           className="bg-orange-600 hover:bg-orange-700"
         >
@@ -258,7 +272,7 @@ export function StaffAvailabilityCalendar({
           Add Time Off
         </Button>
       </div>
-      
+
       {isLoading && !staff ? (
         <div className="flex justify-center items-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
@@ -280,36 +294,46 @@ export function StaffAvailabilityCalendar({
                   </Avatar>
                   <div>
                     <h3 className="text-lg font-medium">{staff.name}</h3>
-                    <p className="text-sm text-muted-foreground">{staff.position}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {staff.position}
+                    </p>
                   </div>
                 </div>
-                
+
                 <div>
-                  <h4 className="text-sm font-medium mb-1">Regular Availability</h4>
+                  <h4 className="text-sm font-medium mb-1">
+                    Regular Availability
+                  </h4>
                   {staff.availability ? (
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">
                           {staff.availability.days
-                            .map((day) => day.charAt(0).toUpperCase() + day.slice(1, 3))
+                            .map(
+                              (day) =>
+                                day.charAt(0).toUpperCase() + day.slice(1, 3)
+                            )
                             .join(", ")}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Clock className="h-4 w-4 text-muted-foreground" />
                         <span className="text-sm">
-                          {staff.availability.startTime} - {staff.availability.endTime}
+                          {staff.availability.startTime} -{" "}
+                          {staff.availability.endTime}
                         </span>
                       </div>
                     </div>
                   ) : (
-                    <p className="text-sm text-muted-foreground">No regular availability set</p>
+                    <p className="text-sm text-muted-foreground">
+                      No regular availability set
+                    </p>
                   )}
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>Time Off</CardTitle>
@@ -321,16 +345,30 @@ export function StaffAvailabilityCalendar({
                 {unavailableDates.length > 0 ? (
                   <div className="space-y-3">
                     {unavailableDates.map((unavailable, index) => (
-                      <div key={index} className="flex items-start justify-between border-b pb-3 last:border-0">
+                      <div
+                        key={index}
+                        className="flex items-start justify-between border-b pb-3 last:border-0"
+                      >
                         <div>
                           <div className="font-medium">
                             {dayjs(unavailable.startDate).format("MMM D, YYYY")}
-                            {!isSameDay(unavailable.startDate, unavailable.endDate) && (
-                              <> - {dayjs(unavailable.endDate).format("MMM D, YYYY")}</>
+                            {!dayjs(unavailable.startDate).isSame(
+                              dayjs(unavailable.endDate),
+                              "day"
+                            ) && (
+                              <>
+                                {" "}
+                                -{" "}
+                                {dayjs(unavailable.endDate).format(
+                                  "MMM D, YYYY"
+                                )}
+                              </>
                             )}
                           </div>
                           {unavailable.reason && (
-                            <p className="text-sm text-muted-foreground">{unavailable.reason}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {unavailable.reason}
+                            </p>
                           )}
                         </div>
                         <Button
@@ -345,13 +383,15 @@ export function StaffAvailabilityCalendar({
                   </div>
                 ) : (
                   <div className="text-center py-6">
-                    <p className="text-muted-foreground">No time off scheduled</p>
+                    <p className="text-muted-foreground">
+                      No time off scheduled
+                    </p>
                   </div>
                 )}
               </CardContent>
               <CardFooter>
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="w-full"
                   onClick={() => setIsAddUnavailableDialogOpen(true)}
                 >
@@ -361,7 +401,7 @@ export function StaffAvailabilityCalendar({
               </CardFooter>
             </Card>
           </div>
-          
+
           <div className="md:col-span-2 space-y-6">
             <Card>
               <CardHeader>
@@ -387,17 +427,20 @@ export function StaffAvailabilityCalendar({
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardHeader>
                 <CardTitle>
-                  Availability for {dayjs(selectedDate).format("EEEE, MMMM d, yyyy")}
+                  Availability for{" "}
+                  {dayjs(selectedDate).format("EEEE, MMMM d, yyyy")}
                 </CardTitle>
                 <CardDescription>
                   {isDateUnavailable(selectedDate) ? (
                     <Badge variant="destructive">Unavailable</Badge>
                   ) : (
-                    <Badge variant="default" className="bg-green-500">Available</Badge>
+                    <Badge variant="default" className="bg-green-500">
+                      Available
+                    </Badge>
                   )}
                 </CardDescription>
               </CardHeader>
@@ -411,46 +454,57 @@ export function StaffAvailabilityCalendar({
                     <AlertCircle className="h-12 w-12 text-red-500 mb-4" />
                     <h3 className="text-lg font-medium mb-2">Not Available</h3>
                     <p className="text-muted-foreground max-w-md">
-                      {staff.name} is not available on this date due to scheduled time off.
+                      {staff.name} is not available on this date due to
+                      scheduled time off.
                     </p>
                   </div>
-                ) : availabilityData?.timeSlots && availabilityData.timeSlots.length > 0 ? (
+                ) : availabilityData?.timeSlots &&
+                  availabilityData.timeSlots.length > 0 ? (
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                    {formatTimeSlots(availabilityData.timeSlots).map((slot, index) => (
-                      <div
-                        key={index}
-                        className={cn(
-                          "border rounded-lg p-3 flex items-center justify-between",
-                          slot.isAvailable
-                            ? "border-green-200 bg-green-50 dark:bg-green-950/20"
-                            : "border-red-200 bg-red-50 dark:bg-red-950/20"
-                        )}
-                      >
-                        <div className="flex items-center gap-2">
-                          <Clock className={cn(
-                            "h-4 w-4",
-                            slot.isAvailable ? "text-green-500" : "text-red-500"
-                          )} />
-                          <span>{slot.formattedTime}</span>
-                        </div>
-                        <Badge
-                          variant={slot.isAvailable ? "default" : "destructive"}
+                    {formatTimeSlots(availabilityData.timeSlots).map(
+                      (slot, index) => (
+                        <div
+                          key={index}
                           className={cn(
-                            "text-xs",
-                            slot.isAvailable ? "bg-green-500" : "bg-red-500"
+                            "border rounded-lg p-3 flex items-center justify-between",
+                            slot.isAvailable
+                              ? "border-green-200 bg-green-50 dark:bg-green-950/20"
+                              : "border-red-200 bg-red-50 dark:bg-red-950/20"
                           )}
                         >
-                          {slot.isAvailable ? "Available" : "Booked"}
-                        </Badge>
-                      </div>
-                    ))}
+                          <div className="flex items-center gap-2">
+                            <Clock
+                              className={cn(
+                                "h-4 w-4",
+                                slot.isAvailable
+                                  ? "text-green-500"
+                                  : "text-red-500"
+                              )}
+                            />
+                            <span>{slot.formattedTime}</span>
+                          </div>
+                          <Badge
+                            variant={
+                              slot.isAvailable ? "default" : "destructive"
+                            }
+                            className={cn(
+                              "text-xs",
+                              slot.isAvailable ? "bg-green-500" : "bg-red-500"
+                            )}
+                          >
+                            {slot.isAvailable ? "Available" : "Booked"}
+                          </Badge>
+                        </div>
+                      )
+                    )}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
                     <Clock className="h-12 w-12 text-muted-foreground mb-4" />
                     <h3 className="text-lg font-medium mb-2">No Time Slots</h3>
                     <p className="text-muted-foreground max-w-md">
-                      There are no time slots available for this date. This could be because it's outside of regular working hours.
+                      There are no time slots available for this date. This
+                      could be because it's outside of regular working hours.
                     </p>
                   </div>
                 )}
@@ -467,9 +521,12 @@ export function StaffAvailabilityCalendar({
           </p>
         </div>
       )}
-      
+
       {/* Add Unavailable Dates Dialog */}
-      <Dialog open={isAddUnavailableDialogOpen} onOpenChange={setIsAddUnavailableDialogOpen}>
+      <Dialog
+        open={isAddUnavailableDialogOpen}
+        onOpenChange={setIsAddUnavailableDialogOpen}
+      >
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Add Time Off</DialogTitle>
@@ -477,9 +534,12 @@ export function StaffAvailabilityCalendar({
               Schedule time off for {staff?.name || "this staff member"}
             </DialogDescription>
           </DialogHeader>
-          
+
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleAddUnavailableDates)} className="space-y-4">
+            <form
+              onSubmit={form.handleSubmit(handleAddUnavailableDates)}
+              className="space-y-4"
+            >
               <FormField
                 control={form.control}
                 name="startDate"
@@ -519,7 +579,7 @@ export function StaffAvailabilityCalendar({
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="endDate"
@@ -550,9 +610,10 @@ export function StaffAvailabilityCalendar({
                           mode="single"
                           selected={field.value}
                           onSelect={field.onChange}
-                          disabled={(date) => 
-                            date < new Date() || 
-                            (form.getValues().startDate && date < form.getValues().startDate)
+                          disabled={(date) =>
+                            date < new Date() ||
+                            (form.getValues().startDate &&
+                              date < form.getValues().startDate)
                           }
                           initialFocus
                         />
@@ -562,7 +623,7 @@ export function StaffAvailabilityCalendar({
                   </FormItem>
                 )}
               />
-              
+
               <FormField
                 control={form.control}
                 name="reason"
@@ -570,15 +631,22 @@ export function StaffAvailabilityCalendar({
                   <FormItem>
                     <FormLabel>Reason (Optional)</FormLabel>
                     <FormControl>
-                      <Input placeholder="Vacation, sick leave, etc." {...field} />
+                      <Input
+                        placeholder="Vacation, sick leave, etc."
+                        {...field}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-              
+
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsAddUnavailableDialogOpen(false)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsAddUnavailableDialogOpen(false)}
+                >
                   Cancel
                 </Button>
                 <Button type="submit">Add Time Off</Button>

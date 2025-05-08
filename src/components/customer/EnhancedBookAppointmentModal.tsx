@@ -5,24 +5,24 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogDescription
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
   Form,
@@ -33,26 +33,21 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { 
-  Popover, 
-  PopoverContent, 
-  PopoverTrigger 
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from "@/components/ui/popover";
 import { Switch } from "@/components/ui/switch";
-import { 
-  Loader2, 
-  CalendarIcon, 
-  Clock, 
-  User, 
-  Repeat, 
-  Info, 
-  AlertCircle 
+import {
+  Loader2,
+  CalendarIcon,
+  Clock,
+  User,
+  Repeat,
+  Info,
+  AlertCircle,
 } from "lucide-react";
 import { appointmentBookingSchema } from "@/lib/validations/service";
 import { appointmentApi } from "@/services/appointment";
@@ -65,13 +60,13 @@ import { cn } from "@/lib/utils";
 import { Staff } from "@/lib/types/staff";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
 
 interface EnhancedBookAppointmentModalProps {
@@ -97,8 +92,12 @@ export function EnhancedBookAppointmentModal({
   const [isLoadingStaff, setIsLoadingStaff] = useState(false);
   const [selectedStaff, setSelectedStaff] = useState<Staff | null>(null);
   const [isRecurring, setIsRecurring] = useState(false);
-  const [recurrencePattern, setRecurrencePattern] = useState<"daily" | "weekly" | "biweekly" | "monthly">("weekly");
-  const [recurrenceEndDate, setRecurrenceEndDate] = useState<Date | undefined>(undefined);
+  const [recurrencePattern, setRecurrencePattern] = useState<
+    "daily" | "weekly" | "biweekly" | "monthly"
+  >("weekly");
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState<Date | undefined>(
+    undefined
+  );
   const [recurrencePreview, setRecurrencePreview] = useState<Date[]>([]);
   const [activeTab, setActiveTab] = useState("appointment");
 
@@ -114,7 +113,11 @@ export function EnhancedBookAppointmentModal({
       endTime: "",
       notes: "",
       isRecurring: false,
-      recurrencePattern: "weekly" as "daily" | "weekly" | "biweekly" | "monthly",
+      recurrencePattern: "weekly" as
+        | "daily"
+        | "weekly"
+        | "biweekly"
+        | "monthly",
       recurrenceEndDate: "",
       recurrenceCount: 4,
     },
@@ -152,7 +155,7 @@ export function EnhancedBookAppointmentModal({
       setRecurrenceEndDate(undefined);
       setRecurrencePreview([]);
       setActiveTab("appointment");
-      
+
       // Fetch staff members
       fetchStaffMembers();
     }
@@ -180,25 +183,26 @@ export function EnhancedBookAppointmentModal({
   useEffect(() => {
     const fetchTimeSlots = async () => {
       if (!selectedDate || !service?._id) return;
-      
+
       try {
         setIsLoadingTimeSlots(true);
         const formattedDate = dayjs(selectedDate).format("YYYY-MM-DD");
         form.setValue("date", formattedDate);
-        
+
         const response = await appointmentApi.getAvailableTimeSlots(
-          service._id, 
+          service._id,
           formattedDate,
           selectedStaff?._id
         );
-        
+
         if (response.available) {
           setAvailableTimeSlots(response.timeSlots);
         } else {
           setAvailableTimeSlots([]);
           toast({
             title: "No Available Slots",
-            description: response.message || "No available time slots on this date",
+            description:
+              response.message || "No available time slots on this date",
             variant: "destructive",
           });
         }
@@ -229,34 +233,34 @@ export function EnhancedBookAppointmentModal({
 
     const dates: Date[] = [];
     let currentDate = new Date(selectedDate);
-    
+
     // Generate preview dates based on pattern
     for (let i = 0; i < 4; i++) {
       if (i === 0) {
         dates.push(new Date(currentDate));
         continue;
       }
-      
+
       switch (recurrencePattern) {
         case "daily":
-          currentDate = addDays(currentDate, 1);
+          currentDate = dayjs(currentDate).add(1, "day").toDate();
           break;
         case "weekly":
-          currentDate = addDays(currentDate, 7);
+          currentDate = dayjs(currentDate).add(7, "day").toDate();
           break;
         case "biweekly":
-          currentDate = addDays(currentDate, 14);
+          currentDate = dayjs(currentDate).add(14, "day").toDate();
           break;
         case "monthly":
-          currentDate = addMonths(currentDate, 1);
+          currentDate = dayjs(currentDate).add(1, "month").toDate();
           break;
       }
-      
+
       dates.push(new Date(currentDate));
     }
-    
+
     setRecurrencePreview(dates);
-    
+
     // Set recurrence end date if not already set
     if (!recurrenceEndDate) {
       const lastDate = dates[dates.length - 1];
@@ -271,7 +275,7 @@ export function EnhancedBookAppointmentModal({
   };
 
   const handleStaffSelect = (staffId: string) => {
-    const staff = staffMembers.find(s => s._id === staffId);
+    const staff = staffMembers.find((s) => s._id === staffId);
     setSelectedStaff(staff || null);
     form.setValue("staffId", staffId);
   };
@@ -281,7 +285,9 @@ export function EnhancedBookAppointmentModal({
     form.setValue("isRecurring", value);
   };
 
-  const handleRecurrencePatternChange = (pattern: "daily" | "weekly" | "biweekly" | "monthly") => {
+  const handleRecurrencePatternChange = (
+    pattern: "daily" | "weekly" | "biweekly" | "monthly"
+  ) => {
     setRecurrencePattern(pattern);
     form.setValue("recurrencePattern", pattern);
     setRecurrenceEndDate(undefined);
@@ -309,14 +315,16 @@ export function EnhancedBookAppointmentModal({
 
     try {
       setIsSubmitting(true);
-      
+
       // Create appointment
-      const appointment = await appointmentApi.bookAppointment(data);
-      
+      const appointment = await appointmentApi.createAppointment(data);
+
       // Initialize payment if service has a price
       if (service.price > 0) {
-        const paymentResponse = await paymentApi.initializeAppointmentPayment(appointment._id);
-        
+        const paymentResponse = await paymentApi.initializeAppointmentPayment(
+          appointment._id
+        );
+
         // Redirect to payment page
         if (paymentResponse.checkoutUrl) {
           window.location.href = paymentResponse.checkoutUrl;
@@ -328,11 +336,11 @@ export function EnhancedBookAppointmentModal({
         // If service is free, just redirect to appointments page
         router.push(`/customer/${data.customerId}/appointments`);
       }
-      
+
       toast({
         title: "Success",
-        description: isRecurring 
-          ? "Recurring appointments booked successfully!" 
+        description: isRecurring
+          ? "Recurring appointments booked successfully!"
           : "Appointment booked successfully!",
       });
       onClose();
@@ -352,16 +360,16 @@ export function EnhancedBookAppointmentModal({
   const disabledDays = (date: Date) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     // Disable past dates
     if (date < today) return true;
-    
+
     // Disable days not available for the service
     if (service?.availability?.days) {
       const dayName = dayjs(date).format("dddd").toLowerCase();
       return !service.availability.days.includes(dayName);
     }
-    
+
     return false;
   };
 
@@ -369,20 +377,26 @@ export function EnhancedBookAppointmentModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">Book Appointment</DialogTitle>
+          <DialogTitle className="text-xl font-bold">
+            Book Appointment
+          </DialogTitle>
           <DialogDescription>
-            Book an appointment for {service?.name} at {service?.businessName || "this business"}
+            Book an appointment for {service?.name} at{" "}
+            {service?.businessName || "this business"}
           </DialogDescription>
         </DialogHeader>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="appointment">Appointment Details</TabsTrigger>
-            <TabsTrigger value="recurring" disabled={!selectedDate || !form.watch("startTime")}>
+            <TabsTrigger
+              value="recurring"
+              disabled={!selectedDate || !form.watch("startTime")}
+            >
               Recurring Options
             </TabsTrigger>
           </TabsList>
-          
+
           <TabsContent value="appointment" className="space-y-4 py-4">
             <Form {...form}>
               <form className="space-y-4">
@@ -393,15 +407,23 @@ export function EnhancedBookAppointmentModal({
                     </CardHeader>
                     <CardContent className="space-y-2">
                       <div>
-                        <Label className="text-sm text-muted-foreground">Service</Label>
+                        <Label className="text-sm text-muted-foreground">
+                          Service
+                        </Label>
                         <p className="font-medium">{service?.name}</p>
                       </div>
                       <div>
-                        <Label className="text-sm text-muted-foreground">Duration</Label>
-                        <p className="font-medium">{service?.duration} minutes</p>
+                        <Label className="text-sm text-muted-foreground">
+                          Duration
+                        </Label>
+                        <p className="font-medium">
+                          {service?.duration} minutes
+                        </p>
                       </div>
                       <div>
-                        <Label className="text-sm text-muted-foreground">Price</Label>
+                        <Label className="text-sm text-muted-foreground">
+                          Price
+                        </Label>
                         <p className="font-medium">
                           {new Intl.NumberFormat("en-US", {
                             style: "currency",
@@ -430,7 +452,9 @@ export function EnhancedBookAppointmentModal({
                                   )}
                                 >
                                   <CalendarIcon className="mr-2 h-4 w-4" />
-                                  {selectedDate ? dayjs(selectedDate).format("PPP") : "Select a date"}
+                                  {selectedDate
+                                    ? dayjs(selectedDate).format("PPP")
+                                    : "Select a date"}
                                 </Button>
                               </FormControl>
                             </PopoverTrigger>
@@ -441,7 +465,9 @@ export function EnhancedBookAppointmentModal({
                                 onSelect={(date) => {
                                   setSelectedDate(date);
                                   if (date) {
-                                    field.onChange(dayjs(date).format("YYYY-MM-DD"));
+                                    field.onChange(
+                                      dayjs(date).format("YYYY-MM-DD")
+                                    );
                                   }
                                 }}
                                 disabled={disabledDays}
@@ -483,7 +509,10 @@ export function EnhancedBookAppointmentModal({
                                 </SelectTrigger>
                                 <SelectContent>
                                   {availableTimeSlots.map((slot, index) => (
-                                    <SelectItem key={index} value={slot.startTime}>
+                                    <SelectItem
+                                      key={index}
+                                      value={slot.startTime}
+                                    >
                                       {slot.startTime} - {slot.endTime}
                                     </SelectItem>
                                   ))}
@@ -535,12 +564,18 @@ export function EnhancedBookAppointmentModal({
                                     <Avatar>
                                       <AvatarImage src={staff.profilePicture} />
                                       <AvatarFallback>
-                                        {staff.name.substring(0, 2).toUpperCase()}
+                                        {staff.name
+                                          .substring(0, 2)
+                                          .toUpperCase()}
                                       </AvatarFallback>
                                     </Avatar>
                                     <div>
-                                      <p className="font-medium">{staff.name}</p>
-                                      <p className="text-xs text-muted-foreground">{staff.position}</p>
+                                      <p className="font-medium">
+                                        {staff.name}
+                                      </p>
+                                      <p className="text-xs text-muted-foreground">
+                                        {staff.position}
+                                      </p>
                                     </div>
                                   </div>
                                 </div>
@@ -549,7 +584,8 @@ export function EnhancedBookAppointmentModal({
                           )}
                         </FormControl>
                         <FormDescription>
-                          Select a staff member or leave unselected for any available staff
+                          Select a staff member or leave unselected for any
+                          available staff
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -571,7 +607,8 @@ export function EnhancedBookAppointmentModal({
                         />
                       </FormControl>
                       <FormDescription>
-                        Add any special requests or information for your appointment
+                        Add any special requests or information for your
+                        appointment
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -593,7 +630,9 @@ export function EnhancedBookAppointmentModal({
                   <div className="bg-muted p-3 rounded-md">
                     <div className="flex items-center gap-2 mb-2">
                       <Repeat className="h-4 w-4 text-orange-500" />
-                      <p className="text-sm font-medium">This will create multiple appointments</p>
+                      <p className="text-sm font-medium">
+                        This will create multiple appointments
+                      </p>
                     </div>
                     <p className="text-xs text-muted-foreground">
                       Configure recurring options in the next tab
@@ -603,7 +642,7 @@ export function EnhancedBookAppointmentModal({
               </form>
             </Form>
           </TabsContent>
-          
+
           <TabsContent value="recurring" className="space-y-4 py-4">
             <div className="space-y-4">
               <div className="flex items-center gap-2">
@@ -625,11 +664,18 @@ export function EnhancedBookAppointmentModal({
                     <Button
                       key={pattern.value}
                       type="button"
-                      variant={recurrencePattern === pattern.value ? "default" : "outline"}
+                      variant={
+                        recurrencePattern === pattern.value
+                          ? "default"
+                          : "outline"
+                      }
                       className={cn(
-                        recurrencePattern === pattern.value && "bg-orange-600 hover:bg-orange-700"
+                        recurrencePattern === pattern.value &&
+                          "bg-orange-600 hover:bg-orange-700"
                       )}
-                      onClick={() => handleRecurrencePatternChange(pattern.value as any)}
+                      onClick={() =>
+                        handleRecurrencePatternChange(pattern.value as any)
+                      }
                     >
                       {pattern.label}
                     </Button>
@@ -649,7 +695,9 @@ export function EnhancedBookAppointmentModal({
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {recurrenceEndDate ? dayjs(recurrenceEndDate).format("PPP") : "Select end date"}
+                      {recurrenceEndDate
+                        ? dayjs(recurrenceEndDate).format("PPP")
+                        : "Select end date"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0">
@@ -683,7 +731,9 @@ export function EnhancedBookAppointmentModal({
                             <div className="bg-orange-100 dark:bg-orange-900 rounded-full p-1.5">
                               <CalendarIcon className="h-4 w-4 text-orange-600 dark:text-orange-300" />
                             </div>
-                            <span>{dayjs(date).format("EEEE, MMMM d, yyyy")}</span>
+                            <span>
+                              {dayjs(date).format("EEEE, MMMM d, yyyy")}
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -691,7 +741,8 @@ export function EnhancedBookAppointmentModal({
                       <div className="flex flex-col items-center justify-center py-6">
                         <AlertCircle className="h-8 w-8 text-muted-foreground mb-2" />
                         <p className="text-muted-foreground text-center">
-                          Select a date and time first to see the recurring pattern
+                          Select a date and time first to see the recurring
+                          pattern
                         </p>
                       </div>
                     )}
@@ -706,8 +757,8 @@ export function EnhancedBookAppointmentModal({
           <Button type="button" variant="outline" onClick={onClose}>
             Cancel
           </Button>
-          <Button 
-            type="button" 
+          <Button
+            type="button"
             disabled={isSubmitting || !form.watch("startTime") || !selectedDate}
             className="bg-orange-600 hover:bg-orange-700"
             onClick={form.handleSubmit(onSubmit)}
@@ -717,8 +768,10 @@ export function EnhancedBookAppointmentModal({
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Booking...
               </>
+            ) : isRecurring ? (
+              "Book Recurring Appointments"
             ) : (
-              isRecurring ? "Book Recurring Appointments" : "Book Appointment"
+              "Book Appointment"
             )}
           </Button>
         </DialogFooter>

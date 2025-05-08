@@ -3,12 +3,12 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
   DialogTitle,
-  DialogFooter
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,18 +52,18 @@ export function UpdateShippingModal({
   const onSubmit = async (data: any) => {
     try {
       setIsSubmitting(true);
-      
+
       // Update shipping info
       await orderApi.updateShippingInfo(order._id, {
         trackingNumber: data.trackingNumber,
       });
-      
+
       // Update order status to shipped
       await orderApi.updateOrderStatus(order._id, "shipped");
-      
+
       // Notify parent component
       onUpdate(order._id, data.trackingNumber);
-      
+
       toast.success("Order marked as shipped");
       onClose();
     } catch (error) {
@@ -100,13 +100,16 @@ export function UpdateShippingModal({
               placeholder="Enter tracking number"
             />
             {errors.trackingNumber && (
-              <p className="text-red-500 text-sm mt-1">{errors.trackingNumber.message}</p>
+              <p className="text-red-500 text-sm mt-1">
+                {errors.trackingNumber.message?.toString()}
+              </p>
             )}
           </div>
 
           <div className="bg-yellow-50 p-3 rounded-md text-sm text-yellow-800">
             <p>
-              Once you mark this order as shipped, the customer will be notified and the order status will be updated.
+              Once you mark this order as shipped, the customer will be notified
+              and the order status will be updated.
             </p>
           </div>
 
@@ -114,8 +117,8 @@ export function UpdateShippingModal({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={isSubmitting}
               className="bg-orange-600 hover:bg-orange-700"
             >

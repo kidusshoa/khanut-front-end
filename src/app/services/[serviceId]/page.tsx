@@ -28,17 +28,32 @@ import { businessDetailApi } from "@/services/businessDetail";
 import { toast } from "react-hot-toast";
 
 export default function ServiceDetailPage({
-  params: { serviceId },
+  params,
 }: {
-  params: { serviceId: string };
+  params: Promise<{ serviceId: string }>;
 }) {
   const router = useRouter();
   const { data: session } = useSession();
+  const [serviceId, setServiceId] = useState<string>("");
   const [service, setService] = useState<any>(null);
   const [business, setBusiness] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isBookModalOpen, setIsBookModalOpen] = useState(false);
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
+
+  // Resolve params
+  useEffect(() => {
+    const resolveParams = async () => {
+      try {
+        const resolvedParams = await params;
+        setServiceId(resolvedParams.serviceId);
+      } catch (error) {
+        console.error("Error resolving params:", error);
+      }
+    };
+
+    resolveParams();
+  }, [params]);
 
   useEffect(() => {
     const fetchServiceDetails = async () => {

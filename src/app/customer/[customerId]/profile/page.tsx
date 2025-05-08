@@ -37,10 +37,11 @@ import { toast } from "react-hot-toast";
 export default function CustomerProfilePage({
   params,
 }: {
-  params: { customerId: string };
+  params: Promise<{ customerId: string }>;
 }) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [customerId, setCustomerId] = useState<string>("");
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -50,6 +51,20 @@ export default function CustomerProfilePage({
     location: "",
   });
 
+  // Resolve params
+  useEffect(() => {
+    const resolveParams = async () => {
+      try {
+        const resolvedParams = await params;
+        setCustomerId(resolvedParams.customerId);
+      } catch (error) {
+        console.error("Error resolving params:", error);
+      }
+    };
+
+    resolveParams();
+  }, [params]);
+
   useEffect(() => {
     // Redirect if not authenticated
     if (status === "unauthenticated") {
@@ -58,7 +73,11 @@ export default function CustomerProfilePage({
     }
 
     // Check if user is accessing their own profile
-    if (status === "authenticated" && session?.user?.id !== params.customerId) {
+    if (
+      status === "authenticated" &&
+      customerId &&
+      session?.user?.id !== customerId
+    ) {
       toast.error("You can only view your own profile");
       router.push(`/customer/${session?.user?.id}/profile`);
       return;
@@ -86,7 +105,7 @@ export default function CustomerProfilePage({
     if (status === "authenticated") {
       fetchProfile();
     }
-  }, [status, session, params.customerId, router]);
+  }, [status, session, customerId, router]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -138,9 +157,7 @@ export default function CustomerProfilePage({
           <Button
             variant="outline"
             className="gap-2"
-            onClick={() =>
-              router.push(`/customer/${params.customerId}/settings`)
-            }
+            onClick={() => router.push(`/customer/${customerId}/settings`)}
           >
             <Settings className="h-4 w-4" />
             Settings

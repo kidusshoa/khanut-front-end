@@ -15,7 +15,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import dayjs from "dayjs";
-// Replaced date-fns with dayjs
+import relativeTime from "dayjs/plugin/relativeTime";
+dayjs.extend(relativeTime);
 import { cn } from "@/lib/utils";
 import { useNotifications, Notification } from "./NotificationProvider";
 import { useRouter } from "next/navigation";
@@ -153,9 +154,7 @@ export function NotificationDropdown() {
                     {notification.message}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {formatDistanceToNow(new Date(notification.createdAt), {
-                      addSuffix: true,
-                    })}
+                    {dayjs(notification.createdAt).fromNow()}
                   </p>
                 </div>
                 {!notification.isRead && (

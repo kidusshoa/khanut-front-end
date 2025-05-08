@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import {
@@ -41,9 +41,23 @@ interface Service {
 export default function BusinessServicesPage({
   params,
 }: {
-  params: { businessId: string };
+  params: Promise<{ businessId: string }>;
 }) {
-  const businessId = params.businessId;
+  const [businessId, setBusinessId] = useState<string>("");
+
+  // Resolve params
+  useEffect(() => {
+    const resolveParams = async () => {
+      try {
+        const resolvedParams = await params;
+        setBusinessId(resolvedParams.businessId);
+      } catch (error) {
+        console.error("Error resolving params:", error);
+      }
+    };
+
+    resolveParams();
+  }, [params]);
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -256,7 +270,7 @@ export default function BusinessServicesPage({
   const filteredServices = services
     ? activeTab === "all"
       ? services
-      : services.filter((service) => service.serviceType === activeTab)
+      : services.filter((service: any) => service.serviceType === activeTab)
     : [];
 
   return (
@@ -341,11 +355,9 @@ export default function BusinessServicesPage({
           onClose={() => setIsAddModalOpen(false)}
           businessId={businessId}
           onServiceAdded={handleServiceAdded}
-          onServiceUpdated={handleServiceUpdated}
           initialServiceType={
             activeTab !== "all" ? (activeTab as any) : undefined
           }
-          service={selectedService}
         />
       )}
     </DashboardLayout>

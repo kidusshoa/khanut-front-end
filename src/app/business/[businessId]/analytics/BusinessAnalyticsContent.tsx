@@ -525,10 +525,32 @@ export default function BusinessAnalyticsContent({
         </div>
 
         {/* Customer Analytics */}
-        <CustomerAnalytics businessId={businessId} />
+        <CustomerAnalytics
+          customerData={
+            analytics?.customers || { total: 0, new: 0, returning: 0 }
+          }
+        />
 
         {/* Performance Metrics */}
-        <PerformanceMetrics businessId={businessId} />
+        <PerformanceMetrics
+          performanceData={{
+            revenue: {
+              total: analytics?.revenue?.total || 0,
+              target: (analytics?.revenue?.total || 0) * 1.2 || 10000, // 20% higher than current as target
+              growth: 5, // Mock 5% growth
+            },
+            orders: {
+              total: analytics?.orders?.total || 0,
+              target: (analytics?.orders?.total || 0) * 1.2 || 100, // 20% higher than current as target
+              growth: 8, // Mock 8% growth
+            },
+            customers: {
+              total: analytics?.customers?.total || 0,
+              target: (analytics?.customers?.total || 0) * 1.2 || 50, // 20% higher than current as target
+              growth: 12, // Mock 12% growth
+            },
+          }}
+        />
       </div>
     </div>
   );

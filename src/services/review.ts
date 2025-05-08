@@ -18,6 +18,7 @@ interface PaginationParams {
 export interface ReviewData {
   businessId: string;
   serviceId?: string;
+  customerId?: string;
   rating: number;
   comment: string;
 }

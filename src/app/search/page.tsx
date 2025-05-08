@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   Search,
@@ -34,7 +34,7 @@ import { serviceApi } from "@/services/service";
 import { searchApi } from "@/services/search";
 import { toast } from "react-hot-toast";
 
-export default function SearchPage() {
+function SearchContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || searchParams.get("query") || "";
@@ -139,7 +139,7 @@ export default function SearchPage() {
           query,
           filters: filterParams,
           sort,
-          order,
+          order: order as "asc" | "desc" | undefined,
         });
 
         setBusinesses(searchResults.businesses || []);
@@ -669,5 +669,46 @@ export default function SearchPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function SearchPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto py-8 px-4">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-4">Search</h1>
+            <div className="flex gap-2">
+              <div className="relative flex-grow">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Search for businesses and services..."
+                  className="pl-10"
+                  disabled
+                />
+              </div>
+              <Button className="bg-orange-600 hover:bg-orange-700" disabled>
+                Search
+              </Button>
+              <Button
+                variant="outline"
+                className="flex items-center gap-2"
+                disabled
+              >
+                <Filter className="h-4 w-4" />
+                Filters
+              </Button>
+            </div>
+          </div>
+          <div className="flex justify-center items-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+          </div>
+        </div>
+      }
+    >
+      <SearchContent />
+    </Suspense>
   );
 }

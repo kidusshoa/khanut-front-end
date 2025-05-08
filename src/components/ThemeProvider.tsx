@@ -2,9 +2,14 @@
 
 import * as React from "react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
-import { type ThemeProviderProps } from "next-themes/dist/types";
 
-export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
+// Define our own props type
+type CustomThemeProviderProps = {
+  children: React.ReactNode;
+  // Add any other props you need
+};
+
+export function ThemeProvider({ children }: CustomThemeProviderProps) {
   const [mounted, setMounted] = React.useState(false);
 
   // useEffect only runs on the client, so now we can safely show the UI
@@ -17,5 +22,9 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
     return <div style={{ visibility: "hidden" }}>{children}</div>;
   }
 
-  return <NextThemesProvider {...props}>{children}</NextThemesProvider>;
+  return (
+    <NextThemesProvider attribute="class" defaultTheme="system" enableSystem>
+      {children}
+    </NextThemesProvider>
+  );
 }

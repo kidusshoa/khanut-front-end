@@ -2,34 +2,34 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  Calendar, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  AlertCircle, 
+import {
+  Calendar,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
   MapPin,
   Building,
   User,
   CreditCard,
   MessageSquare,
   ExternalLink,
-  Pencil
+  Pencil,
 } from "lucide-react";
 import dayjs from "dayjs";
 // Replaced date-fns with dayjs
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { 
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -49,10 +49,10 @@ interface AppointmentDetailProps {
   onAppointmentUpdate?: () => void;
 }
 
-export function AppointmentDetail({ 
-  appointment, 
+export function AppointmentDetail({
+  appointment,
   customerId,
-  onAppointmentUpdate 
+  onAppointmentUpdate,
 }: AppointmentDetailProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -87,28 +87,40 @@ export function AppointmentDetail({
     switch (status) {
       case "pending":
         return (
-          <Badge variant="outline" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400">
+          <Badge
+            variant="outline"
+            className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400"
+          >
             <Clock className="mr-1 h-3 w-3" />
             Pending
           </Badge>
         );
       case "confirmed":
         return (
-          <Badge variant="outline" className="bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">
+          <Badge
+            variant="outline"
+            className="bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
+          >
             <CheckCircle className="mr-1 h-3 w-3" />
             Confirmed
           </Badge>
         );
       case "completed":
         return (
-          <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+          <Badge
+            variant="outline"
+            className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+          >
             <CheckCircle className="mr-1 h-3 w-3" />
             Completed
           </Badge>
         );
       case "cancelled":
         return (
-          <Badge variant="outline" className="bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400">
+          <Badge
+            variant="outline"
+            className="bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+          >
             <XCircle className="mr-1 h-3 w-3" />
             Cancelled
           </Badge>
@@ -127,8 +139,10 @@ export function AppointmentDetail({
   const handlePayment = async () => {
     try {
       setIsLoading(true);
-      const response = await paymentApi.initializeAppointmentPayment(appointment._id);
-      
+      const response = await paymentApi.initializeAppointmentPayment(
+        appointment._id
+      );
+
       if (response.data?.checkout_url) {
         // Redirect to Chapa checkout
         window.location.href = response.data.checkout_url;
@@ -147,7 +161,10 @@ export function AppointmentDetail({
   const handleCancelAppointment = async () => {
     try {
       setIsLoading(true);
-      await appointmentApi.updateAppointmentStatus(appointment._id, "cancelled");
+      await appointmentApi.updateAppointmentStatus(
+        appointment._id,
+        "cancelled"
+      );
       toast.success("Appointment cancelled successfully");
       setShowCancelDialog(false);
       if (onAppointmentUpdate) onAppointmentUpdate();
@@ -161,8 +178,8 @@ export function AppointmentDetail({
 
   // Get service name
   const getServiceName = () => {
-    if (typeof appointment.serviceId === 'string') {
-      return 'Service';
+    if (typeof appointment.serviceId === "string") {
+      return "Service";
     } else {
       return appointment.serviceId.name;
     }
@@ -170,8 +187,8 @@ export function AppointmentDetail({
 
   // Get business name
   const getBusinessName = () => {
-    if (typeof appointment.businessId === 'string') {
-      return 'Business';
+    if (typeof appointment.businessId === "string") {
+      return "Business";
     } else {
       return appointment.businessId.name;
     }
@@ -179,7 +196,7 @@ export function AppointmentDetail({
 
   // Get service price
   const getServicePrice = () => {
-    if (typeof appointment.serviceId === 'string') {
+    if (typeof appointment.serviceId === "string") {
       return 0;
     } else {
       return appointment.serviceId.price;
@@ -188,7 +205,7 @@ export function AppointmentDetail({
 
   // Get service duration
   const getServiceDuration = () => {
-    if (typeof appointment.serviceId === 'string') {
+    if (typeof appointment.serviceId === "string") {
       return 0;
     } else {
       return appointment.serviceId.duration;
@@ -196,24 +213,27 @@ export function AppointmentDetail({
   };
 
   // Check if appointment can be cancelled
-  const canCancel = ['pending', 'confirmed'].includes(appointment.status);
-  
+  const canCancel = ["pending", "confirmed"].includes(appointment.status);
+
   // Check if appointment is in the future
   const isUpcoming = () => {
     try {
       const appointmentDate = dayjs(appointment.date);
       const [hours, minutes] = appointment.startTime.split(":");
-      const appointmentDateTime = new Date(appointmentDate);
-      appointmentDateTime.setHours(parseInt(hours), parseInt(minutes));
-      
-      return isFuture(appointmentDateTime);
+      const appointmentDateTime = appointmentDate
+        .hour(parseInt(hours))
+        .minute(parseInt(minutes))
+        .toDate();
+
+      return dayjs(appointmentDateTime).isAfter(dayjs());
     } catch (error) {
       return false;
     }
   };
 
   // Check if appointment needs payment
-  const needsPayment = appointment.status === 'pending' && getServicePrice() > 0;
+  const needsPayment =
+    appointment.status === "pending" && getServicePrice() > 0;
 
   return (
     <Card className="w-full">
@@ -228,7 +248,7 @@ export function AppointmentDetail({
           {getStatusBadge(appointment.status)}
         </div>
       </CardHeader>
-      
+
       <CardContent className="space-y-6">
         {/* Appointment Time */}
         <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-md">
@@ -244,12 +264,13 @@ export function AppointmentDetail({
             <div>
               <p className="text-sm text-muted-foreground">Time</p>
               <p className="font-medium">
-                {formatTime(appointment.startTime)} - {formatTime(appointment.endTime)}
+                {formatTime(appointment.startTime)} -{" "}
+                {formatTime(appointment.endTime)}
               </p>
             </div>
           </div>
         </div>
-        
+
         {/* Service Details */}
         <div>
           <h3 className="font-medium mb-3">Service Details</h3>
@@ -274,9 +295,9 @@ export function AppointmentDetail({
                 <span className="text-sm font-medium">Price</span>
               </div>
               <p className="text-sm">
-                {getServicePrice() > 0 
-                  ? `${getServicePrice().toLocaleString()} ETB` 
-                  : 'Free'}
+                {getServicePrice() > 0
+                  ? `${getServicePrice().toLocaleString()} ETB`
+                  : "Free"}
               </p>
             </div>
             <div className="p-3 border rounded-md">
@@ -288,7 +309,7 @@ export function AppointmentDetail({
             </div>
           </div>
         </div>
-        
+
         {/* Notes */}
         {appointment.notes && (
           <div>
@@ -302,14 +323,22 @@ export function AppointmentDetail({
             </div>
           </div>
         )}
-        
+
         {/* Business Information */}
         <div>
           <h3 className="font-medium mb-3">Business Information</h3>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="w-full justify-between"
-            onClick={() => router.push(`/customer/${customerId}/businesses/${typeof appointment.businessId === 'string' ? appointment.businessId : appointment.businessId._id}`)}
+            onClick={() =>
+              router.push(
+                `/customer/${customerId}/businesses/${
+                  typeof appointment.businessId === "string"
+                    ? appointment.businessId
+                    : appointment.businessId._id
+                }`
+              )
+            }
           >
             <div className="flex items-center gap-2">
               <div className="bg-gray-100 dark:bg-gray-800 p-2 rounded-full">
@@ -321,33 +350,37 @@ export function AppointmentDetail({
           </Button>
         </div>
       </CardContent>
-      
+
       <CardFooter className="flex flex-col sm:flex-row gap-3 pt-0">
         {needsPayment && (
-          <Button 
+          <Button
             className="w-full sm:w-auto bg-orange-600 hover:bg-orange-700"
             onClick={handlePayment}
             disabled={isLoading}
           >
-            {isLoading ? 'Processing...' : 'Pay Now'}
+            {isLoading ? "Processing..." : "Pay Now"}
           </Button>
         )}
-        
-        {isUpcoming() && appointment.status === 'confirmed' && (
-          <Button 
-            variant="outline" 
+
+        {isUpcoming() && appointment.status === "confirmed" && (
+          <Button
+            variant="outline"
             className="w-full sm:w-auto"
-            onClick={() => router.push(`/customer/${customerId}/appointments/${appointment._id}/reschedule`)}
+            onClick={() =>
+              router.push(
+                `/customer/${customerId}/appointments/${appointment._id}/reschedule`
+              )
+            }
           >
             <Pencil className="mr-2 h-4 w-4" />
             Reschedule
           </Button>
         )}
-        
+
         {canCancel && (
           <>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="w-full sm:w-auto text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 dark:border-red-900 dark:hover:bg-red-950"
               onClick={() => setShowCancelDialog(true)}
               disabled={isLoading}
@@ -355,16 +388,17 @@ export function AppointmentDetail({
               <XCircle className="mr-2 h-4 w-4" />
               Cancel Appointment
             </Button>
-            
+
             <Dialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Cancel Appointment</DialogTitle>
                   <DialogDescription>
-                    Are you sure you want to cancel this appointment? This action cannot be undone.
+                    Are you sure you want to cancel this appointment? This
+                    action cannot be undone.
                   </DialogDescription>
                 </DialogHeader>
-                
+
                 <div className="py-4">
                   <label className="text-sm font-medium mb-2 block">
                     Reason for cancellation (optional)
@@ -375,7 +409,7 @@ export function AppointmentDetail({
                     onChange={(e) => setCancelReason(e.target.value)}
                   />
                 </div>
-                
+
                 <DialogFooter>
                   <Button
                     variant="outline"
@@ -389,7 +423,7 @@ export function AppointmentDetail({
                     onClick={handleCancelAppointment}
                     disabled={isLoading}
                   >
-                    {isLoading ? 'Cancelling...' : 'Cancel Appointment'}
+                    {isLoading ? "Cancelling..." : "Cancel Appointment"}
                   </Button>
                 </DialogFooter>
               </DialogContent>

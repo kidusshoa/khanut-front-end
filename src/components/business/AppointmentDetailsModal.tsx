@@ -69,59 +69,72 @@ export function AppointmentDetailsModal({
   onStatusUpdate,
 }: AppointmentDetailsModalProps) {
   const [isUpdating, setIsUpdating] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState(appointment.status);
-  
+  const [selectedStatus, setSelectedStatus] = useState<
+    "scheduled" | "confirmed" | "completed" | "cancelled" | "no_show"
+  >(appointment.status);
+
   // Get status badge
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "scheduled":
         return (
-          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+          <Badge
+            variant="outline"
+            className="bg-yellow-50 text-yellow-700 border-yellow-200"
+          >
             <Clock className="mr-1 h-3 w-3" />
             Scheduled
           </Badge>
         );
       case "confirmed":
         return (
-          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+          <Badge
+            variant="outline"
+            className="bg-blue-50 text-blue-700 border-blue-200"
+          >
             <Calendar className="mr-1 h-3 w-3" />
             Confirmed
           </Badge>
         );
       case "completed":
         return (
-          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+          <Badge
+            variant="outline"
+            className="bg-green-50 text-green-700 border-green-200"
+          >
             <CheckCircle className="mr-1 h-3 w-3" />
             Completed
           </Badge>
         );
       case "cancelled":
         return (
-          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+          <Badge
+            variant="outline"
+            className="bg-red-50 text-red-700 border-red-200"
+          >
             <XCircle className="mr-1 h-3 w-3" />
             Cancelled
           </Badge>
         );
       case "no_show":
         return (
-          <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">
+          <Badge
+            variant="outline"
+            className="bg-gray-50 text-gray-700 border-gray-200"
+          >
             <XCircle className="mr-1 h-3 w-3" />
             No Show
           </Badge>
         );
       default:
-        return (
-          <Badge variant="outline">
-            {status}
-          </Badge>
-        );
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
-  
+
   // Handle status update
   const handleStatusUpdate = async () => {
     if (selectedStatus === appointment.status) return;
-    
+
     try {
       setIsUpdating(true);
       await onStatusUpdate(appointment._id, selectedStatus);
@@ -132,7 +145,7 @@ export function AppointmentDetailsModal({
       setIsUpdating(false);
     }
   };
-  
+
   // Get available status options based on current status
   const getStatusOptions = () => {
     switch (appointment.status) {
@@ -159,9 +172,9 @@ export function AppointmentDetailsModal({
         return [];
     }
   };
-  
+
   const appointmentDate = dayjs(appointment.appointmentDate);
-  
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
@@ -174,11 +187,13 @@ export function AppointmentDetailsModal({
             Appointment #{appointment.appointmentNumber}
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-6 mt-4">
           {/* Appointment Time */}
           <div className="space-y-2">
-            <h3 className="font-medium text-sm text-muted-foreground">Date & Time</h3>
+            <h3 className="font-medium text-sm text-muted-foreground">
+              Date & Time
+            </h3>
             <div className="flex items-center gap-2">
               <CalendarClock className="h-5 w-5 text-muted-foreground" />
               <div>
@@ -191,12 +206,14 @@ export function AppointmentDetailsModal({
               </div>
             </div>
           </div>
-          
+
           <Separator />
-          
+
           {/* Customer Information */}
           <div className="space-y-2">
-            <h3 className="font-medium text-sm text-muted-foreground">Customer</h3>
+            <h3 className="font-medium text-sm text-muted-foreground">
+              Customer
+            </h3>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <User className="h-4 w-4 text-muted-foreground" />
@@ -214,15 +231,18 @@ export function AppointmentDetailsModal({
               )}
             </div>
           </div>
-          
+
           <Separator />
-          
+
           {/* Service Information */}
           <div className="space-y-2">
-            <h3 className="font-medium text-sm text-muted-foreground">Service</h3>
+            <h3 className="font-medium text-sm text-muted-foreground">
+              Service
+            </h3>
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-md overflow-hidden bg-muted flex-shrink-0">
-                {appointment.serviceId.images && appointment.serviceId.images.length > 0 ? (
+                {appointment.serviceId.images &&
+                appointment.serviceId.images.length > 0 ? (
                   <img
                     src={appointment.serviceId.images[0]}
                     alt={appointment.serviceId.name}
@@ -240,45 +260,64 @@ export function AppointmentDetailsModal({
                   <span className="text-sm text-muted-foreground">
                     {appointment.serviceId.duration} minutes
                   </span>
-                  <span className="font-medium">${appointment.serviceId.price.toFixed(2)}</span>
+                  <span className="font-medium">
+                    ${appointment.serviceId.price.toFixed(2)}
+                  </span>
                 </div>
               </div>
             </div>
           </div>
-          
+
           {appointment.notes && (
             <>
               <Separator />
               <div className="space-y-2">
-                <h3 className="font-medium text-sm text-muted-foreground">Notes</h3>
+                <h3 className="font-medium text-sm text-muted-foreground">
+                  Notes
+                </h3>
                 <p className="text-sm">{appointment.notes}</p>
               </div>
             </>
           )}
-          
+
           <Separator />
-          
+
           {/* Booking Information */}
           <div className="space-y-2">
-            <h3 className="font-medium text-sm text-muted-foreground">Booking Information</h3>
+            <h3 className="font-medium text-sm text-muted-foreground">
+              Booking Information
+            </h3>
             <div className="grid grid-cols-2 gap-2 text-sm">
               <div className="text-muted-foreground">Booked on:</div>
-              <div>{dayjs(dayjs(appointment.createdAt)).format("MMM D, YYYY")}</div>
-              
+              <div>
+                {dayjs(dayjs(appointment.createdAt)).format("MMM D, YYYY")}
+              </div>
+
               <div className="text-muted-foreground">Last updated:</div>
-              <div>{dayjs(dayjs(appointment.updatedAt)).format("MMM D, YYYY")}</div>
+              <div>
+                {dayjs(dayjs(appointment.updatedAt)).format("MMM D, YYYY")}
+              </div>
             </div>
           </div>
         </div>
-        
+
         <DialogFooter className="mt-6 flex flex-col sm:flex-row gap-2">
           <div className="flex-grow">
             <Select
               value={selectedStatus}
-              onValueChange={setSelectedStatus}
+              onValueChange={(value) =>
+                setSelectedStatus(
+                  value as
+                    | "scheduled"
+                    | "confirmed"
+                    | "completed"
+                    | "cancelled"
+                    | "no_show"
+                )
+              }
               disabled={
-                appointment.status === "completed" || 
-                appointment.status === "cancelled" || 
+                appointment.status === "completed" ||
+                appointment.status === "cancelled" ||
                 appointment.status === "no_show"
               }
             >
@@ -294,7 +333,7 @@ export function AppointmentDetailsModal({
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="flex gap-2">
             <Button variant="outline" onClick={onClose}>
               Close

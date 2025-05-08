@@ -47,6 +47,8 @@ export const authOptions: NextAuthOptions = {
           // Convert AuthResponse to User
           const user: User = {
             id: data.userId,
+            email: credentials.email,
+            name: data.name || credentials.email,
             role: data.role,
             accessToken: data.accessToken,
             refreshToken: data.refreshToken,

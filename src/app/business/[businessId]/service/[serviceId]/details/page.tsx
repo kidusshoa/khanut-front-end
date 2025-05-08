@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import {
@@ -216,10 +216,25 @@ interface Review {
 export default function ServiceDetailsPage({
   params,
 }: {
-  params: { businessId: string; serviceId: string };
+  params: Promise<{ businessId: string; serviceId: string }>;
 }) {
-  const businessId = params.businessId;
-  const serviceId = params.serviceId;
+  const [businessId, setBusinessId] = useState<string>("");
+  const [serviceId, setServiceId] = useState<string>("");
+
+  // Resolve params
+  useEffect(() => {
+    const resolveParams = async () => {
+      try {
+        const resolvedParams = await params;
+        setBusinessId(resolvedParams.businessId);
+        setServiceId(resolvedParams.serviceId);
+      } catch (error) {
+        console.error("Error resolving params:", error);
+      }
+    };
+
+    resolveParams();
+  }, [params]);
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("details");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -453,7 +468,7 @@ export default function ServiceDetailsPage({
                           <ArrowLeft className="h-4 w-4 transform rotate-180" />
                         </Button>
                         <div className="absolute bottom-2 left-0 right-0 flex justify-center gap-1">
-                          {service.images.map((_, index) => (
+                          {service.images.map((_: string, index: number) => (
                             <div
                               key={index}
                               className={`h-2 w-2 rounded-full ${
@@ -648,24 +663,25 @@ export default function ServiceDetailsPage({
                                   {review.authorId.name}
                                 </div>
                                 <div className="text-sm text-muted-foreground">
-                                  {format(
-                                    new Date(review.createdAt),
-                                    "MMMM d, yyyy"
+                                  {dayjs(review.createdAt).format(
+                                    "MMMM D, YYYY"
                                   )}
                                 </div>
                               </div>
                             </div>
                             <div className="flex items-center gap-1 mb-2">
-                              {Array.from({ length: 5 }).map((_, i) => (
-                                <Star
-                                  key={i}
-                                  className={`h-4 w-4 ${
-                                    i < review.rating
-                                      ? "fill-yellow-400 text-yellow-400"
-                                      : "text-muted"
-                                  }`}
-                                />
-                              ))}
+                              {Array.from({ length: 5 }).map(
+                                (_: unknown, i: number) => (
+                                  <Star
+                                    key={i}
+                                    className={`h-4 w-4 ${
+                                      i < review.rating
+                                        ? "fill-yellow-400 text-yellow-400"
+                                        : "text-muted"
+                                    }`}
+                                  />
+                                )
+                              )}
                             </div>
                             <p className="text-sm">{review.comment}</p>
                           </div>

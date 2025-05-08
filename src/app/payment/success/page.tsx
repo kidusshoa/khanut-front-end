@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import {
   Card,
@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Loader2, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { paymentApi } from "@/services/payment";
 
-export default function PaymentSuccessPage() {
+function PaymentSuccessContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const [status, setStatus] = useState<
@@ -134,5 +134,34 @@ export default function PaymentSuccessPage() {
         </CardFooter>
       </Card>
     </div>
+  );
+}
+
+export default function PaymentSuccessPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container max-w-md mx-auto py-12">
+          <Card>
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl">Payment Status</CardTitle>
+              <CardDescription>
+                Please wait while we verify your payment
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center space-y-4">
+              <div className="my-4">
+                <Loader2 className="h-16 w-16 text-primary animate-spin" />
+              </div>
+              <p className="text-center text-lg font-medium">
+                Loading payment details...
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      }
+    >
+      <PaymentSuccessContent />
+    </Suspense>
   );
 }

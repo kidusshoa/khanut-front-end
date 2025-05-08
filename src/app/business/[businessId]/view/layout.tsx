@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -11,11 +11,25 @@ export default function BusinessViewLayout({
   params,
 }: {
   children: React.ReactNode;
-  params: { businessId: string };
+  params: Promise<{ businessId: string }>;
 }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const router = useRouter();
-  const { businessId } = params;
+  const [businessId, setBusinessId] = useState<string>("");
+
+  // Resolve params
+  useEffect(() => {
+    const resolveParams = async () => {
+      try {
+        const resolvedParams = await params;
+        setBusinessId(resolvedParams.businessId);
+      } catch (error) {
+        console.error("Error resolving params:", error);
+      }
+    };
+
+    resolveParams();
+  }, [params]);
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -34,9 +48,7 @@ export default function BusinessViewLayout({
             <Button variant="ghost" onClick={() => router.push("/login")}>
               Login
             </Button>
-            <Button onClick={() => router.push("/register")}>
-              Register
-            </Button>
+            <Button onClick={() => router.push("/register")}>Register</Button>
           </nav>
 
           {/* Mobile Menu Button */}

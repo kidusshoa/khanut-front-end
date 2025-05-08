@@ -17,6 +17,7 @@ interface ServiceCardProps {
     duration?: number;
     inventory?: number;
     customerId?: string;
+    businessId: string;
   };
   onDelete: () => void;
   onEdit: () => void;

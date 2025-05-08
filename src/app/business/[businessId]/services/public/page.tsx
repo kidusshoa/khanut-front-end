@@ -138,9 +138,23 @@ interface Service {
 export default function BusinessServicesPublicPage({
   params,
 }: {
-  params: { businessId: string };
+  params: Promise<{ businessId: string }>;
 }) {
-  const businessId = params.businessId;
+  const [businessId, setBusinessId] = useState<string>("");
+
+  // Resolve params
+  useEffect(() => {
+    const resolveParams = async () => {
+      try {
+        const resolvedParams = await params;
+        setBusinessId(resolvedParams.businessId);
+      } catch (error) {
+        console.error("Error resolving params:", error);
+      }
+    };
+
+    resolveParams();
+  }, [params]);
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("all");
 

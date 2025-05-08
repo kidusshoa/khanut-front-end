@@ -7,6 +7,7 @@ export interface CartItem {
   price: number;
   quantity: number;
   businessId: string;
+  businessName?: string;
   image: string | null;
 }
 
@@ -24,11 +25,11 @@ export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
       cart: [],
-      
+
       addToCart: (item: CartItem) => {
         const { cart } = get();
         const existingItem = cart.find((i) => i.serviceId === item.serviceId);
-        
+
         if (existingItem) {
           // Update quantity if item already exists
           set({
@@ -43,14 +44,14 @@ export const useCartStore = create<CartState>()(
           set({ cart: [...cart, item] });
         }
       },
-      
+
       removeFromCart: (serviceId: string) => {
         const { cart } = get();
         set({
           cart: cart.filter((item) => item.serviceId !== serviceId),
         });
       },
-      
+
       updateQuantity: (serviceId: string, quantity: number) => {
         const { cart } = get();
         set({
@@ -59,16 +60,19 @@ export const useCartStore = create<CartState>()(
           ),
         });
       },
-      
+
       clearCart: () => {
         set({ cart: [] });
       },
-      
+
       getCartTotal: () => {
         const { cart } = get();
-        return cart.reduce((total, item) => total + item.price * item.quantity, 0);
+        return cart.reduce(
+          (total, item) => total + item.price * item.quantity,
+          0
+        );
       },
-      
+
       getItemCount: () => {
         const { cart } = get();
         return cart.reduce((count, item) => count + item.quantity, 0);

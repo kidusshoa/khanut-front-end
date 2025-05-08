@@ -82,89 +82,107 @@ export function OrderDetailsModal({
   onStatusUpdate,
 }: OrderDetailsModalProps) {
   const [isUpdating, setIsUpdating] = useState(false);
-  const [selectedStatus, setSelectedStatus] = useState(order.status);
-  
+  const [selectedStatus, setSelectedStatus] = useState<
+    "pending" | "processing" | "shipped" | "delivered" | "cancelled"
+  >(order.status);
+
   // Get status badge
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "pending":
         return (
-          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+          <Badge
+            variant="outline"
+            className="bg-yellow-50 text-yellow-700 border-yellow-200"
+          >
             <Clock className="mr-1 h-3 w-3" />
             Pending
           </Badge>
         );
       case "processing":
         return (
-          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+          <Badge
+            variant="outline"
+            className="bg-blue-50 text-blue-700 border-blue-200"
+          >
             <Package className="mr-1 h-3 w-3" />
             Processing
           </Badge>
         );
       case "shipped":
         return (
-          <Badge variant="outline" className="bg-indigo-50 text-indigo-700 border-indigo-200">
+          <Badge
+            variant="outline"
+            className="bg-indigo-50 text-indigo-700 border-indigo-200"
+          >
             <TruckIcon className="mr-1 h-3 w-3" />
             Shipped
           </Badge>
         );
       case "delivered":
         return (
-          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+          <Badge
+            variant="outline"
+            className="bg-green-50 text-green-700 border-green-200"
+          >
             <CheckCircle className="mr-1 h-3 w-3" />
             Delivered
           </Badge>
         );
       case "cancelled":
         return (
-          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+          <Badge
+            variant="outline"
+            className="bg-red-50 text-red-700 border-red-200"
+          >
             <XCircle className="mr-1 h-3 w-3" />
             Cancelled
           </Badge>
         );
       default:
-        return (
-          <Badge variant="outline">
-            {status}
-          </Badge>
-        );
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
-  
+
   // Get payment status badge
   const getPaymentBadge = (status: string) => {
     switch (status) {
       case "pending":
         return (
-          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+          <Badge
+            variant="outline"
+            className="bg-yellow-50 text-yellow-700 border-yellow-200"
+          >
             Pending
           </Badge>
         );
       case "paid":
         return (
-          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+          <Badge
+            variant="outline"
+            className="bg-green-50 text-green-700 border-green-200"
+          >
             Paid
           </Badge>
         );
       case "failed":
         return (
-          <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+          <Badge
+            variant="outline"
+            className="bg-red-50 text-red-700 border-red-200"
+          >
             Failed
           </Badge>
         );
       default:
-        return (
-          <Badge variant="outline">
-            {status}
-          </Badge>
-        );
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
-  
+
   // Handle status update
   const handleStatusUpdate = async () => {
     if (selectedStatus === order.status) return;
-    
+
     try {
       setIsUpdating(true);
       await onStatusUpdate(order._id, selectedStatus);
@@ -175,7 +193,7 @@ export function OrderDetailsModal({
       setIsUpdating(false);
     }
   };
-  
+
   // Get available status options based on current status
   const getStatusOptions = () => {
     switch (order.status) {
@@ -204,7 +222,7 @@ export function OrderDetailsModal({
         return [];
     }
   };
-  
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
@@ -214,10 +232,13 @@ export function OrderDetailsModal({
             {getStatusBadge(order.status)}
           </DialogTitle>
           <DialogDescription>
-            Placed on {dayjs(new Date(order.createdAt)).format("MMMM d, yyyy 'at' h:mm a")}
+            Placed on{" "}
+            {dayjs(new Date(order.createdAt)).format(
+              "MMMM d, yyyy 'at' h:mm a"
+            )}
           </DialogDescription>
         </DialogHeader>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
           {/* Customer Information */}
           <div className="space-y-4">
@@ -239,7 +260,7 @@ export function OrderDetailsModal({
               )}
             </div>
           </div>
-          
+
           {/* Shipping Address */}
           <div className="space-y-4">
             <h3 className="font-medium text-lg">Shipping Address</h3>
@@ -250,20 +271,24 @@ export function OrderDetailsModal({
                   <div>
                     <p>{order.shippingAddress.street}</p>
                     <p>
-                      {order.shippingAddress.city}, {order.shippingAddress.state} {order.shippingAddress.postalCode}
+                      {order.shippingAddress.city},{" "}
+                      {order.shippingAddress.state}{" "}
+                      {order.shippingAddress.postalCode}
                     </p>
                     <p>{order.shippingAddress.country}</p>
                   </div>
                 </div>
               </div>
             ) : (
-              <p className="text-muted-foreground">No shipping address provided</p>
+              <p className="text-muted-foreground">
+                No shipping address provided
+              </p>
             )}
           </div>
         </div>
-        
+
         <Separator className="my-4" />
-        
+
         {/* Order Items */}
         <div className="space-y-4">
           <h3 className="font-medium text-lg">Order Items</h3>
@@ -289,16 +314,18 @@ export function OrderDetailsModal({
                     <span className="text-sm text-muted-foreground">
                       ${item.serviceId.price.toFixed(2)} x {item.quantity}
                     </span>
-                    <span className="font-medium">${(item.price * item.quantity).toFixed(2)}</span>
+                    <span className="font-medium">
+                      ${(item.price * item.quantity).toFixed(2)}
+                    </span>
                   </div>
                 </div>
               </div>
             ))}
           </div>
         </div>
-        
+
         <Separator className="my-4" />
-        
+
         {/* Order Summary */}
         <div className="space-y-4">
           <h3 className="font-medium text-lg">Order Summary</h3>
@@ -322,9 +349,9 @@ export function OrderDetailsModal({
             </div>
           </div>
         </div>
-        
+
         <Separator className="my-4" />
-        
+
         {/* Payment Information */}
         <div className="space-y-4">
           <div className="flex justify-between items-center">
@@ -342,13 +369,24 @@ export function OrderDetailsModal({
             </div>
           </div>
         </div>
-        
+
         <DialogFooter className="mt-6 flex flex-col sm:flex-row gap-2">
           <div className="flex-grow">
             <Select
               value={selectedStatus}
-              onValueChange={setSelectedStatus}
-              disabled={order.status === "delivered" || order.status === "cancelled"}
+              onValueChange={(value) =>
+                setSelectedStatus(
+                  value as
+                    | "pending"
+                    | "processing"
+                    | "shipped"
+                    | "delivered"
+                    | "cancelled"
+                )
+              }
+              disabled={
+                order.status === "delivered" || order.status === "cancelled"
+              }
             >
               <SelectTrigger className="w-[200px]">
                 <SelectValue placeholder="Update Status" />
@@ -362,7 +400,7 @@ export function OrderDetailsModal({
               </SelectContent>
             </Select>
           </div>
-          
+
           <div className="flex gap-2">
             <Button variant="outline" onClick={onClose}>
               Close

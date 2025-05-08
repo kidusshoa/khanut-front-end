@@ -29,7 +29,7 @@ export default function BusinessRegistrationForm() {
     const file = event.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        setError("profilePicture", {
+        setError("businessImage", {
           type: "manual",
           message: "Image size should be less than 5MB",
         });
@@ -39,7 +39,7 @@ export default function BusinessRegistrationForm() {
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
-        setValue("profilePicture", file);
+        setValue("businessImage", file);
       };
       reader.readAsDataURL(file);
     }
@@ -76,15 +76,15 @@ export default function BusinessRegistrationForm() {
           Business Name
         </label>
         <input
-          {...register("businessName")}
+          {...register("name")}
           type="text"
           className={`mt-1 block w-full rounded-md border ${
-            errors.businessName ? "border-red-500" : "border-gray-300"
+            errors.name ? "border-red-500" : "border-gray-300"
           } shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm`}
         />
-        {errors.businessName && (
+        {errors.name && (
           <p className="mt-1 text-sm text-red-600">
-            {errors.businessName.message?.toString()}
+            {errors.name.message?.toString()}
           </p>
         )}
       </div>
@@ -97,15 +97,15 @@ export default function BusinessRegistrationForm() {
           Phone Number
         </label>
         <input
-          {...register("phoneNumber")}
+          {...register("phone")}
           type="tel"
           className={`mt-1 block w-full rounded-md border ${
-            errors.phoneNumber ? "border-red-500" : "border-gray-300"
+            errors.phone ? "border-red-500" : "border-gray-300"
           } shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm`}
         />
-        {errors.phoneNumber && (
+        {errors.phone && (
           <p className="mt-1 text-sm text-red-600">
-            {errors.phoneNumber.message?.toString()}
+            {errors.phone.message?.toString()}
           </p>
         )}
       </div>
@@ -133,42 +133,189 @@ export default function BusinessRegistrationForm() {
 
       <div>
         <label
-          htmlFor="businessType"
+          htmlFor="category"
           className="block text-sm font-medium text-gray-700"
         >
-          Business Type
+          Business Category
         </label>
         <input
-          {...register("businessType")}
+          {...register("category")}
           type="text"
           className={`mt-1 block w-full rounded-md border ${
-            errors.businessType ? "border-red-500" : "border-gray-300"
+            errors.category ? "border-red-500" : "border-gray-300"
           } shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm`}
         />
-        {errors.businessType && (
+        {errors.category && (
           <p className="mt-1 text-sm text-red-600">
-            {errors.businessType.message?.toString()}
+            {errors.category.message?.toString()}
           </p>
         )}
       </div>
 
       <div>
         <label
-          htmlFor="businessAddress"
+          htmlFor="address"
           className="block text-sm font-medium text-gray-700"
         >
           Business Address
         </label>
         <input
-          {...register("businessAddress")}
+          {...register("address")}
           type="text"
           className={`mt-1 block w-full rounded-md border ${
-            errors.businessAddress ? "border-red-500" : "border-gray-300"
+            errors.address ? "border-red-500" : "border-gray-300"
           } shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm`}
         />
-        {errors.businessAddress && (
+        {errors.address && (
           <p className="mt-1 text-sm text-red-600">
-            {errors.businessAddress.message?.toString()}
+            {errors.address.message?.toString()}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <label
+          htmlFor="city"
+          className="block text-sm font-medium text-gray-700"
+        >
+          City
+        </label>
+        <input
+          {...register("city")}
+          type="text"
+          className={`mt-1 block w-full rounded-md border ${
+            errors.city ? "border-red-500" : "border-gray-300"
+          } shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm`}
+        />
+        {errors.city && (
+          <p className="mt-1 text-sm text-red-600">
+            {errors.city.message?.toString()}
+          </p>
+        )}
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label
+            htmlFor="latitude"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Latitude
+          </label>
+          <input
+            {...register("latitude")}
+            type="text"
+            className={`mt-1 block w-full rounded-md border ${
+              errors.latitude ? "border-red-500" : "border-gray-300"
+            } shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm`}
+          />
+          {errors.latitude && (
+            <p className="mt-1 text-sm text-red-600">
+              {errors.latitude.message?.toString()}
+            </p>
+          )}
+        </div>
+
+        <div>
+          <label
+            htmlFor="longitude"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Longitude
+          </label>
+          <input
+            {...register("longitude")}
+            type="text"
+            className={`mt-1 block w-full rounded-md border ${
+              errors.longitude ? "border-red-500" : "border-gray-300"
+            } shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm`}
+          />
+          {errors.longitude && (
+            <p className="mt-1 text-sm text-red-600">
+              {errors.longitude.message?.toString()}
+            </p>
+          )}
+        </div>
+      </div>
+
+      <div>
+        <label
+          htmlFor="email"
+          className="block text-sm font-medium text-gray-700"
+        >
+          Business Email (Optional)
+        </label>
+        <input
+          {...register("email")}
+          type="email"
+          className={`mt-1 block w-full rounded-md border ${
+            errors.email ? "border-red-500" : "border-gray-300"
+          } shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm`}
+        />
+        {errors.email && (
+          <p className="mt-1 text-sm text-red-600">
+            {errors.email.message?.toString()}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <label
+          htmlFor="website"
+          className="block text-sm font-medium text-gray-700"
+        >
+          Website (Optional)
+        </label>
+        <input
+          {...register("website")}
+          type="url"
+          className={`mt-1 block w-full rounded-md border ${
+            errors.website ? "border-red-500" : "border-gray-300"
+          } shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm`}
+        />
+        {errors.website && (
+          <p className="mt-1 text-sm text-red-600">
+            {errors.website.message?.toString()}
+          </p>
+        )}
+      </div>
+
+      <div>
+        <label
+          htmlFor="businessImage"
+          className="block text-sm font-medium text-gray-700"
+        >
+          Business Image
+        </label>
+        <div className="mt-1 flex items-center space-x-4">
+          <label
+            htmlFor="businessImage"
+            className="flex items-center justify-center w-32 h-32 border-2 border-gray-300 border-dashed rounded-md cursor-pointer hover:border-orange-500"
+          >
+            {imagePreview ? (
+              <img
+                src={imagePreview}
+                alt="Business preview"
+                className="w-full h-full object-cover rounded-md"
+              />
+            ) : (
+              <div className="space-y-1 text-center">
+                <Upload className="mx-auto h-8 w-8 text-gray-400" />
+                <div className="text-xs text-gray-500">Upload image</div>
+              </div>
+            )}
+            <input
+              id="businessImage"
+              type="file"
+              accept="image/*"
+              className="sr-only"
+              onChange={handleImageChange}
+            />
+          </label>
+        </div>
+        {errors.businessImage && (
+          <p className="mt-1 text-sm text-red-600">
+            {errors.businessImage.message?.toString()}
           </p>
         )}
       </div>

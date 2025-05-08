@@ -15,6 +15,7 @@ export interface AuthResponse extends AuthUserData {
   accessToken: string;
   refreshToken: string;
   userId: string;
+  name?: string;
 }
 
 // Extend the built-in Session type

@@ -28,7 +28,6 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import dayjs from "dayjs";
-// Replaced date-fns with dayjs
 import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
 import {
@@ -52,10 +51,27 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 export default function RecurringAppointmentDetailsPage({
   params,
 }: {
-  params: { businessId: string; recurringId: string };
+  params: Promise<{ businessId: string; recurringId: string }>;
 }) {
-  const businessId = params.businessId;
-  const recurringId = params.recurringId;
+  // Handle both Promise and non-Promise cases
+  const [businessId, setBusinessId] = useState<string>("");
+  const [recurringId, setRecurringId] = useState<string>("");
+
+  useEffect(() => {
+    const resolveParams = async () => {
+      try {
+        const resolvedParams =
+          params instanceof Promise ? await params : params;
+        setBusinessId(resolvedParams.businessId);
+        setRecurringId(resolvedParams.recurringId);
+      } catch (error) {
+        console.error("Error resolving params:", error);
+      }
+    };
+
+    resolveParams();
+  }, [params]);
+
   const router = useRouter();
   const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(true);
@@ -115,7 +131,7 @@ export default function RecurringAppointmentDetailsPage({
 
   // Fetch appointment details when authorized
   useEffect(() => {
-    if (isAuthorized) {
+    if (isAuthorized && recurringId) {
       fetchRecurringAppointmentDetails();
     }
   }, [isAuthorized, recurringId]);
@@ -178,15 +194,11 @@ export default function RecurringAppointmentDetailsPage({
         return "Daily";
       case "weekly":
         return `Weekly on ${
-          dayOfWeek !== undefined
-            ? dayjs(2023, 0, 1 + dayOfWeek).format("dddd")
-            : ""
+          dayOfWeek !== undefined ? dayjs().day(dayOfWeek).format("dddd") : ""
         }`;
       case "biweekly":
         return `Every 2 weeks on ${
-          dayOfWeek !== undefined
-            ? dayjs(2023, 0, 1 + dayOfWeek).format("dddd")
-            : ""
+          dayOfWeek !== undefined ? dayjs().day(dayOfWeek).format("dddd") : ""
         }`;
       case "monthly":
         return `Monthly on day ${dayOfMonth}`;
@@ -203,7 +215,7 @@ export default function RecurringAppointmentDetailsPage({
 
   if (isLoading && !recurringAppointment) {
     return (
-      <DashboardLayout>
+      <DashboardLayout businessId={businessId}>
         <div className="flex items-center justify-center min-h-[50vh]">
           <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
         </div>
@@ -213,7 +225,7 @@ export default function RecurringAppointmentDetailsPage({
 
   if (!isAuthorized) {
     return (
-      <DashboardLayout>
+      <DashboardLayout businessId={businessId}>
         <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
           <h1 className="text-2xl font-bold">Unauthorized</h1>
           <p className="text-muted-foreground">
@@ -228,7 +240,7 @@ export default function RecurringAppointmentDetailsPage({
   }
 
   return (
-    <DashboardLayout>
+    <DashboardLayout businessId={businessId}>
       <div className="container mx-auto py-8 px-4">
         <div className="mb-6">
           <Button
@@ -275,10 +287,7 @@ export default function RecurringAppointmentDetailsPage({
                 </div>
                 <p className="text-muted-foreground">
                   Created on{" "}
-                  {format(
-                    dayjs(recurringAppointment.createdAt),
-                    "MMMM d, yyyy"
-                  )}
+                  {dayjs(recurringAppointment.createdAt).format("MMMM D, YYYY")}
                 </p>
               </div>
 
@@ -362,9 +371,8 @@ export default function RecurringAppointmentDetailsPage({
                       <Calendar className="h-4 w-4 text-muted-foreground" />
                       <span>
                         From:{" "}
-                        {format(
-                          dayjs(recurringAppointment.startDate),
-                          "MMMM d, yyyy"
+                        {dayjs(recurringAppointment.startDate).format(
+                          "MMMM D, YYYY"
                         )}
                       </span>
                     </div>
@@ -373,9 +381,8 @@ export default function RecurringAppointmentDetailsPage({
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         <span>
                           To:{" "}
-                          {format(
-                            dayjs(recurringAppointment.endDate),
-                            "MMMM d, yyyy"
+                          {dayjs(recurringAppointment.endDate).format(
+                            "MMMM D, YYYY"
                           )}
                         </span>
                       </div>
@@ -446,9 +453,8 @@ export default function RecurringAppointmentDetailsPage({
                             {filteredAppointments.map((appointment) => (
                               <TableRow key={appointment._id}>
                                 <TableCell>
-                                  {format(
-                                    dayjs(appointment.date),
-                                    "MMM d, yyyy"
+                                  {dayjs(appointment.date).format(
+                                    "MMM D, YYYY"
                                   )}
                                 </TableCell>
                                 <TableCell>

@@ -82,7 +82,7 @@ export default function CartContent({ customerId }: CartContentProps) {
             <p className="text-muted-foreground mb-6">
               You haven't added any items to your cart yet.
             </p>
-            <button 
+            <button
               onClick={() => router.push(`/customer/${customerId}`)}
               className={`${buttonVariants()} bg-orange-600 hover:bg-orange-700`}
             >
@@ -133,8 +133,16 @@ export default function CartContent({ customerId }: CartContentProps) {
                           <div className="flex items-center">
                             <button
                               type="button"
-                              className={`${buttonVariants({ variant: "outline", size: "icon" })} h-8 w-8`}
-                              onClick={() => handleQuantityChange(item.serviceId, item.quantity - 1)}
+                              className={`${buttonVariants({
+                                variant: "outline",
+                                size: "icon",
+                              })} h-8 w-8`}
+                              onClick={() =>
+                                handleQuantityChange(
+                                  item.serviceId,
+                                  item.quantity - 1
+                                )
+                              }
                               disabled={item.quantity <= 1}
                             >
                               <Minus className="h-3 w-3" />
@@ -144,15 +152,26 @@ export default function CartContent({ customerId }: CartContentProps) {
                             </span>
                             <button
                               type="button"
-                              className={`${buttonVariants({ variant: "outline", size: "icon" })} h-8 w-8`}
-                              onClick={() => handleQuantityChange(item.serviceId, item.quantity + 1)}
+                              className={`${buttonVariants({
+                                variant: "outline",
+                                size: "icon",
+                              })} h-8 w-8`}
+                              onClick={() =>
+                                handleQuantityChange(
+                                  item.serviceId,
+                                  item.quantity + 1
+                                )
+                              }
                             >
                               <Plus className="h-3 w-3" />
                             </button>
                           </div>
 
                           <button
-                            className={`${buttonVariants({ variant: "ghost", size: "sm" })} text-red-500 hover:text-red-700 hover:bg-red-50`}
+                            className={`${buttonVariants({
+                              variant: "ghost",
+                              size: "sm",
+                            })} text-red-500 hover:text-red-700 hover:bg-red-50`}
                             onClick={() => handleRemoveItem(item.serviceId)}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -187,22 +206,26 @@ export default function CartContent({ customerId }: CartContentProps) {
                       <span>{formatCurrency(getCartTotal() * 1.15)}</span>
                     </div>
 
-                    <button 
+                    <button
                       onClick={handleCheckout}
                       className={`${buttonVariants()} w-full bg-orange-600 hover:bg-orange-700`}
                     >
                       Proceed to Checkout
                     </button>
 
-                    <button 
-                      className={`${buttonVariants({ variant: "outline" })} w-full mt-2`}
+                    <button
+                      className={`${buttonVariants({
+                        variant: "outline",
+                      })} w-full mt-2`}
                       onClick={() => router.push(`/customer/${customerId}`)}
                     >
                       Continue Shopping
                     </button>
 
-                    <button 
-                      className={`${buttonVariants({ variant: "ghost" })} w-full mt-2 text-red-500 hover:text-red-700 hover:bg-red-50`}
+                    <button
+                      className={`${buttonVariants({
+                        variant: "ghost",
+                      })} w-full mt-2 text-red-500 hover:text-red-700 hover:bg-red-50`}
                       onClick={() => {
                         clearCart();
                         toast.success("Cart cleared");
@@ -222,7 +245,6 @@ export default function CartContent({ customerId }: CartContentProps) {
           isOpen={isCheckoutModalOpen}
           onClose={closeCheckoutModal}
           cartItems={cart}
-          cartTotal={getCartTotal() * 1.15}
           customerId={customerId}
         />
       </div>

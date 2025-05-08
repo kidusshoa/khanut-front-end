@@ -7,7 +7,13 @@ import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
 dayjs.extend(isToday);
 // Replaced date-fns with dayjs
-import { Calendar as CalendarIcon, Clock, Loader2, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Calendar as CalendarIcon,
+  Clock,
+  Loader2,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
@@ -44,7 +50,9 @@ export function AppointmentBooking({
   const { data: session } = useSession();
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
-  const [selectedTimeSlot, setSelectedTimeSlot] = useState<TimeSlot | null>(null);
+  const [selectedTimeSlot, setSelectedTimeSlot] = useState<TimeSlot | null>(
+    null
+  );
   const [notes, setNotes] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingTimeSlots, setIsLoadingTimeSlots] = useState(false);
@@ -62,8 +70,11 @@ export function AppointmentBooking({
 
       try {
         const formattedDate = dayjs(date).format("YYYY-MM-DD");
-        const response = await appointmentApi.getAvailableTimeSlots(serviceId, formattedDate);
-        
+        const response = await appointmentApi.getAvailableTimeSlots(
+          serviceId,
+          formattedDate
+        );
+
         if (response.available) {
           setTimeSlots(response.timeSlots);
         } else {
@@ -97,7 +108,7 @@ export function AppointmentBooking({
 
     try {
       const formattedDate = dayjs(date).format("YYYY-MM-DD");
-      
+
       // Create appointment
       const appointmentData = {
         serviceId,
@@ -107,15 +118,20 @@ export function AppointmentBooking({
         startTime: selectedTimeSlot.startTime,
         endTime: selectedTimeSlot.endTime,
         notes: notes.trim() || undefined,
+        isRecurring: false, // Add the required isRecurring property
       };
 
-      const appointment = await appointmentApi.createAppointment(appointmentData);
-      
+      const appointment = await appointmentApi.createAppointment(
+        appointmentData
+      );
+
       // If service has a price, initialize payment
       if (servicePrice > 0) {
         try {
-          const paymentResponse = await paymentApi.initializeAppointmentPayment(appointment._id);
-          
+          const paymentResponse = await paymentApi.initializeAppointmentPayment(
+            appointment._id
+          );
+
           if (paymentResponse.data?.checkout_url) {
             // Redirect to payment page
             window.location.href = paymentResponse.data.checkout_url;
@@ -126,14 +142,16 @@ export function AppointmentBooking({
           // Continue even if payment fails, as appointment is already created
         }
       }
-      
+
       toast.success("Appointment booked successfully!");
-      
+
       if (onSuccess) {
         onSuccess();
       } else {
         // Redirect to appointments page
-        router.push(`/customer/${session.user.id}/appointments/${appointment._id}`);
+        router.push(
+          `/customer/${session.user.id}/appointments/${appointment._id}`
+        );
       }
     } catch (err: any) {
       console.error("Error booking appointment:", err);
@@ -155,7 +173,7 @@ export function AppointmentBooking({
 
   // Disable past dates in calendar
   const disabledDates = (date: Date) => {
-    return isBefore(date, new Date()) && !dayjs(date).isToday();
+    return dayjs(date).isBefore(dayjs()) && !dayjs(date).isSame(dayjs(), "day");
   };
 
   return (
@@ -198,7 +216,7 @@ export function AppointmentBooking({
       {/* Time Slot Selection */}
       <div className="space-y-2">
         <label className="text-sm font-medium">Select Time</label>
-        
+
         {isLoadingTimeSlots ? (
           <div className="flex justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -219,7 +237,8 @@ export function AppointmentBooking({
                 variant={selectedTimeSlot === slot ? "default" : "outline"}
                 className={cn(
                   "justify-center",
-                  selectedTimeSlot === slot && "bg-orange-600 hover:bg-orange-700"
+                  selectedTimeSlot === slot &&
+                    "bg-orange-600 hover:bg-orange-700"
                 )}
                 onClick={() => setSelectedTimeSlot(slot)}
               >
@@ -250,20 +269,25 @@ export function AppointmentBooking({
           <div className="grid grid-cols-2 gap-2 text-sm">
             <span className="text-muted-foreground">Service:</span>
             <span>{serviceName}</span>
-            
+
             <span className="text-muted-foreground">Date:</span>
             <span>{date ? dayjs(date).format("PPP") : "Not selected"}</span>
-            
+
             <span className="text-muted-foreground">Time:</span>
             <span>
-              {formatTime(selectedTimeSlot.startTime)} - {formatTime(selectedTimeSlot.endTime)}
+              {formatTime(selectedTimeSlot.startTime)} -{" "}
+              {formatTime(selectedTimeSlot.endTime)}
             </span>
-            
+
             <span className="text-muted-foreground">Duration:</span>
             <span>{serviceDuration} minutes</span>
-            
+
             <span className="text-muted-foreground">Price:</span>
-            <span>{servicePrice > 0 ? `${servicePrice.toLocaleString()} ETB` : "Free"}</span>
+            <span>
+              {servicePrice > 0
+                ? `${servicePrice.toLocaleString()} ETB`
+                : "Free"}
+            </span>
           </div>
         </div>
       )}
@@ -284,7 +308,7 @@ export function AppointmentBooking({
             "Book Appointment"
           )}
         </Button>
-        
+
         <Button
           variant="outline"
           className="sm:flex-1"

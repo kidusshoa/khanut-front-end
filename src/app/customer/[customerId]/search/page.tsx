@@ -122,7 +122,7 @@ export default function CustomerSearchPage() {
         const uniqueCategories = Array.from(
           new Set(
             result.businesses
-              .map((business) => business.category)
+              .map((business: any) => business.category)
               .filter(Boolean)
           )
         ) as string[];
@@ -224,8 +224,8 @@ export default function CustomerSearchPage() {
               // Trigger search with the selected query
               const queryParams = new URLSearchParams();
               queryParams.set("q", query);
-              if (selectedCategory) {
-                queryParams.set("category", selectedCategory);
+              if (searchFilters.category) {
+                queryParams.set("category", searchFilters.category);
               }
               router.push(
                 `/customer/${customerId}/search?${queryParams.toString()}`
@@ -287,7 +287,7 @@ export default function CustomerSearchPage() {
                           <ServiceCard
                             key={service._id}
                             service={{
-                              ...service,
+                              _id: service._id,
                               name: service.name || "Unnamed Service",
                               description:
                                 service.description ||
@@ -296,6 +296,7 @@ export default function CustomerSearchPage() {
                               serviceType: service.serviceType || "product",
                               images: service.images || [],
                               customerId: customerId,
+                              businessId: service.businessId || "",
                             }}
                             onDelete={() => {}}
                             onEdit={() => {}}
@@ -372,6 +373,7 @@ export default function CustomerSearchPage() {
                         duration: service.duration,
                         inventory: service.inventory,
                         customerId: customerId, // Pass customer ID to the service card
+                        businessId: service.businessId || "",
                       }}
                       onDelete={() => {}}
                       onEdit={() => {}}

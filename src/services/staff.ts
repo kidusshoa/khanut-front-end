@@ -8,6 +8,7 @@ interface StaffInput {
   position: string;
   specialties?: string[];
   bio?: string;
+  isActive?: boolean;
   availability?: {
     days: string[];
     startTime: string;

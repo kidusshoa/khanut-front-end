@@ -15,7 +15,7 @@ import {
   Loader2,
   ChevronRight,
   Building,
-  ArrowLeft
+  ArrowLeft,
 } from "lucide-react";
 import { serviceApi } from "@/services/service";
 import { BookAppointmentModal } from "@/components/customer/BookAppointmentModal";
@@ -34,7 +34,7 @@ export default function CustomerServiceDetailPage() {
   const { data: session } = useSession();
   const customerId = params.customerId as string;
   const serviceId = params.serviceId as string;
-  
+
   const [service, setService] = useState<any>(null);
   const [business, setBusiness] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -51,7 +51,9 @@ export default function CustomerServiceDetailPage() {
         // Fetch business details
         if (serviceData.businessId) {
           try {
-            const businessData = await businessDetailApi.getBusinessById(serviceData.businessId);
+            const businessData = await businessDetailApi.getBusinessById(
+              serviceData.businessId
+            );
             setBusiness(businessData);
           } catch (businessError) {
             console.error("Error fetching business details:", businessError);
@@ -118,7 +120,7 @@ export default function CustomerServiceDetailPage() {
             <p className="text-muted-foreground mb-6">
               The service you're looking for doesn't exist or has been removed.
             </p>
-            <Button 
+            <Button
               onClick={() => router.push(`/customer/${customerId}/search`)}
               className="bg-orange-600 hover:bg-orange-700"
             >
@@ -134,16 +136,16 @@ export default function CustomerServiceDetailPage() {
     <CustomerDashboardLayout customerId={customerId}>
       {/* Breadcrumb */}
       <div className="flex items-center text-sm text-muted-foreground mb-6">
-        <Button 
-          variant="link" 
+        <Button
+          variant="link"
           className="p-0 h-auto text-muted-foreground"
           onClick={() => router.push(`/customer/${customerId}`)}
         >
           Dashboard
         </Button>
         <ChevronRight className="h-4 w-4 mx-1" />
-        <Button 
-          variant="link" 
+        <Button
+          variant="link"
           className="p-0 h-auto text-muted-foreground"
           onClick={() => router.push(`/customer/${customerId}/search`)}
         >
@@ -152,10 +154,14 @@ export default function CustomerServiceDetailPage() {
         <ChevronRight className="h-4 w-4 mx-1" />
         {business && (
           <>
-            <Button 
-              variant="link" 
+            <Button
+              variant="link"
               className="p-0 h-auto text-muted-foreground"
-              onClick={() => router.push(`/customer/${customerId}/businesses/${business._id}`)}
+              onClick={() =>
+                router.push(
+                  `/customer/${customerId}/businesses/${business._id}`
+                )
+              }
             >
               {business.name}
             </Button>
@@ -165,15 +171,11 @@ export default function CustomerServiceDetailPage() {
         <span className="text-foreground">{service.name}</span>
       </div>
 
-      <Button 
-        variant="outline" 
-        className="mb-6"
-        onClick={() => router.back()}
-      >
+      <Button variant="outline" className="mb-6" onClick={() => router.back()}>
         <ArrowLeft className="h-4 w-4 mr-2" />
         Back
       </Button>
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Service Image */}
         <div>
@@ -193,15 +195,17 @@ export default function CustomerServiceDetailPage() {
 
           {service.images && service.images.length > 1 && (
             <div className="grid grid-cols-4 gap-2">
-              {service.images.slice(0, 4).map((image, index) => (
-                <div key={index} className="rounded-md overflow-hidden h-20">
-                  <img
-                    src={image}
-                    alt={`${service.name} - ${index + 1}`}
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-              ))}
+              {service.images
+                .slice(0, 4)
+                .map((image: string, index: number) => (
+                  <div key={index} className="rounded-md overflow-hidden h-20">
+                    <img
+                      src={image}
+                      alt={`${service.name} - ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                ))}
             </div>
           )}
         </div>
@@ -213,9 +217,21 @@ export default function CustomerServiceDetailPage() {
               <h1 className="text-3xl font-bold">{service.name}</h1>
               <Badge
                 className={`
-                  ${service.serviceType === "appointment" ? "bg-blue-100 text-blue-800" : ""}
-                  ${service.serviceType === "product" ? "bg-orange-100 text-orange-800" : ""}
-                  ${service.serviceType === "in_person" ? "bg-green-100 text-green-800" : ""}
+                  ${
+                    service.serviceType === "appointment"
+                      ? "bg-blue-100 text-blue-800"
+                      : ""
+                  }
+                  ${
+                    service.serviceType === "product"
+                      ? "bg-orange-100 text-orange-800"
+                      : ""
+                  }
+                  ${
+                    service.serviceType === "in_person"
+                      ? "bg-green-100 text-green-800"
+                      : ""
+                  }
                 `}
               >
                 <div className="flex items-center">
@@ -302,7 +318,9 @@ export default function CustomerServiceDetailPage() {
                 <Button
                   className="bg-orange-600 hover:bg-orange-700 flex-1"
                   onClick={() =>
-                    router.push(`/customer/${customerId}/businesses/${service.businessId}`)
+                    router.push(
+                      `/customer/${customerId}/businesses/${service.businessId}`
+                    )
                   }
                 >
                   <MapPin className="mr-2 h-4 w-4" />
@@ -329,13 +347,15 @@ export default function CustomerServiceDetailPage() {
                         </div>
                       )}
                     </div>
-                    
+
                     <div className="flex-1">
                       <h3 className="font-medium text-lg">{business.name}</h3>
                       <p className="text-sm text-muted-foreground mb-2">
                         {business.city || "Location not specified"}
                       </p>
-                      <Link href={`/customer/${customerId}/businesses/${business._id}`}>
+                      <Link
+                        href={`/customer/${customerId}/businesses/${business._id}`}
+                      >
                         <Button variant="outline" className="mt-2">
                           View Business
                         </Button>
@@ -355,6 +375,7 @@ export default function CustomerServiceDetailPage() {
           service={service}
           isOpen={showBookModal}
           onClose={() => setShowBookModal(false)}
+          businessId={service?.businessId || ""}
         />
       )}
 
@@ -363,6 +384,7 @@ export default function CustomerServiceDetailPage() {
           service={service}
           isOpen={showCartModal}
           onClose={() => setShowCartModal(false)}
+          businessId={service?.businessId || ""}
         />
       )}
     </CustomerDashboardLayout>

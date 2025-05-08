@@ -116,7 +116,7 @@ export default function BusinessDetailPage() {
     : 0;
 
   // Format address
-  const formatAddress = (business) => {
+  const formatAddress = (business: any) => {
     if (!business) return "Location not specified";
 
     const parts = [
@@ -303,7 +303,17 @@ export default function BusinessDetailPage() {
                   {filteredServices.map((service) => (
                     <ServiceCard
                       key={service._id}
-                      service={service}
+                      service={{
+                        _id: service._id,
+                        name: service.name,
+                        description: service.description || "",
+                        price: service.price,
+                        serviceType: service.serviceType,
+                        images: service.image ? [service.image] : [],
+                        duration: service.duration,
+                        customerId: service.customerId,
+                        businessId: businessId,
+                      }}
                       onDelete={() => {}}
                       onEdit={() => {}}
                       showActions={false}
@@ -356,7 +366,7 @@ export default function BusinessDetailPage() {
                 <div className="flex justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
                 </div>
-              ) : reviews?.length > 0 ? (
+              ) : reviews && reviews.length > 0 ? (
                 <div className="space-y-6">
                   {reviews.map((review) => (
                     <div

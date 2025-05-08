@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import {
@@ -207,10 +207,25 @@ interface Business {
 export default function PurchaseProductPage({
   params,
 }: {
-  params: { businessId: string; serviceId: string };
+  params: Promise<{ businessId: string; serviceId: string }>;
 }) {
-  const businessId = params.businessId;
-  const serviceId = params.serviceId;
+  const [businessId, setBusinessId] = useState<string>("");
+  const [serviceId, setServiceId] = useState<string>("");
+
+  // Resolve params
+  useEffect(() => {
+    const resolveParams = async () => {
+      try {
+        const resolvedParams = await params;
+        setBusinessId(resolvedParams.businessId);
+        setServiceId(resolvedParams.serviceId);
+      } catch (error) {
+        console.error("Error resolving params:", error);
+      }
+    };
+
+    resolveParams();
+  }, [params]);
   const router = useRouter();
   const { toast } = useToast();
   const [quantity, setQuantity] = useState(1);
@@ -486,7 +501,7 @@ export default function PurchaseProductPage({
         <h1 className="text-2xl font-bold">Purchase Product</h1>
 
         {!isAuthenticated && (
-          <Alert variant="warning" className="bg-yellow-50 border-yellow-200">
+          <Alert className="bg-yellow-50 border-yellow-200">
             <Info className="h-4 w-4 text-yellow-600" />
             <AlertTitle>Authentication Required</AlertTitle>
             <AlertDescription>
@@ -540,18 +555,20 @@ export default function PurchaseProductPage({
               {service.images && service.images.length > 1 && (
                 <CardContent className="pt-4">
                   <div className="grid grid-cols-4 gap-2">
-                    {service.images.slice(0, 4).map((image, index) => (
-                      <div
-                        key={index}
-                        className="h-16 w-full bg-muted rounded-md overflow-hidden"
-                      >
-                        <img
-                          src={image}
-                          alt={`${service.name} - Image ${index + 1}`}
-                          className="object-cover w-full h-full"
-                        />
-                      </div>
-                    ))}
+                    {service.images
+                      .slice(0, 4)
+                      .map((image: string, index: number) => (
+                        <div
+                          key={index}
+                          className="h-16 w-full bg-muted rounded-md overflow-hidden"
+                        >
+                          <img
+                            src={image}
+                            alt={`${service.name} - Image ${index + 1}`}
+                            className="object-cover w-full h-full"
+                          />
+                        </div>
+                      ))}
                   </div>
                 </CardContent>
               )}

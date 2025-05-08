@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2 } from "lucide-react";
@@ -13,13 +13,28 @@ import { businessService } from "@/services/business";
 import { LocationPicker } from "@/components/LocationPicker";
 
 export default function BusinessRegistrationPage({
-  params: { businessOwnerId },
+  params,
 }: {
-  params: { businessOwnerId: string };
+  params: Promise<{ businessOwnerId: string }>;
 }) {
   const router = useRouter();
+  const [businessOwnerId, setBusinessOwnerId] = useState<string>("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Resolve params
+  useEffect(() => {
+    const resolveParams = async () => {
+      try {
+        const resolvedParams = await params;
+        setBusinessOwnerId(resolvedParams.businessOwnerId);
+      } catch (error) {
+        console.error("Error resolving params:", error);
+      }
+    };
+
+    resolveParams();
+  }, [params]);
 
   const {
     register,

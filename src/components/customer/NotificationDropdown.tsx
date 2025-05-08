@@ -4,17 +4,18 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { 
-  Bell, 
-  Check, 
-  Info, 
-  AlertCircle, 
-  CheckCircle, 
+import {
+  Bell,
+  Check,
+  Info,
+  AlertCircle,
+  CheckCircle,
   XCircle,
-  Loader2
+  Loader2,
 } from "lucide-react";
 import dayjs from "dayjs";
-// Replaced date-fns with dayjs
+import relativeTime from "dayjs/plugin/relativeTime";
+dayjs.extend(relativeTime);
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
@@ -31,12 +32,12 @@ export function NotificationDropdown() {
   const { data: session } = useSession();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
-  
+
   // Fetch notifications
-  const { 
-    data: notifications = [], 
+  const {
+    data: notifications = [],
     isLoading,
-    refetch 
+    refetch,
   } = useQuery({
     queryKey: ["notifications", session?.user?.id],
     queryFn: async () => {
@@ -45,12 +46,9 @@ export function NotificationDropdown() {
     },
     enabled: !!session?.user?.id,
   });
-  
+
   // Fetch unread count
-  const { 
-    data: unreadData,
-    refetch: refetchUnreadCount
-  } = useQuery({
+  const { data: unreadData, refetch: refetchUnreadCount } = useQuery({
     queryKey: ["notificationsUnreadCount", session?.user?.id],
     queryFn: async () => {
       if (!session?.user?.id) return { count: 0 };
@@ -58,9 +56,9 @@ export function NotificationDropdown() {
     },
     enabled: !!session?.user?.id,
   });
-  
+
   const unreadCount = unreadData?.count || 0;
-  
+
   // Refresh notifications when dropdown opens
   useEffect(() => {
     if (open && session?.user?.id) {
@@ -68,24 +66,24 @@ export function NotificationDropdown() {
       refetchUnreadCount();
     }
   }, [open, session?.user?.id, refetch, refetchUnreadCount]);
-  
+
   // Handle notification click
   const handleNotificationClick = async (notification: Notification) => {
     try {
       if (!notification.read) {
         await notificationApi.markAsRead(notification._id);
-        
+
         // Update cache
         queryClient.setQueryData(
           ["notifications", session?.user?.id],
           (oldData: Notification[] | undefined) => {
             if (!oldData) return [];
-            return oldData.map(n => 
+            return oldData.map((n) =>
               n._id === notification._id ? { ...n, read: true } : n
             );
           }
         );
-        
+
         // Update unread count
         queryClient.setQueryData(
           ["notificationsUnreadCount", session?.user?.id],
@@ -95,7 +93,7 @@ export function NotificationDropdown() {
           }
         );
       }
-      
+
       // Navigate to link if provided
       if (notification.link) {
         setOpen(false);
@@ -105,36 +103,36 @@ export function NotificationDropdown() {
       console.error("Error handling notification click:", error);
     }
   };
-  
+
   // Mark all as read
   const handleMarkAllAsRead = async () => {
     if (!session?.user?.id) return;
-    
+
     try {
       await notificationApi.markAllAsRead(session.user.id);
-      
+
       // Update cache
       queryClient.setQueryData(
         ["notifications", session?.user?.id],
         (oldData: Notification[] | undefined) => {
           if (!oldData) return [];
-          return oldData.map(n => ({ ...n, read: true }));
+          return oldData.map((n) => ({ ...n, read: true }));
         }
       );
-      
+
       // Update unread count
       queryClient.setQueryData(
         ["notificationsUnreadCount", session?.user?.id],
         { count: 0 }
       );
-      
+
       toast.success("All notifications marked as read");
     } catch (error) {
       console.error("Error marking all as read:", error);
       toast.error("Failed to mark all as read");
     }
   };
-  
+
   // Get notification icon based on type
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -150,16 +148,16 @@ export function NotificationDropdown() {
         return <Info className="h-4 w-4 text-blue-500" />;
     }
   };
-  
+
   // Format date
   const formatDate = (dateString: string) => {
     try {
-      return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+      return dayjs(dateString).fromNow();
     } catch (error) {
       return "Unknown time";
     }
   };
-  
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -176,9 +174,9 @@ export function NotificationDropdown() {
         <div className="flex items-center justify-between p-4">
           <h4 className="font-medium">Notifications</h4>
           {unreadCount > 0 && (
-            <Button 
-              variant="ghost" 
-              size="sm" 
+            <Button
+              variant="ghost"
+              size="sm"
               className="h-8 text-xs"
               onClick={handleMarkAllAsRead}
             >
@@ -195,7 +193,9 @@ export function NotificationDropdown() {
         ) : notifications.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-8 text-center">
             <Bell className="h-8 w-8 text-muted-foreground mb-2" />
-            <p className="text-sm text-muted-foreground">No notifications yet</p>
+            <p className="text-sm text-muted-foreground">
+              No notifications yet
+            </p>
           </div>
         ) : (
           <ScrollArea className="h-[300px]">
@@ -213,7 +213,11 @@ export function NotificationDropdown() {
                       {getNotificationIcon(notification.type)}
                     </div>
                     <div className="space-y-1 flex-1">
-                      <p className={`text-sm ${!notification.read ? "font-medium" : ""}`}>
+                      <p
+                        className={`text-sm ${
+                          !notification.read ? "font-medium" : ""
+                        }`}
+                      >
                         {notification.title}
                       </p>
                       <p className="text-xs text-muted-foreground line-clamp-2">

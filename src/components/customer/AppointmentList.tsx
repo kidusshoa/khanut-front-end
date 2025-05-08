@@ -2,22 +2,28 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  Calendar, 
-  ChevronRight, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Calendar,
+  ChevronRight,
+  Clock,
+  CheckCircle,
+  XCircle,
   AlertCircle,
   Search,
   Filter,
-  CalendarRange
+  CalendarRange,
 } from "lucide-react";
 import dayjs from "dayjs";
 import isToday from "dayjs/plugin/isToday";
 dayjs.extend(isToday);
 // Replaced date-fns with dayjs
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -42,7 +48,9 @@ export function AppointmentList({ customerId }: AppointmentListProps) {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
-  const [filteredAppointments, setFilteredAppointments] = useState<Appointment[]>([]);
+  const [filteredAppointments, setFilteredAppointments] = useState<
+    Appointment[]
+  >([]);
 
   // Fetch appointments
   useEffect(() => {
@@ -69,21 +77,25 @@ export function AppointmentList({ customerId }: AppointmentListProps) {
 
     // Apply status filter
     if (statusFilter) {
-      filtered = filtered.filter(appointment => appointment.status === statusFilter);
+      filtered = filtered.filter(
+        (appointment) => appointment.status === statusFilter
+      );
     }
 
     // Apply search filter (search by service name or business name)
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(appointment => {
-        const serviceName = typeof appointment.serviceId === 'string' 
-          ? '' 
-          : appointment.serviceId.name.toLowerCase();
-        
-        const businessName = typeof appointment.businessId === 'string'
-          ? ''
-          : appointment.businessId.name.toLowerCase();
-        
+      filtered = filtered.filter((appointment) => {
+        const serviceName =
+          typeof appointment.serviceId === "string"
+            ? ""
+            : appointment.serviceId.name.toLowerCase();
+
+        const businessName =
+          typeof appointment.businessId === "string"
+            ? ""
+            : appointment.businessId.name.toLowerCase();
+
         return serviceName.includes(term) || businessName.includes(term);
       });
     }
@@ -121,36 +133,50 @@ export function AppointmentList({ customerId }: AppointmentListProps) {
   const getStatusBadge = (status: string, date: string, startTime: string) => {
     const appointmentDate = dayjs(date);
     const [hours, minutes] = startTime.split(":");
-    const appointmentDateTime = new Date(appointmentDate);
-    appointmentDateTime.setHours(parseInt(hours), parseInt(minutes));
-    
-    const isPastAppointment = isPast(appointmentDateTime);
+    const appointmentDateTime = appointmentDate
+      .hour(parseInt(hours))
+      .minute(parseInt(minutes))
+      .toDate();
+
+    const isPastAppointment = dayjs(appointmentDateTime).isBefore(dayjs());
 
     switch (status) {
       case "pending":
         return (
-          <Badge variant="outline" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400">
+          <Badge
+            variant="outline"
+            className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400"
+          >
             <Clock className="mr-1 h-3 w-3" />
             Pending
           </Badge>
         );
       case "confirmed":
         return (
-          <Badge variant="outline" className="bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">
+          <Badge
+            variant="outline"
+            className="bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
+          >
             <CheckCircle className="mr-1 h-3 w-3" />
             Confirmed
           </Badge>
         );
       case "completed":
         return (
-          <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+          <Badge
+            variant="outline"
+            className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+          >
             <CheckCircle className="mr-1 h-3 w-3" />
             Completed
           </Badge>
         );
       case "cancelled":
         return (
-          <Badge variant="outline" className="bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400">
+          <Badge
+            variant="outline"
+            className="bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+          >
             <XCircle className="mr-1 h-3 w-3" />
             Cancelled
           </Badge>
@@ -167,8 +193,8 @@ export function AppointmentList({ customerId }: AppointmentListProps) {
 
   // Get service name
   const getServiceName = (appointment: Appointment) => {
-    if (typeof appointment.serviceId === 'string') {
-      return 'Service';
+    if (typeof appointment.serviceId === "string") {
+      return "Service";
     } else {
       return appointment.serviceId.name;
     }
@@ -176,8 +202,8 @@ export function AppointmentList({ customerId }: AppointmentListProps) {
 
   // Get business name
   const getBusinessName = (appointment: Appointment) => {
-    if (typeof appointment.businessId === 'string') {
-      return 'Business';
+    if (typeof appointment.businessId === "string") {
+      return "Business";
     } else {
       return appointment.businessId.name;
     }
@@ -254,7 +280,7 @@ export function AppointmentList({ customerId }: AppointmentListProps) {
                 : "No appointments match your current filters. Try adjusting your search or filter criteria."}
             </p>
             {appointments.length === 0 && (
-              <Button 
+              <Button
                 className="mt-4 bg-orange-600 hover:bg-orange-700"
                 onClick={() => router.push(`/customer/${customerId}/search`)}
               >
@@ -266,10 +292,14 @@ export function AppointmentList({ customerId }: AppointmentListProps) {
       ) : (
         <div className="space-y-4">
           {filteredAppointments.map((appointment) => (
-            <Card 
-              key={appointment._id} 
+            <Card
+              key={appointment._id}
               className="w-full hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => router.push(`/customer/${customerId}/appointments/${appointment._id}`)}
+              onClick={() =>
+                router.push(
+                  `/customer/${customerId}/appointments/${appointment._id}`
+                )
+              }
             >
               <CardHeader className="pb-2">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
@@ -282,7 +312,11 @@ export function AppointmentList({ customerId }: AppointmentListProps) {
                       {formatDate(appointment.date)}
                     </CardDescription>
                   </div>
-                  {getStatusBadge(appointment.status, appointment.date, appointment.startTime)}
+                  {getStatusBadge(
+                    appointment.status,
+                    appointment.date,
+                    appointment.startTime
+                  )}
                 </div>
               </CardHeader>
               <CardContent>
@@ -292,17 +326,21 @@ export function AppointmentList({ customerId }: AppointmentListProps) {
                       <Calendar className="h-5 w-5 text-gray-500" />
                     </div>
                     <div>
-                      <p className="font-medium">{getBusinessName(appointment)}</p>
+                      <p className="font-medium">
+                        {getBusinessName(appointment)}
+                      </p>
                       <p className="text-sm text-muted-foreground">
-                        {formatTime(appointment.startTime)} - {formatTime(appointment.endTime)}
+                        {formatTime(appointment.startTime)} -{" "}
+                        {formatTime(appointment.endTime)}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <p className="font-medium">
-                      {typeof appointment.serviceId !== 'string' && appointment.serviceId.price > 0
+                      {typeof appointment.serviceId !== "string" &&
+                      appointment.serviceId.price > 0
                         ? `${appointment.serviceId.price.toLocaleString()} ETB`
-                        : 'Free'}
+                        : "Free"}
                     </p>
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </div>

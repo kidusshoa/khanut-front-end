@@ -1,15 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, Lock, AlertCircle, ArrowLeft, CheckCircle } from "lucide-react";
+import {
+  Loader2,
+  Lock,
+  AlertCircle,
+  ArrowLeft,
+  CheckCircle,
+} from "lucide-react";
 import Link from "next/link";
-import { resetPasswordSchema, ResetPasswordInput } from "@/lib/validations/auth";
+import {
+  resetPasswordSchema,
+  ResetPasswordInput,
+} from "@/lib/validations/auth";
 import { authService } from "@/services/auth";
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,11 +52,15 @@ export default function ResetPasswordPage() {
         if (result.valid) {
           setIsValidToken(true);
         } else {
-          setTokenError("This reset link has expired. Please request a new one.");
+          setTokenError(
+            "This reset link has expired. Please request a new one."
+          );
         }
       } catch (error) {
         console.error("Token validation error:", error);
-        setTokenError("This reset link is invalid or has expired. Please request a new one.");
+        setTokenError(
+          "This reset link is invalid or has expired. Please request a new one."
+        );
       } finally {
         setIsValidating(false);
       }
@@ -105,9 +118,7 @@ export default function ResetPasswordPage() {
                     Reset link error
                   </h3>
                   <div className="mt-2">
-                    <p className="text-sm text-gray-500">
-                      {tokenError}
-                    </p>
+                    <p className="text-sm text-gray-500">{tokenError}</p>
                   </div>
                   <div className="mt-5">
                     <Link
@@ -160,7 +171,8 @@ export default function ResetPasswordPage() {
                 </h3>
                 <div className="mt-2">
                   <p className="text-sm text-gray-500">
-                    Your password has been reset successfully. You can now log in with your new password.
+                    Your password has been reset successfully. You can now log
+                    in with your new password.
                   </p>
                 </div>
                 <div className="mt-5">
@@ -224,7 +236,9 @@ export default function ResetPasswordPage() {
                     type="password"
                     autoComplete="new-password"
                     className={`appearance-none block w-full pl-10 px-3 py-2 border ${
-                      errors.confirmPassword ? "border-red-300" : "border-gray-300"
+                      errors.confirmPassword
+                        ? "border-red-300"
+                        : "border-gray-300"
                     } rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-orange-500 focus:border-orange-500 sm:text-sm`}
                   />
                   {errors.confirmPassword && (
@@ -258,5 +272,26 @@ export default function ResetPasswordPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+          <div className="sm:mx-auto sm:w-full sm:max-w-md">
+            <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+              Loading...
+            </h2>
+            <div className="mt-8 flex justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-orange-600" />
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <ResetPasswordContent />
+    </Suspense>
   );
 }

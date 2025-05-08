@@ -13,10 +13,25 @@ import { Staff } from "@/lib/types/staff";
 export default function StaffAvailabilityPage({
   params,
 }: {
-  params: { businessId: string; staffId: string };
+  params: Promise<{ businessId: string; staffId: string }>;
 }) {
-  const businessId = params.businessId;
-  const staffId = params.staffId;
+  const [businessId, setBusinessId] = useState<string>("");
+  const [staffId, setStaffId] = useState<string>("");
+
+  // Resolve params
+  useEffect(() => {
+    const resolveParams = async () => {
+      try {
+        const resolvedParams = await params;
+        setBusinessId(resolvedParams.businessId);
+        setStaffId(resolvedParams.staffId);
+      } catch (error) {
+        console.error("Error resolving params:", error);
+      }
+    };
+
+    resolveParams();
+  }, [params]);
   const router = useRouter();
   const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(true);
@@ -59,7 +74,7 @@ export default function StaffAvailabilityPage({
 
   if (isLoading) {
     return (
-      <DashboardLayout>
+      <DashboardLayout businessId={businessId}>
         <div className="flex items-center justify-center min-h-[50vh]">
           <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
         </div>
@@ -69,7 +84,7 @@ export default function StaffAvailabilityPage({
 
   if (!isAuthorized) {
     return (
-      <DashboardLayout>
+      <DashboardLayout businessId={businessId}>
         <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
           <h1 className="text-2xl font-bold">Unauthorized</h1>
           <p className="text-muted-foreground">
@@ -84,7 +99,7 @@ export default function StaffAvailabilityPage({
   }
 
   return (
-    <DashboardLayout>
+    <DashboardLayout businessId={businessId}>
       <div className="container mx-auto py-8 px-4">
         <div className="mb-6">
           <Button

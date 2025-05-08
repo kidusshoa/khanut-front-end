@@ -8,7 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { reviewApi } from "@/services/review";
 import dayjs from "dayjs";
-// Replaced date-fns with dayjs
+import relativeTime from "dayjs/plugin/relativeTime";
+dayjs.extend(relativeTime);
 import { toast } from "react-hot-toast";
 import { WriteReviewModal } from "./WriteReviewModal";
 
@@ -30,21 +31,21 @@ export function ReviewList({ serviceId, businessId }: ReviewListProps) {
     const fetchReviews = async () => {
       try {
         setIsLoading(true);
-        
+
         // Fetch reviews
         const reviewsData = await reviewApi.getServiceReviews(serviceId);
         setReviews(reviewsData);
-        
+
         // Fetch stats
         const statsData = await reviewApi.getServiceRatingStats(serviceId);
         setStats(statsData);
-        
+
         // Check if current user has already reviewed
         if (session?.user?.id) {
           const userReview = reviewsData.find(
             (review: any) => review.customerId._id === session.user.id
           );
-          
+
           if (userReview) {
             setUserHasReviewed(true);
             setUserReview(userReview);
@@ -70,17 +71,17 @@ export function ReviewList({ serviceId, businessId }: ReviewListProps) {
         rating: reviewData.rating,
         comment: reviewData.comment,
       });
-      
+
       // Refetch reviews and stats
       const reviewsData = await reviewApi.getServiceReviews(serviceId);
       setReviews(reviewsData);
-      
+
       const statsData = await reviewApi.getServiceRatingStats(serviceId);
       setStats(statsData);
-      
+
       setUserHasReviewed(true);
       setUserReview(newReview);
-      
+
       toast.success("Review submitted successfully!");
     } catch (error) {
       console.error("Error submitting review:", error);
@@ -94,20 +95,20 @@ export function ReviewList({ serviceId, businessId }: ReviewListProps) {
         rating: reviewData.rating,
         comment: reviewData.comment,
       });
-      
+
       // Refetch reviews and stats
       const reviewsData = await reviewApi.getServiceReviews(serviceId);
       setReviews(reviewsData);
-      
+
       const statsData = await reviewApi.getServiceRatingStats(serviceId);
       setStats(statsData);
-      
+
       // Update user review
       const updatedUserReview = reviewsData.find(
         (review: any) => review.customerId._id === session?.user?.id
       );
       setUserReview(updatedUserReview);
-      
+
       toast.success("Review updated successfully!");
     } catch (error) {
       console.error("Error updating review:", error);
@@ -118,17 +119,17 @@ export function ReviewList({ serviceId, businessId }: ReviewListProps) {
   const handleReviewDelete = async () => {
     try {
       await reviewApi.deleteReview(userReview._id);
-      
+
       // Refetch reviews and stats
       const reviewsData = await reviewApi.getServiceReviews(serviceId);
       setReviews(reviewsData);
-      
+
       const statsData = await reviewApi.getServiceRatingStats(serviceId);
       setStats(statsData);
-      
+
       setUserHasReviewed(false);
       setUserReview(null);
-      
+
       toast.success("Review deleted successfully!");
     } catch (error) {
       console.error("Error deleting review:", error);
@@ -140,20 +141,30 @@ export function ReviewList({ serviceId, businessId }: ReviewListProps) {
     const stars = [];
     const fullStars = Math.floor(rating);
     const hasHalfStar = rating % 1 !== 0;
-    
+
     for (let i = 0; i < fullStars; i++) {
-      stars.push(<Star key={`full-${i}`} className="h-4 w-4 fill-yellow-400 text-yellow-400" />);
+      stars.push(
+        <Star
+          key={`full-${i}`}
+          className="h-4 w-4 fill-yellow-400 text-yellow-400"
+        />
+      );
     }
-    
+
     if (hasHalfStar) {
-      stars.push(<StarHalf key="half" className="h-4 w-4 fill-yellow-400 text-yellow-400" />);
+      stars.push(
+        <StarHalf
+          key="half"
+          className="h-4 w-4 fill-yellow-400 text-yellow-400"
+        />
+      );
     }
-    
+
     const emptyStars = 5 - stars.length;
     for (let i = 0; i < emptyStars; i++) {
       stars.push(<Star key={`empty-${i}`} className="h-4 w-4 text-gray-300" />);
     }
-    
+
     return stars;
   };
 
@@ -167,8 +178,10 @@ export function ReviewList({ serviceId, businessId }: ReviewListProps) {
 
   return (
     <div className="mt-8">
-      <h2 className="text-2xl font-bold text-gray-900 mb-4">Customer Reviews</h2>
-      
+      <h2 className="text-2xl font-bold text-gray-900 mb-4">
+        Customer Reviews
+      </h2>
+
       {stats && (
         <div className="bg-gray-50 p-4 rounded-lg mb-6">
           <div className="flex items-center mb-2">
@@ -179,10 +192,11 @@ export function ReviewList({ serviceId, businessId }: ReviewListProps) {
               {stats.averageRating.toFixed(1)}
             </span>
             <span className="text-gray-500 ml-2">
-              ({stats.totalReviews} {stats.totalReviews === 1 ? "review" : "reviews"})
+              ({stats.totalReviews}{" "}
+              {stats.totalReviews === 1 ? "review" : "reviews"})
             </span>
           </div>
-          
+
           <div className="space-y-1">
             {[5, 4, 3, 2, 1].map((rating) => (
               <div key={rating} className="flex items-center">
@@ -192,7 +206,11 @@ export function ReviewList({ serviceId, businessId }: ReviewListProps) {
                     className="bg-yellow-400 h-2 rounded-full"
                     style={{
                       width: stats.totalReviews
-                        ? `${(stats.ratingDistribution[rating] / stats.totalReviews) * 100}%`
+                        ? `${
+                            (stats.ratingDistribution[rating] /
+                              stats.totalReviews) *
+                            100
+                          }%`
                         : "0%",
                     }}
                   ></div>
@@ -205,7 +223,7 @@ export function ReviewList({ serviceId, businessId }: ReviewListProps) {
           </div>
         </div>
       )}
-      
+
       {session?.user?.id && (
         <div className="mb-6">
           {userHasReviewed ? (
@@ -216,7 +234,7 @@ export function ReviewList({ serviceId, businessId }: ReviewListProps) {
                   {renderStars(userReview.rating)}
                 </div>
                 <span className="ml-2 text-gray-600">
-                  {formatDistanceToNow(new Date(userReview.createdAt), { addSuffix: true })}
+                  {dayjs(userReview.createdAt).fromNow()}
                 </span>
               </div>
               <p className="text-gray-700 mb-3">{userReview.comment}</p>
@@ -248,7 +266,7 @@ export function ReviewList({ serviceId, businessId }: ReviewListProps) {
           )}
         </div>
       )}
-      
+
       {reviews.length > 0 ? (
         <div className="space-y-4">
           {reviews
@@ -275,7 +293,7 @@ export function ReviewList({ serviceId, businessId }: ReviewListProps) {
                           {renderStars(review.rating)}
                         </div>
                         <span className="ml-2 text-sm text-gray-500">
-                          {formatDistanceToNow(new Date(review.createdAt), { addSuffix: true })}
+                          {dayjs(review.createdAt).fromNow()}
                         </span>
                       </div>
                     </div>
@@ -287,10 +305,12 @@ export function ReviewList({ serviceId, businessId }: ReviewListProps) {
         </div>
       ) : (
         <div className="text-center py-8 bg-gray-50 rounded-lg">
-          <p className="text-gray-500">No reviews yet. Be the first to review this service!</p>
+          <p className="text-gray-500">
+            No reviews yet. Be the first to review this service!
+          </p>
         </div>
       )}
-      
+
       <WriteReviewModal
         isOpen={isReviewModalOpen}
         onClose={() => setIsReviewModalOpen(false)}

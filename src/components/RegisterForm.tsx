@@ -6,9 +6,26 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { RegisterInput, registerSchema } from "@/lib/validations/auth";
+import * as z from "zod";
+import { registerSchema } from "@/lib/validations/auth";
 import { authService } from "@/services/auth";
 import { useAuthStore } from "@/store/authStore";
+
+// Extended schema that includes confirmPassword and acceptTerms
+const extendedRegisterSchema = registerSchema
+  .extend({
+    confirmPassword: z.string(),
+    acceptTerms: z.boolean().refine((val) => val === true, {
+      message: "You must accept the terms and conditions",
+    }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
+  });
+
+// Define the type for the form data
+type ExtendedRegisterInput = z.infer<typeof extendedRegisterSchema>;
 
 export default function RegisterForm() {
   const router = useRouter();
@@ -21,16 +38,18 @@ export default function RegisterForm() {
     handleSubmit,
     formState: { errors, isSubmitting },
     setError,
-  } = useForm<RegisterInput>({
-    resolver: zodResolver(registerSchema),
+  } = useForm<ExtendedRegisterInput>({
+    resolver: zodResolver(extendedRegisterSchema),
     defaultValues: {
       role: "customer",
     },
   });
 
-  const onSubmit = async (data: RegisterInput) => {
+  const onSubmit = async (data: ExtendedRegisterInput) => {
+    // Extract only the fields needed for the API
+    const { confirmPassword, acceptTerms, ...registerData } = data;
     try {
-      const response = await authService.register(data);
+      const response = await authService.register(registerData);
       setTempEmail(data.email);
       router.push("/verify");
     } catch (error: any) {

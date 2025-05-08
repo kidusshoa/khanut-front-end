@@ -46,11 +46,12 @@ api.interceptors.response.use(
     // Handle 401 Unauthorized errors
     if (error.response?.status === 401 && !originalRequest._retry) {
       // Check if the error is due to token expiration
+      const responseData = error.response?.data as Record<string, any>;
       const isTokenExpired =
-        error.response?.data?.code === "TOKEN_EXPIRED" ||
-        (error.response?.data?.message &&
-          (error.response?.data?.message.includes("expired") ||
-            error.response?.data?.message.includes("Token expired")));
+        (responseData && responseData.code === "TOKEN_EXPIRED") ||
+        (responseData?.message &&
+          (responseData.message.includes("expired") ||
+            responseData.message.includes("Token expired")));
 
       if (isTokenExpired) {
         console.log("Token expired, attempting to refresh...");
