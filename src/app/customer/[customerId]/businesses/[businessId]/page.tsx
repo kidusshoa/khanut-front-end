@@ -547,6 +547,7 @@ export default function CustomerBusinessDetailPage() {
                       service={{
                         ...service,
                         customerId: customerId, // Pass customer ID to the service card
+                        businessName: business?.name, // Pass business name to the service card
                       }}
                       onDelete={() => {}}
                       onEdit={() => {}}

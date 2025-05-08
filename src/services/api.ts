@@ -7,9 +7,7 @@ import axios, {
 import Cookies from "js-cookie";
 import { handleLogout } from "@/lib/auth-utils";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL
-  ? `${process.env.NEXT_PUBLIC_API_URL}/api`
-  : "http://localhost:4000/api";
+const API_URL = `${process.env.NEXT_PUBLIC_API_URL}/api`;
 
 console.log("API URL configured as:", API_URL);
 

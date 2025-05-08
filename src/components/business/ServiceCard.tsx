@@ -18,6 +18,12 @@ interface ServiceCardProps {
     inventory?: number;
     customerId?: string;
     businessId: string;
+    businessName?: string;
+    availability?: {
+      days?: string[];
+      startTime?: string;
+      endTime?: string;
+    };
   };
   onDelete: () => void;
   onEdit: () => void;

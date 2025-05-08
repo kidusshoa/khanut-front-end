@@ -61,6 +61,7 @@ export default function CustomerSearchPage() {
     duration?: number;
     inventory?: number;
     businessId?: string;
+    businessName?: string;
   }
 
   // Define business type
@@ -297,6 +298,7 @@ export default function CustomerSearchPage() {
                               images: service.images || [],
                               customerId: customerId,
                               businessId: service.businessId || "",
+                              businessName: service.businessName || "Business",
                             }}
                             onDelete={() => {}}
                             onEdit={() => {}}
@@ -374,6 +376,7 @@ export default function CustomerSearchPage() {
                         inventory: service.inventory,
                         customerId: customerId, // Pass customer ID to the service card
                         businessId: service.businessId || "",
+                        businessName: service.businessName || "Business",
                       }}
                       onDelete={() => {}}
                       onEdit={() => {}}

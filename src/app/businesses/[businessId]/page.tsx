@@ -205,7 +205,9 @@ export default function BusinessDetailPage() {
 
         <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold">{business?.name}</h1>
+            <h1 className="text-3xl font-bold text-orange-600">
+              {business?.name}
+            </h1>
             <div className="flex items-center mt-2 text-muted-foreground">
               <MapPin className="h-4 w-4 mr-1" />
               <span>{formatAddress(business)}</span>
@@ -313,6 +315,7 @@ export default function BusinessDetailPage() {
                         duration: service.duration,
                         customerId: service.customerId,
                         businessId: businessId,
+                        businessName: business?.name,
                       }}
                       onDelete={() => {}}
                       onEdit={() => {}}
