@@ -4,8 +4,12 @@ import { useEffect, useState, Fragment } from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { FaSave, FaUserPlus } from "react-icons/fa";
 import { toast } from "react-hot-toast";
+import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 
 export default function SettingsPage() {
+  const router = useRouter();
+
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -28,17 +32,42 @@ export default function SettingsPage() {
   useEffect(() => {
     async function fetchSettings() {
       try {
-        const res = await fetch("/api/admin/settings");
+        const accessToken = Cookies.get("client-token");
+
+        if (!accessToken) {
+          router.push("/login");
+          return;
+        }
+
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/admin/settings/profile`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch settings");
+        }
+
         const data = await res.json();
-        setForm(data);
-      } catch {
+        setForm({
+          name: data.name || "",
+          email: data.email || "",
+          notify: data.notificationsEnabled || false,
+          twoFactorAuth: data.twoFactorEnabled || false,
+        });
+      } catch (error) {
+        console.error("Error fetching settings:", error);
         toast.error("Failed to load settings ❌");
       }
     }
     fetchSettings();
-  }, []);
+  }, [router]);
 
-  const handleChange = (e: any) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
     setForm((prev) => ({
       ...prev,
@@ -46,23 +75,77 @@ export default function SettingsPage() {
     }));
   };
 
-  const handlePasswordChange = (e: any) => {
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setPasswordForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = async (e: any) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSaving(true);
+
     try {
-      await fetch("/api/admin/settings", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
+      const accessToken = Cookies.get("client-token");
+
+      if (!accessToken) {
+        router.push("/login");
+        return;
+      }
+
+      // Prepare the data for the API
+      const updateData = {
+        name: form.name,
+        // Only include password fields if they are filled
+        ...(passwordForm.oldPassword && passwordForm.newPassword
+          ? {
+              currentPassword: passwordForm.oldPassword,
+              newPassword: passwordForm.newPassword,
+            }
+          : {}),
+      };
+
+      // Validate password match if changing password
+      if (
+        passwordForm.newPassword &&
+        passwordForm.newPassword !== passwordForm.confirmPassword
+      ) {
+        toast.error("New passwords don't match ❌");
+        setSaving(false);
+        return;
+      }
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/settings/profile`,
+        {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify(updateData),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to save settings");
+      }
+
+      // Reset password fields after successful update
+      if (passwordForm.newPassword) {
+        setPasswordForm({
+          oldPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        });
+      }
+
       toast.success("Settings saved ✅");
-    } catch {
-      toast.error("Failed to save settings ❌");
+    } catch (error) {
+      console.error("Error saving settings:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save settings ❌"
+      );
     } finally {
       setSaving(false);
     }
@@ -70,16 +153,44 @@ export default function SettingsPage() {
 
   const handleAddAdmin = async () => {
     try {
-      await fetch("/api/admin/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newAdmin),
-      });
+      const accessToken = Cookies.get("client-token");
+
+      if (!accessToken) {
+        router.push("/login");
+        return;
+      }
+
+      // Validate inputs
+      if (!newAdmin.name || !newAdmin.email || !newAdmin.password) {
+        toast.error("All fields are required ❌");
+        return;
+      }
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/settings/add-admin`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify(newAdmin),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to add admin");
+      }
+
       toast.success("New admin added ✅");
       setNewAdmin({ name: "", email: "", password: "" });
       setIsAddAdminOpen(false);
-    } catch {
-      toast.error("Failed to add admin ❌");
+    } catch (error) {
+      console.error("Error adding admin:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to add admin ❌"
+      );
     }
   };
 

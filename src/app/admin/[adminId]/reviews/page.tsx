@@ -194,14 +194,14 @@ export default function PendingReviewsPage() {
           </table>
 
           {/* Pagination controls */}
-          {/* <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center mt-4">
             <button
               onClick={() => fetchPendingReviews(pagination.currentPage - 1)}
-              disabled={!pagination.hasPrevPage}
+              disabled={pagination.currentPage <= 1}
               className={`px-4 py-2 rounded ${
-                pagination.hasPrevPage
-                  ? 'bg-orange-500 text-white hover:bg-orange-600'
-                  : 'bg-gray-300 cursor-not-allowed'
+                pagination.currentPage > 1
+                  ? "bg-orange-500 text-white hover:bg-orange-600"
+                  : "bg-gray-300 cursor-not-allowed"
               }`}
             >
               Previous
@@ -211,16 +211,16 @@ export default function PendingReviewsPage() {
             </span>
             <button
               onClick={() => fetchPendingReviews(pagination.currentPage + 1)}
-              disabled={!pagination.hasNextPage}
+              disabled={pagination.currentPage >= pagination.totalPages}
               className={`px-4 py-2 rounded ${
-                pagination.hasNextPage
-                  ? 'bg-orange-500 text-white hover:bg-orange-600'
-                  : 'bg-gray-300 cursor-not-allowed'
+                pagination.currentPage < pagination.totalPages
+                  ? "bg-orange-500 text-white hover:bg-orange-600"
+                  : "bg-gray-300 cursor-not-allowed"
               }`}
             >
               Next
             </button>
-          </div> */}
+          </div>
         </div>
       )}
     </div>

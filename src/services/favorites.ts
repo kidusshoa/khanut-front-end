@@ -1,7 +1,7 @@
 import api from "./api";
 import { getAuthToken } from "@/lib/auth";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 export interface FavoriteItem {
   _id: string;
@@ -24,7 +24,7 @@ export const favoritesApi = {
   getFavorites: async () => {
     try {
       const token = await getAuthToken();
-      
+
       const response = await fetch(`${API_URL}/api/customer/favorites`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -47,17 +47,22 @@ export const favoritesApi = {
   toggleFavorite: async (businessId: string) => {
     try {
       const token = await getAuthToken();
-      
-      const response = await fetch(`${API_URL}/api/customer/favorites/${businessId}`, {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+
+      const response = await fetch(
+        `${API_URL}/api/customer/favorites/${businessId}`,
+        {
+          method: "PATCH",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to toggle favorite status");
+        throw new Error(
+          errorData.message || "Failed to toggle favorite status"
+        );
       }
 
       return response.json();
@@ -71,7 +76,9 @@ export const favoritesApi = {
   isFavorite: async (businessId: string) => {
     try {
       const favorites = await favoritesApi.getFavorites();
-      return favorites.some((fav: FavoriteItem) => fav.businessId._id === businessId);
+      return favorites.some(
+        (fav: FavoriteItem) => fav.businessId._id === businessId
+      );
     } catch (error) {
       console.error("Error checking favorite status:", error);
       return false;

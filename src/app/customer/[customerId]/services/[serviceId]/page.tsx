@@ -157,11 +157,13 @@ export default function CustomerServiceDetailPage() {
             <Button
               variant="link"
               className="p-0 h-auto text-muted-foreground"
-              onClick={() =>
+              onClick={() => {
+                // Use the businessId from the service object as a fallback
+                const businessIdToUse = business._id || service.businessId;
                 router.push(
-                  `/customer/${customerId}/businesses/${business._id}`
-                )
-              }
+                  `/customer/${customerId}/businesses/${businessIdToUse}`
+                );
+              }}
             >
               {business.name}
             </Button>
@@ -353,13 +355,32 @@ export default function CustomerServiceDetailPage() {
                       <p className="text-sm text-muted-foreground mb-2">
                         {business.city || "Location not specified"}
                       </p>
-                      <Link
-                        href={`/customer/${customerId}/businesses/${business._id}`}
+                      <Button
+                        variant="outline"
+                        className="mt-2"
+                        onClick={() => {
+                          console.log("Business object:", business);
+                          console.log(
+                            "Business ID from business object:",
+                            business._id
+                          );
+                          console.log(
+                            "Business ID from service:",
+                            service.businessId
+                          );
+
+                          // Use the businessId from the service object as a fallback
+                          const businessIdToUse =
+                            business._id || service.businessId;
+                          console.log("Using business ID:", businessIdToUse);
+
+                          router.push(
+                            `/customer/${customerId}/businesses/${businessIdToUse}`
+                          );
+                        }}
                       >
-                        <Button variant="outline" className="mt-2">
-                          View Business
-                        </Button>
-                      </Link>
+                        View Business
+                      </Button>
                     </div>
                   </div>
                 </CardContent>

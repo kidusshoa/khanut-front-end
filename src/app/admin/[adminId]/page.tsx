@@ -15,6 +15,7 @@ import {
   AlertCircle,
   User,
   Store,
+  Loader2,
 } from "lucide-react";
 import {
   Card,
@@ -35,122 +36,327 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import {
+  adminDashboardApi,
+  ChartDataPoint,
+  ActivityLog,
+} from "@/services/adminDashboard";
+import Cookies from "js-cookie";
 
-// Mock data for charts
-const weeklyData = [
-  { name: "Mon", businesses: 4, users: 7 },
-  { name: "Tue", businesses: 3, users: 5 },
-  { name: "Wed", businesses: 5, users: 9 },
-  { name: "Thu", businesses: 7, users: 12 },
-  { name: "Fri", businesses: 2, users: 8 },
-  { name: "Sat", businesses: 6, users: 10 },
-  { name: "Sun", businesses: 8, users: 15 },
-];
+// Initialize dayjs plugins
+dayjs.extend(relativeTime);
 
-const monthlyData = [
-  { name: "Jan", businesses: 20, users: 45 },
-  { name: "Feb", businesses: 15, users: 30 },
-  { name: "Mar", businesses: 25, users: 50 },
-  { name: "Apr", businesses: 30, users: 65 },
-  { name: "May", businesses: 18, users: 40 },
-  { name: "Jun", businesses: 32, users: 70 },
-];
+// Define activity icon mapping
+type ActivityType =
+  | "business_registration"
+  | "review"
+  | "approval"
+  | "user_registration"
+  | "alert"
+  | string;
 
-// Activity feed data
-const activities = [
-  {
-    id: 1,
-    type: "business_registration",
-    message: "User JohnDoe registered a new business: Tech Gurus",
-    time: "2 hours ago",
+interface ActivityIconMapping {
+  [key: string]: {
+    icon: React.ElementType;
+    iconColor: string;
+  };
+}
+
+const activityIconMapping: ActivityIconMapping = {
+  business_registration: {
     icon: Building2,
     iconColor: "text-blue-500 bg-blue-100",
   },
-  {
-    id: 2,
-    type: "review",
-    message: "Review submitted for Local Bites by user SaraA",
-    time: "5 hours ago",
+  review: {
     icon: Star,
     iconColor: "text-yellow-500 bg-yellow-100",
   },
-  {
-    id: 3,
-    type: "approval",
-    message: "Business Fast Clean approved by admin",
-    time: "Yesterday",
+  approval: {
     icon: CheckCircle2,
     iconColor: "text-green-500 bg-green-100",
   },
-  {
-    id: 4,
-    type: "user_registration",
-    message: "New user MikeT joined the platform",
-    time: "Yesterday",
+  user_registration: {
     icon: User,
     iconColor: "text-purple-500 bg-purple-100",
   },
-  {
-    id: 5,
-    type: "alert",
-    message: "Business Speedy Delivery reported for policy violation",
-    time: "2 days ago",
+  alert: {
     icon: AlertCircle,
     iconColor: "text-red-500 bg-red-100",
   },
-];
+  default: {
+    icon: AlertCircle,
+    iconColor: "text-gray-500 bg-gray-100",
+  },
+};
+
+interface StatItem {
+  label: string;
+  value: number;
+  icon: React.ElementType;
+  color: string;
+  bgColor: string;
+  change: string;
+  trend: "up" | "down";
+}
+
+interface FormattedActivity {
+  id: string;
+  type: ActivityType;
+  message: string;
+  time: string;
+  icon: React.ElementType;
+  iconColor: string;
+}
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [mounted, setMounted] = useState(false);
-  const [chartData, setChartData] = useState(weeklyData);
-  const [chartPeriod, setChartPeriod] = useState("weekly");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Handle hydration issues
+  // State for dashboard data
+  const [stats, setStats] = useState<StatItem[]>([]);
+  const [activities, setActivities] = useState<FormattedActivity[]>([]);
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
+  const [chartPeriod, setChartPeriod] = useState<"weekly" | "monthly">(
+    "weekly"
+  );
+  const [weeklyChartData, setWeeklyChartData] = useState<ChartDataPoint[]>([]);
+  const [monthlyChartData, setMonthlyChartData] = useState<ChartDataPoint[]>(
+    []
+  );
+
+  // Fetch dashboard data
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Check if user is authenticated
+      const token = Cookies.get("client-token");
+      if (!token) {
+        router.push("/login");
+        return;
+      }
+
+      // Fetch dashboard stats
+      const dashboardStats = await adminDashboardApi.getDashboardStats();
+
+      // Fetch report data for charts
+      const reportData = await adminDashboardApi.getReportData();
+
+      // Get weekly chart data
+      const weeklyData = await adminDashboardApi.getWeeklyChartData();
+
+      // Convert monthly data to chart format
+      const monthlyData = adminDashboardApi.convertToChartData(
+        reportData.monthlyUsers,
+        reportData.monthlyBusinesses
+      );
+
+      // Set chart data based on selected period
+      setWeeklyChartData(weeklyData);
+      setMonthlyChartData(monthlyData);
+      setChartData(chartPeriod === "weekly" ? weeklyData : monthlyData);
+
+      // Format activities
+      const formattedActivities = formatActivities(
+        dashboardStats.recentActivity
+      );
+      setActivities(formattedActivities);
+
+      // Create stats array
+      const statsArray: StatItem[] = [
+        {
+          label: "Total Businesses",
+          value: reportData.totalBusinesses,
+          icon: Building2,
+          color: "text-blue-600",
+          bgColor: "bg-blue-50",
+          change: "+12%", // This would ideally come from the API
+          trend: "up",
+        },
+        {
+          label: "Total Users",
+          value: reportData.totalUsers,
+          icon: Users,
+          color: "text-purple-600",
+          bgColor: "bg-purple-50",
+          change: "+8%", // This would ideally come from the API
+          trend: "up",
+        },
+        {
+          label: "Pending Approvals",
+          value: reportData.pendingApprovals,
+          icon: Clock,
+          color: "text-amber-600",
+          bgColor: "bg-amber-50",
+          change: `-${reportData.pendingApprovals}`, // This would ideally come from the API
+          trend: "down",
+        },
+        {
+          label: "Reviews Awaiting",
+          value: reportData.pendingReviews,
+          icon: Star,
+          color: "text-green-600",
+          bgColor: "bg-green-50",
+          change: `+${reportData.pendingReviews}`, // This would ideally come from the API
+          trend: "up",
+        },
+      ];
+
+      setStats(statsArray);
+      setLoading(false);
+    } catch (err) {
+      console.error("Error fetching dashboard data:", err);
+      setError("Failed to load dashboard data. Please try again.");
+      setLoading(false);
+
+      // Use mock data as fallback
+      setStats([
+        {
+          label: "Total Businesses",
+          value: 120,
+          icon: Building2,
+          color: "text-blue-600",
+          bgColor: "bg-blue-50",
+          change: "+12%",
+          trend: "up",
+        },
+        {
+          label: "Total Users",
+          value: 350,
+          icon: Users,
+          color: "text-purple-600",
+          bgColor: "bg-purple-50",
+          change: "+8%",
+          trend: "up",
+        },
+        {
+          label: "Pending Approvals",
+          value: 12,
+          icon: Clock,
+          color: "text-amber-600",
+          bgColor: "bg-amber-50",
+          change: "-3",
+          trend: "down",
+        },
+        {
+          label: "Reviews Awaiting",
+          value: 8,
+          icon: Star,
+          color: "text-green-600",
+          bgColor: "bg-green-50",
+          change: "+2",
+          trend: "up",
+        },
+      ]);
+    }
+  };
+
+  // Format activities from API response
+  const formatActivities = (
+    activityLogs: ActivityLog[]
+  ): FormattedActivity[] => {
+    return activityLogs.map((log) => {
+      // Determine activity type from message
+      let type: ActivityType = "default";
+
+      if (log.message.includes("registered a new business")) {
+        type = "business_registration";
+      } else if (log.message.includes("review")) {
+        type = "review";
+      } else if (log.message.includes("approved")) {
+        type = "approval";
+      } else if (log.message.includes("joined")) {
+        type = "user_registration";
+      } else if (
+        log.message.includes("reported") ||
+        log.message.includes("violation")
+      ) {
+        type = "alert";
+      }
+
+      // Use the type from the log if available
+      if (log.type && activityIconMapping[log.type]) {
+        type = log.type;
+      }
+
+      // Get icon and color from mapping
+      const { icon, iconColor } =
+        activityIconMapping[type] || activityIconMapping.default;
+
+      return {
+        id: log._id,
+        type,
+        message: log.message,
+        time: dayjs(log.createdAt).fromNow(),
+        icon,
+        iconColor,
+      };
+    });
+  };
+
+  // Handle hydration issues and fetch data
   useEffect(() => {
     setMounted(true);
-  }, []);
+    fetchDashboardData();
+  }, [router]);
 
-  const stats = [
-    {
-      label: "Total Businesses",
-      value: 120,
-      icon: Building2,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-      change: "+12%",
-      trend: "up",
-    },
-    {
-      label: "Total Users",
-      value: 350,
-      icon: Users,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
-      change: "+8%",
-      trend: "up",
-    },
-    {
-      label: "Pending Approvals",
-      value: 12,
-      icon: Clock,
-      color: "text-amber-600",
-      bgColor: "bg-amber-50",
-      change: "-3",
-      trend: "down",
-    },
-    {
-      label: "Reviews Awaiting",
-      value: 8,
-      icon: Star,
-      color: "text-green-600",
-      bgColor: "bg-green-50",
-      change: "+2",
-      trend: "up",
-    },
-  ];
+  // Handle chart period change
+  const handleChartPeriodChange = (value: "weekly" | "monthly") => {
+    setChartPeriod(value);
+    setChartData(value === "weekly" ? weeklyChartData : monthlyChartData);
+  };
 
   if (!mounted) {
     return null; // Prevent hydration issues
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[60vh]">
+        <div className="flex flex-col items-center space-y-4">
+          <Loader2 className="h-12 w-12 animate-spin text-orange-600" />
+          <p className="text-lg font-medium">Loading dashboard data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+            <p className="text-muted-foreground">
+              Welcome back to your admin dashboard.
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-red-50 border border-red-200 rounded-md p-4 text-red-800">
+          <div className="flex items-start">
+            <AlertCircle className="h-5 w-5 mr-2 mt-0.5 text-red-600" />
+            <div>
+              <h3 className="font-medium">Error loading dashboard data</h3>
+              <p className="text-sm mt-1">{error}</p>
+              <button
+                onClick={fetchDashboardData}
+                className="mt-2 text-sm bg-red-100 hover:bg-red-200 text-red-800 px-3 py-1 rounded-md transition-colors"
+              >
+                Try again
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -227,10 +433,9 @@ export default function AdminDashboard() {
               <Tabs
                 defaultValue="weekly"
                 value={chartPeriod}
-                onValueChange={(value) => {
-                  setChartPeriod(value);
-                  setChartData(value === "weekly" ? weeklyData : monthlyData);
-                }}
+                onValueChange={(value) =>
+                  handleChartPeriodChange(value as "weekly" | "monthly")
+                }
                 className="w-[200px]"
               >
                 <TabsList className="grid w-full grid-cols-2">

@@ -78,12 +78,63 @@ export default function ReportsPage() {
     fetchReportData();
   }, [router]);
 
-  const handleExport = () => {
+  const handleExport = async () => {
     setDownloading(true);
-    setTimeout(() => {
+
+    try {
+      const accessToken = Cookies.get("client-token");
+
+      if (!accessToken) {
+        router.push("/login");
+        return;
+      }
+
+      // Use fetch with blob response type to download the file
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/reports/export`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to export report");
+      }
+
+      // Get the blob from the response
+      const blob = await response.blob();
+
+      // Create a URL for the blob
+      const url = window.URL.createObjectURL(blob);
+
+      // Create a temporary link element to trigger the download
+      const a = document.createElement("a");
+      a.style.display = "none";
+      a.href = url;
+
+      // Get the filename from the Content-Disposition header or use a default
+      const contentDisposition = response.headers.get("Content-Disposition");
+      const filename = contentDisposition
+        ? contentDisposition.split("filename=")[1].replace(/"/g, "")
+        : `khanut_report_${new Date().toISOString().split("T")[0]}.xlsx`;
+
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+
+      // Clean up
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast.success("Report exported successfully ✅");
+    } catch (error) {
+      console.error("Error exporting report:", error);
+      toast.error("Failed to export report ❌");
+    } finally {
       setDownloading(false);
-      alert("Exported CSV (simulated)");
-    }, 1000);
+    }
   };
 
   if (loading) {

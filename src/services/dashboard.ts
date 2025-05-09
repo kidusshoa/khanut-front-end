@@ -1,7 +1,7 @@
 import api from "./api";
 import { getAuthToken } from "@/lib/auth";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = "http://localhost:4000";
 
 export interface DashboardStats {
   totalAppointments: number;
@@ -28,7 +28,7 @@ export const dashboardApi = {
   getDashboardStats: async (): Promise<DashboardStats> => {
     try {
       const token = await getAuthToken();
-      
+
       const response = await fetch(`${API_URL}/api/customer/dashboard/stats`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -37,7 +37,9 @@ export const dashboardApi = {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to fetch dashboard statistics");
+        throw new Error(
+          errorData.message || "Failed to fetch dashboard statistics"
+        );
       }
 
       return response.json();
@@ -54,7 +56,7 @@ export const dashboardApi = {
   ): Promise<RecommendedBusiness[]> => {
     try {
       const token = await getAuthToken();
-      
+
       const response = await fetch(
         `${API_URL}/api/customer/dashboard/recommended?limit=${limit}&method=${method}`,
         {

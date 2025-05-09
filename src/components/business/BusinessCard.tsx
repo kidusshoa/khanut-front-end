@@ -105,7 +105,7 @@ export function BusinessCard({ business }: BusinessCardProps) {
     <Link
       href={
         business.customerId
-          ? `/customer/${business.customerId}/search/${business._id}`
+          ? `/customer/${business.customerId}/businesses/${business._id}`
           : `/businesses/${business._id}`
       }
       className="group"
@@ -225,7 +225,7 @@ export function BusinessCard({ business }: BusinessCardProps) {
               <Link
                 href={
                   business.customerId
-                    ? `/customer/${business.customerId}/search/${business._id}`
+                    ? `/customer/${business.customerId}/businesses/${business._id}`
                     : `/businesses/${business._id}`
                 }
                 className={cn(

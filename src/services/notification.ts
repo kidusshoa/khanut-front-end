@@ -1,6 +1,6 @@
 import { getAuthToken } from "@/lib/auth";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 // Mock data for when the API endpoints are not available
 // Using a valid MongoDB ObjectId format for the mock ID to prevent backend errors

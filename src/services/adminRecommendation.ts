@@ -1,8 +1,7 @@
 import { getAuthToken } from "@/lib/auth";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = "http://localhost:4000";
 
-// Type definitions for type safety
 export interface RecommendationServiceHealth {
   status: string;
   data_files_exist: boolean;
