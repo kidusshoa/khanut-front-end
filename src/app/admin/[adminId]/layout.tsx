@@ -22,6 +22,7 @@ import {
   LogOut,
   Sun,
   Moon,
+  Brain,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -91,6 +92,11 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
     { name: "Users", icon: Users, path: `/admin/${adminId}/users` },
     { name: "Reviews", icon: MessageSquare, path: `/admin/${adminId}/reviews` },
     { name: "Reports", icon: FileBarChart, path: `/admin/${adminId}/reports` },
+    {
+      name: "Recommendations",
+      icon: Brain,
+      path: `/admin/${adminId}/recommendations`,
+    },
     { name: "Settings", icon: Settings, path: `/admin/${adminId}/settings` },
   ];
 
