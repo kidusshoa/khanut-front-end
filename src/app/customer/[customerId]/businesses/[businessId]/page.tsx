@@ -119,6 +119,8 @@ export default function CustomerBusinessDetailPage() {
   } = useQuery({
     queryKey: ["businessServices", businessId],
     queryFn: () => businessDetailApi.getBusinessServices(businessId),
+    // If business data already has services, use those instead
+    enabled: !(business?.services && business.services.length > 0),
   });
 
   // Fetch business reviews
@@ -129,6 +131,8 @@ export default function CustomerBusinessDetailPage() {
   } = useQuery({
     queryKey: ["businessReviews", businessId],
     queryFn: () => businessDetailApi.getBusinessReviews(businessId),
+    // If business data already has reviews, use those instead
+    enabled: !(business?.reviews && business.reviews.length > 0),
   });
 
   // Handle errors
@@ -177,17 +181,29 @@ export default function CustomerBusinessDetailPage() {
     }, 1000);
   };
 
+  // Use services from business object if available, otherwise use the separately fetched services
+  const servicesToUse =
+    business?.services && business.services.length > 0
+      ? business.services
+      : services || [];
+
   // Filter services based on active tab
   const filteredServices =
-    services?.filter((service: any) => {
+    servicesToUse.filter((service: any) => {
       if (activeTab === "all") return true;
       return service.serviceType === activeTab;
     }) || [];
 
+  // Use reviews from business object if available, otherwise use the separately fetched reviews
+  const reviewsToUse =
+    business?.reviews && business.reviews.length > 0
+      ? business.reviews
+      : reviews || [];
+
   // Calculate average rating
-  const averageRating = reviews?.length
-    ? reviews.reduce((acc: any, review: any) => acc + review.rating, 0) /
-      reviews.length
+  const averageRating = reviewsToUse.length
+    ? reviewsToUse.reduce((acc: any, review: any) => acc + review.rating, 0) /
+      reviewsToUse.length
     : 0;
 
   // Format address
@@ -260,7 +276,9 @@ export default function CustomerBusinessDetailPage() {
           Search{searchQuery ? `: ${searchQuery}` : ""}
         </Button>
         <ChevronRight className="h-4 w-4 mx-1" />
-        <span className="text-foreground">{business?.name}</span>
+        <span className="text-foreground">
+          {business?.name || "Business Details"}
+        </span>
       </div>
 
       <div className="flex gap-2 mb-6">
@@ -313,7 +331,7 @@ export default function CustomerBusinessDetailPage() {
           </p>
         </div>
 
-        {reviews && (
+        {reviewsToUse.length > 0 && (
           <div className="flex items-center bg-white dark:bg-gray-800 px-4 py-2 rounded-lg shadow-sm">
             <div className="flex mr-2">
               {[1, 2, 3, 4, 5].map((star) => (
@@ -330,7 +348,8 @@ export default function CustomerBusinessDetailPage() {
             </div>
             <span className="font-medium">{averageRating.toFixed(1)}</span>
             <span className="text-muted-foreground ml-1">
-              ({reviews.length} {reviews.length === 1 ? "review" : "reviews"})
+              ({reviewsToUse.length}{" "}
+              {reviewsToUse.length === 1 ? "review" : "reviews"})
             </span>
           </div>
         )}
@@ -535,7 +554,7 @@ export default function CustomerBusinessDetailPage() {
               </div>
             </CardHeader>
             <CardContent>
-              {isServicesLoading ? (
+              {isServicesLoading && !servicesToUse.length ? (
                 <div className="py-12">
                   <LoadingState size="md" message="Loading services..." />
                 </div>
@@ -584,7 +603,7 @@ export default function CustomerBusinessDetailPage() {
           <Card>
             <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <CardTitle>Reviews</CardTitle>
-              {reviews && reviews.length > 0 && (
+              {reviewsToUse.length > 0 && (
                 <div className="flex items-center gap-2 text-sm">
                   <div className="flex">
                     {[1, 2, 3, 4, 5].map((star) => (
@@ -603,20 +622,20 @@ export default function CustomerBusinessDetailPage() {
                     {averageRating.toFixed(1)}
                   </span>
                   <span className="text-muted-foreground">
-                    based on {reviews?.length || 0}{" "}
-                    {reviews?.length === 1 ? "review" : "reviews"}
+                    based on {reviewsToUse.length}{" "}
+                    {reviewsToUse.length === 1 ? "review" : "reviews"}
                   </span>
                 </div>
               )}
             </CardHeader>
             <CardContent>
-              {isReviewsLoading ? (
+              {isReviewsLoading && !reviewsToUse.length ? (
                 <div className="py-12">
                   <LoadingState size="md" message="Loading reviews..." />
                 </div>
-              ) : reviews && reviews.length > 0 ? (
+              ) : reviewsToUse.length > 0 ? (
                 <div className="space-y-6">
-                  {reviews.map((review: any) => (
+                  {reviewsToUse.map((review: any) => (
                     <div
                       key={review._id}
                       className="p-4 rounded-lg border border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"

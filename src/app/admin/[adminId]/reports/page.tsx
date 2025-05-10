@@ -17,6 +17,7 @@ import {
 import { FaDownload } from "react-icons/fa";
 import Cookies from "js-cookie";
 import { useRouter } from "next/navigation";
+import { toast } from "react-hot-toast";
 
 const COLORS = ["#8884d8", "#82ca9d", "#ffc658"];
 

@@ -6,6 +6,8 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Cookies from "js-cookie";
 import { useTheme } from "next-themes";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
 import {
   LayoutDashboard,
   Building2,
@@ -48,6 +50,9 @@ export default function AdminLayoutWrapper({
     </AuthProvider>
   );
 }
+
+// Initialize dayjs plugins
+dayjs.extend(relativeTime);
 
 // Main layout component
 function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -288,7 +293,12 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-80">
-                  <DropdownMenuLabel>Notifications</DropdownMenuLabel>
+                  <DropdownMenuLabel className="flex justify-between items-center">
+                    <span>Notifications</span>
+                    <Button variant="ghost" size="sm" className="h-8 px-2">
+                      Refresh
+                    </Button>
+                  </DropdownMenuLabel>
                   <DropdownMenuSeparator />
                   <div className="max-h-80 overflow-y-auto">
                     <div className="p-3 hover:bg-gray-50 cursor-pointer border-b">
@@ -296,18 +306,34 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
                         New business registration
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        Tech Gurus has registered and awaits approval
+                        Addis Tech Solutions has registered and awaits approval
                       </p>
-                      <p className="text-xs text-gray-400 mt-1">2 hours ago</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {dayjs().subtract(2, "hour").fromNow()}
+                      </p>
                     </div>
-                    <div className="p-3 hover:bg-gray-50 cursor-pointer">
+                    <div className="p-3 hover:bg-gray-50 cursor-pointer border-b">
                       <p className="font-medium text-sm">
                         New review submitted
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        A review for Local Bites requires moderation
+                        A review for Abyssinia Restaurant requires moderation
                       </p>
-                      <p className="text-xs text-gray-400 mt-1">5 hours ago</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {dayjs().subtract(5, "hour").fromNow()}
+                      </p>
+                    </div>
+                    <div className="p-3 hover:bg-gray-50 cursor-pointer">
+                      <p className="font-medium text-sm">
+                        User account warning
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Multiple failed login attempts detected for user Samuel
+                        Tesfaye
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {dayjs().subtract(1, "day").fromNow()}
+                      </p>
                     </div>
                   </div>
                   <DropdownMenuSeparator />

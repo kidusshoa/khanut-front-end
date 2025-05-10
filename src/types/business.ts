@@ -44,6 +44,8 @@ export interface Business {
   ownerId?: string;
   createdAt?: string;
   updatedAt?: string;
+  services?: any[];
+  reviews?: any[];
 }
 
 export interface Service {
@@ -52,7 +54,7 @@ export interface Service {
   description?: string;
   price: number;
   duration?: number;
-  serviceType: 'appointment' | 'product' | 'in_person';
+  serviceType: "appointment" | "product" | "in_person";
   businessId: string;
   image?: string;
   category?: string;

@@ -286,6 +286,25 @@ export default function AdminDashboard() {
         type = log.type;
       }
 
+      // Format message to replace IDs with names if available
+      let formattedMessage = log.message;
+
+      // Replace IDs with names if they exist in the log
+      if (log.userName && log.userId && log.message.includes(log.userId)) {
+        formattedMessage = formattedMessage.replace(log.userId, log.userName);
+      }
+
+      if (
+        log.businessName &&
+        log.businessId &&
+        log.message.includes(log.businessId)
+      ) {
+        formattedMessage = formattedMessage.replace(
+          log.businessId,
+          log.businessName
+        );
+      }
+
       // Get icon and color from mapping
       const { icon, iconColor } =
         activityIconMapping[type] || activityIconMapping.default;
@@ -293,7 +312,7 @@ export default function AdminDashboard() {
       return {
         id: log._id,
         type,
-        message: log.message,
+        message: formattedMessage,
         time: dayjs(log.createdAt).fromNow(),
         icon,
         iconColor,
@@ -371,7 +390,7 @@ export default function AdminDashboard() {
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" className="gap-1">
             <Calendar className="h-4 w-4" />
-            <span>June 2023</span>
+            <span>{dayjs().format("MMMM YYYY")}</span>
           </Button>
           <Button className="gap-1 bg-orange-600 hover:bg-orange-700">
             <BarChart3 className="h-4 w-4" />

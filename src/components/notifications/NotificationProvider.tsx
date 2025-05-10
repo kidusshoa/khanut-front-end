@@ -1,17 +1,24 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from "react";
 import { useSession } from "next-auth/react";
 import { toast } from "@/components/ui/use-toast";
 import { Bell } from "lucide-react";
-import { userService } from "@/services/user";
+import { notificationApi } from "@/services/notification";
 
+// Use the same interface as in notification.ts but with isRead instead of read
 export interface Notification {
   _id: string;
   title?: string;
   message: string;
   type: string;
-  isRead: boolean;
+  isRead: boolean; // This is 'read' in the backend and notification.ts
   createdAt: string;
   link?: string;
 }
@@ -22,15 +29,21 @@ interface NotificationContextType {
   fetchNotifications: () => Promise<void>;
   markAsRead: (notificationId: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
-  showNotification: (notification: Omit<Notification, "_id" | "isRead" | "createdAt">) => void;
+  showNotification: (
+    notification: Omit<Notification, "_id" | "isRead" | "createdAt">
+  ) => void;
 }
 
-const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+const NotificationContext = createContext<NotificationContextType | undefined>(
+  undefined
+);
 
 export const useNotifications = () => {
   const context = useContext(NotificationContext);
   if (!context) {
-    throw new Error("useNotifications must be used within a NotificationProvider");
+    throw new Error(
+      "useNotifications must be used within a NotificationProvider"
+    );
   }
   return context;
 };
@@ -47,7 +60,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   const { data: session } = useSession();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState<number>(0);
-  const [lastFetchTime, setLastFetchTime] = useState<Date | null>(null);
+  // We don't need to track lastFetchTime anymore
 
   // Fetch notifications from API
   const fetchNotifications = async () => {
@@ -55,15 +68,25 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
 
     try {
       // Get notifications
-      const data = await userService.getCustomerNotifications({ limit: 10 });
-      setNotifications(data.notifications || []);
-      
+      const notificationsData = await notificationApi.getUserNotifications(
+        session.user.id
+      );
+      // Convert from API format (read) to component format (isRead)
+      const convertedNotifications = (notificationsData || []).map((n) => ({
+        ...n,
+        isRead: n.read,
+        // Make sure all required fields are present
+        type: n.type || "info",
+        message: n.message || "",
+        createdAt: n.createdAt || new Date().toISOString(),
+      }));
+      setNotifications(convertedNotifications);
+
       // Get unread count
-      const countData = await userService.getUnreadNotificationCount();
+      const countData = await notificationApi.getUnreadCount(session.user.id);
       setUnreadCount(countData.count || 0);
-      
-      // Update last fetch time
-      setLastFetchTime(new Date());
+
+      // We don't need to track lastFetchTime anymore
     } catch (error) {
       console.error("Error fetching notifications:", error);
     }
@@ -74,19 +97,19 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     if (!session?.user) return;
 
     try {
-      await userService.markNotificationAsRead(notificationId);
-      
+      await notificationApi.markAsRead(notificationId);
+
       // Update local state
-      setNotifications(prev => 
-        prev.map(notification => 
-          notification._id === notificationId 
-            ? { ...notification, isRead: true } 
+      setNotifications((prev) =>
+        prev.map((notification) =>
+          notification._id === notificationId
+            ? { ...notification, isRead: true }
             : notification
         )
       );
-      
+
       // Update unread count
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch (error) {
       console.error("Error marking notification as read:", error);
     }
@@ -97,13 +120,13 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     if (!session?.user || unreadCount === 0) return;
 
     try {
-      await userService.markAllNotificationsAsRead();
-      
+      await notificationApi.markAllAsRead(session.user.id);
+
       // Update local state
-      setNotifications(prev => 
-        prev.map(notification => ({ ...notification, isRead: true }))
+      setNotifications((prev) =>
+        prev.map((notification) => ({ ...notification, isRead: true }))
       );
-      
+
       // Reset unread count
       setUnreadCount(0);
     } catch (error) {
@@ -112,7 +135,9 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
   };
 
   // Show a notification toast
-  const showNotification = (notification: Omit<Notification, "_id" | "isRead" | "createdAt">) => {
+  const showNotification = (
+    notification: Omit<Notification, "_id" | "isRead" | "createdAt">
+  ) => {
     toast({
       title: notification.title || getNotificationTitle(notification.type),
       description: notification.message,
@@ -153,18 +178,31 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({
     const intervalId = setInterval(async () => {
       // Check for new notifications
       try {
-        const countData = await userService.getUnreadNotificationCount();
+        const countData = await notificationApi.getUnreadCount(session.user.id);
         const newCount = countData.count || 0;
-        
+
         // If there are new notifications, fetch them and show a toast
         if (newCount > unreadCount) {
-          const data = await userService.getCustomerNotifications({ limit: 10 });
-          setNotifications(data.notifications || []);
+          const notificationsData = await notificationApi.getUserNotifications(
+            session.user.id
+          );
+
+          // Convert from API format (read) to component format (isRead)
+          const convertedNotifications = (notificationsData || []).map((n) => ({
+            ...n,
+            isRead: n.read,
+            // Make sure all required fields are present
+            type: n.type || "info",
+            message: n.message || "",
+            createdAt: n.createdAt || new Date().toISOString(),
+          }));
+
+          setNotifications(convertedNotifications);
           setUnreadCount(newCount);
-          
+
           // Show toast for the newest notification
-          if (data.notifications && data.notifications.length > 0) {
-            const newest = data.notifications[0];
+          if (convertedNotifications.length > 0) {
+            const newest = convertedNotifications[0];
             if (newest && !newest.isRead) {
               showNotification({
                 title: getNotificationTitle(newest.type),

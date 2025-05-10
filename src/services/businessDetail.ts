@@ -19,6 +19,24 @@ export const businessDetailApi = {
       try {
         const response = await api.get(`/businesses/${businessId}`);
         console.log("Business data received:", response.data);
+
+        // Handle the nested response format from the backend
+        if (response.data && response.data.profile) {
+          // Transform the nested structure to a flat structure
+          return {
+            _id: businessId,
+            name: response.data.profile.name,
+            email: response.data.profile.email,
+            phone: response.data.profile.phone,
+            city: response.data.profile.city,
+            description: response.data.description,
+            location: response.data.location,
+            // Add other fields as needed
+            services: response.data.services || [],
+            reviews: response.data.reviews || [],
+          };
+        }
+
         return response.data;
       } catch (firstError) {
         console.log("First endpoint failed, trying alternative endpoint");
@@ -28,6 +46,24 @@ export const businessDetailApi = {
           "Business data received from alt endpoint:",
           altResponse.data
         );
+
+        // Handle the nested response format from the backend
+        if (altResponse.data && altResponse.data.profile) {
+          // Transform the nested structure to a flat structure
+          return {
+            _id: businessId,
+            name: altResponse.data.profile.name,
+            email: altResponse.data.profile.email,
+            phone: altResponse.data.profile.phone,
+            city: altResponse.data.profile.city,
+            description: altResponse.data.description,
+            location: altResponse.data.location,
+            // Add other fields as needed
+            services: altResponse.data.services || [],
+            reviews: altResponse.data.reviews || [],
+          };
+        }
+
         return altResponse.data;
       }
     } catch (error) {
@@ -45,9 +81,22 @@ export const businessDetailApi = {
     try {
       console.log(`Fetching services for business ID: ${businessId}`);
 
-      const response = await api.get(`/services/business/${businessId}`);
-      console.log("Services data received:", response.data);
-      return response.data;
+      try {
+        const response = await api.get(`/services/business/${businessId}`);
+        console.log("Services data received:", response.data);
+        return response.data;
+      } catch (firstError) {
+        console.log(
+          "First services endpoint failed, trying alternative endpoint"
+        );
+        // Try alternative endpoint
+        const altResponse = await api.get(`/services/${businessId}`);
+        console.log(
+          "Services data received from alt endpoint:",
+          altResponse.data
+        );
+        return altResponse.data;
+      }
     } catch (error) {
       console.error("Error fetching business services:", error);
       // Return empty array instead of throwing to prevent UI errors
@@ -60,9 +109,22 @@ export const businessDetailApi = {
     try {
       console.log(`Fetching reviews for business ID: ${businessId}`);
 
-      const response = await api.get(`/reviews/business/${businessId}`);
-      console.log("Reviews data received:", response.data);
-      return response.data;
+      try {
+        const response = await api.get(`/reviews/business/${businessId}`);
+        console.log("Reviews data received:", response.data);
+        return response.data;
+      } catch (firstError) {
+        console.log(
+          "First reviews endpoint failed, trying alternative endpoint"
+        );
+        // Try alternative endpoint
+        const altResponse = await api.get(`/reviews/${businessId}`);
+        console.log(
+          "Reviews data received from alt endpoint:",
+          altResponse.data
+        );
+        return altResponse.data;
+      }
     } catch (error) {
       console.error("Error fetching business reviews:", error);
       // Return empty array instead of throwing to prevent UI errors

@@ -20,9 +20,9 @@ interface ServiceCardProps {
     businessId: string;
     businessName?: string;
     availability?: {
-      days?: string[];
-      startTime?: string;
-      endTime?: string;
+      days: string[];
+      startTime: string;
+      endTime: string;
     };
   };
   onDelete: () => void;

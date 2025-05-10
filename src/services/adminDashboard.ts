@@ -8,6 +8,10 @@ export interface ActivityLog {
   message: string;
   createdAt: string;
   type?: string;
+  userId?: string;
+  userName?: string;
+  businessId?: string;
+  businessName?: string;
 }
 
 export interface DashboardStats {
@@ -45,11 +49,11 @@ export const adminDashboardApi = {
   getDashboardStats: async (): Promise<DashboardStats> => {
     try {
       const token = await getAuthToken();
-      
+
       if (!token) {
         throw new Error("Authentication token not found");
       }
-      
+
       const response = await fetch(`${API_URL}/api/admin/dashboard`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -58,7 +62,9 @@ export const adminDashboardApi = {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to fetch dashboard statistics");
+        throw new Error(
+          errorData.message || "Failed to fetch dashboard statistics"
+        );
       }
 
       return await response.json();
@@ -67,16 +73,16 @@ export const adminDashboardApi = {
       throw error;
     }
   },
-  
+
   // Get report data for charts
   getReportData: async (): Promise<AdminReportData> => {
     try {
       const token = await getAuthToken();
-      
+
       if (!token) {
         throw new Error("Authentication token not found");
       }
-      
+
       const response = await fetch(`${API_URL}/api/admin/reports`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -94,23 +100,26 @@ export const adminDashboardApi = {
       throw error;
     }
   },
-  
+
   // Convert monthly data to chart format
-  convertToChartData: (monthlyUsers: MonthlyData[], monthlyBusinesses: MonthlyData[]): ChartDataPoint[] => {
+  convertToChartData: (
+    monthlyUsers: MonthlyData[],
+    monthlyBusinesses: MonthlyData[]
+  ): ChartDataPoint[] => {
     // Create a map of all months from both arrays
     const monthsMap = new Map<string, ChartDataPoint>();
-    
+
     // Initialize with user data
-    monthlyUsers.forEach(item => {
+    monthlyUsers.forEach((item) => {
       monthsMap.set(item.month, {
         name: item.month,
         users: item.count,
-        businesses: 0
+        businesses: 0,
       });
     });
-    
+
     // Add business data
-    monthlyBusinesses.forEach(item => {
+    monthlyBusinesses.forEach((item) => {
       if (monthsMap.has(item.month)) {
         const existing = monthsMap.get(item.month)!;
         existing.businesses = item.count;
@@ -118,21 +127,32 @@ export const adminDashboardApi = {
         monthsMap.set(item.month, {
           name: item.month,
           users: 0,
-          businesses: item.count
+          businesses: item.count,
         });
       }
     });
-    
+
     // Convert map to array and sort by month order
     const monthOrder = [
-      "January", "February", "March", "April", "May", "June",
-      "July", "August", "September", "October", "November", "December"
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
     ];
-    
-    return Array.from(monthsMap.values())
-      .sort((a, b) => monthOrder.indexOf(a.name) - monthOrder.indexOf(b.name));
+
+    return Array.from(monthsMap.values()).sort(
+      (a, b) => monthOrder.indexOf(a.name) - monthOrder.indexOf(b.name)
+    );
   },
-  
+
   // Get weekly chart data
   getWeeklyChartData: async (): Promise<ChartDataPoint[]> => {
     // This would ideally come from the API, but for now we'll return mock data
@@ -145,5 +165,5 @@ export const adminDashboardApi = {
       { name: "Sat", businesses: 6, users: 10 },
       { name: "Sun", businesses: 8, users: 15 },
     ];
-  }
+  },
 };

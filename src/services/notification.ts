@@ -49,7 +49,9 @@ export const notificationApi = {
         return [];
       }
 
-      const url = `${API_URL}/api/notifications/user/${userId}${
+      // The backend endpoint is just /api/notifications
+      // The userId is determined from the auth token
+      const url = `${API_URL}/api/notifications${
         unreadOnly ? "?unreadOnly=true" : ""
       }`;
 
@@ -138,7 +140,7 @@ export const notificationApi = {
    * @param userId User ID
    * @returns Success message
    */
-  markAllAsRead: async (userId: string): Promise<{ message: string }> => {
+  markAllAsRead: async (_userId: string): Promise<{ message: string }> => {
     try {
       const token = await getAuthToken();
 
@@ -148,7 +150,7 @@ export const notificationApi = {
       }
 
       const response = await fetch(
-        `${API_URL}/api/notifications/user/${userId}/read-all`,
+        `${API_URL}/api/notifications/mark-all-read`,
         {
           method: "PATCH",
           headers: {
@@ -220,7 +222,7 @@ export const notificationApi = {
    * @param userId User ID
    * @returns Unread notification count
    */
-  getUnreadCount: async (userId: string): Promise<{ count: number }> => {
+  getUnreadCount: async (_userId: string): Promise<{ count: number }> => {
     try {
       const token = await getAuthToken();
 
@@ -229,16 +231,13 @@ export const notificationApi = {
         return { count: 0 };
       }
 
-      const response = await fetch(
-        `${API_URL}/api/notifications/user/${userId}/unread-count`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch(`${API_URL}/api/notifications/unread`, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (!response.ok) {
         console.warn(
