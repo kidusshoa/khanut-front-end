@@ -81,21 +81,42 @@ export const businessDetailApi = {
     try {
       console.log(`Fetching services for business ID: ${businessId}`);
 
+      // First try using the fetch API directly to our Next.js API route
       try {
-        const response = await api.get(`/services/business/${businessId}`);
-        console.log("Services data received:", response.data);
-        return response.data;
-      } catch (firstError) {
-        console.log(
-          "First services endpoint failed, trying alternative endpoint"
-        );
-        // Try alternative endpoint
-        const altResponse = await api.get(`/services/${businessId}`);
-        console.log(
-          "Services data received from alt endpoint:",
-          altResponse.data
-        );
-        return altResponse.data;
+        const response = await fetch(`/api/business/${businessId}/services`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch business services");
+        }
+
+        const data = await response.json();
+        console.log("Services data received from Next.js API:", data);
+        return data;
+      } catch (fetchError) {
+        console.log("Next.js API endpoint failed, trying axios endpoints");
+
+        // Try axios endpoints as fallback
+        try {
+          const response = await api.get(`/services/business/${businessId}`);
+          console.log("Services data received from axios:", response.data);
+          return response.data;
+        } catch (firstError) {
+          console.log(
+            "First services endpoint failed, trying alternative endpoint"
+          );
+          // Try alternative endpoint
+          const altResponse = await api.get(`/services/${businessId}`);
+          console.log(
+            "Services data received from alt endpoint:",
+            altResponse.data
+          );
+          return altResponse.data;
+        }
       }
     } catch (error) {
       console.error("Error fetching business services:", error);

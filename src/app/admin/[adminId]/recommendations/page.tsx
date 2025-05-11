@@ -6,11 +6,18 @@ interface PageParams {
   adminId: string;
 }
 
-// Use the 'any' type for the component props to avoid type errors
-export default function RecommendationsPage({ params }: { params: any }) {
+// Use the PageParams type for the component props
+export default async function RecommendationsPage({
+  params,
+}: {
+  params: PageParams;
+}) {
+  // Await the params to ensure they're fully resolved
+  const adminId = await Promise.resolve(params.adminId);
+
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <RecommendationsClient adminId={params.adminId} />
+      <RecommendationsClient adminId={adminId} />
     </Suspense>
   );
 }

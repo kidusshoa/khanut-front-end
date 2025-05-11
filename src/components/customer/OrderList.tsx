@@ -2,22 +2,28 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { 
-  Package, 
-  ChevronRight, 
-  Clock, 
-  CheckCircle, 
-  Truck, 
-  XCircle, 
+import {
+  Package,
+  ChevronRight,
+  Clock,
+  CheckCircle,
+  Truck,
+  XCircle,
   RefreshCw,
   CreditCard,
   Search,
   Filter,
-  CalendarRange
+  CalendarRange,
 } from "lucide-react";
 import dayjs from "dayjs";
 // Replaced date-fns with dayjs
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -68,16 +74,18 @@ export function OrderList({ customerId }: OrderListProps) {
     let filtered = orders;
 
     // Apply status filter
-    if (statusFilter) {
-      filtered = filtered.filter(order => order.status === statusFilter);
+    if (statusFilter && statusFilter !== "all") {
+      filtered = filtered.filter((order) => order.status === statusFilter);
     }
 
     // Apply search filter (search by order ID)
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
-      filtered = filtered.filter(order => 
-        order._id.toLowerCase().includes(term) ||
-        (typeof order.businessId !== 'string' && order.businessId.name.toLowerCase().includes(term))
+      filtered = filtered.filter(
+        (order) =>
+          order._id.toLowerCase().includes(term) ||
+          (typeof order.businessId !== "string" &&
+            order.businessId.name.toLowerCase().includes(term))
       );
     }
 
@@ -98,66 +106,83 @@ export function OrderList({ customerId }: OrderListProps) {
     switch (status) {
       case "pending_payment":
         return (
-          <Badge variant="outline" className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400">
+          <Badge
+            variant="outline"
+            className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400"
+          >
             <Clock className="mr-1 h-3 w-3" />
             Awaiting Payment
           </Badge>
         );
       case "payment_received":
         return (
-          <Badge variant="outline" className="bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">
+          <Badge
+            variant="outline"
+            className="bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
+          >
             <CreditCard className="mr-1 h-3 w-3" />
             Payment Received
           </Badge>
         );
       case "processing":
         return (
-          <Badge variant="outline" className="bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400">
+          <Badge
+            variant="outline"
+            className="bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400"
+          >
             <RefreshCw className="mr-1 h-3 w-3" />
             Processing
           </Badge>
         );
       case "shipped":
         return (
-          <Badge variant="outline" className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400">
+          <Badge
+            variant="outline"
+            className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400"
+          >
             <Truck className="mr-1 h-3 w-3" />
             Shipped
           </Badge>
         );
       case "delivered":
         return (
-          <Badge variant="outline" className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400">
+          <Badge
+            variant="outline"
+            className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+          >
             <CheckCircle className="mr-1 h-3 w-3" />
             Delivered
           </Badge>
         );
       case "cancelled":
         return (
-          <Badge variant="outline" className="bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400">
+          <Badge
+            variant="outline"
+            className="bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+          >
             <XCircle className="mr-1 h-3 w-3" />
             Cancelled
           </Badge>
         );
       case "refunded":
         return (
-          <Badge variant="outline" className="bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400">
+          <Badge
+            variant="outline"
+            className="bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400"
+          >
             <RefreshCw className="mr-1 h-3 w-3" />
             Refunded
           </Badge>
         );
       default:
-        return (
-          <Badge variant="outline">
-            {status}
-          </Badge>
-        );
+        return <Badge variant="outline">{status}</Badge>;
     }
   };
 
   // Get business name
   const getBusinessName = (order: Order) => {
-    if (typeof order.businessId === 'string') {
-      return 'Business';
+    if (typeof order.businessId === "string") {
+      return "Business";
     } else {
       return order.businessId.name;
     }
@@ -213,7 +238,7 @@ export function OrderList({ customerId }: OrderListProps) {
             </div>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All statuses</SelectItem>
+            <SelectItem value="all">All statuses</SelectItem>
             <SelectItem value="pending_payment">Awaiting Payment</SelectItem>
             <SelectItem value="payment_received">Payment Received</SelectItem>
             <SelectItem value="processing">Processing</SelectItem>
@@ -237,7 +262,7 @@ export function OrderList({ customerId }: OrderListProps) {
                 : "No orders match your current filters. Try adjusting your search or filter criteria."}
             </p>
             {orders.length === 0 && (
-              <Button 
+              <Button
                 className="mt-4 bg-orange-600 hover:bg-orange-700"
                 onClick={() => router.push(`/customer/${customerId}/search`)}
               >
@@ -249,10 +274,12 @@ export function OrderList({ customerId }: OrderListProps) {
       ) : (
         <div className="space-y-4">
           {filteredOrders.map((order) => (
-            <Card 
-              key={order._id} 
+            <Card
+              key={order._id}
               className="w-full hover:shadow-md transition-shadow cursor-pointer"
-              onClick={() => router.push(`/customer/${customerId}/orders/${order._id}`)}
+              onClick={() =>
+                router.push(`/customer/${customerId}/orders/${order._id}`)
+              }
             >
               <CardHeader className="pb-2">
                 <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
@@ -277,12 +304,15 @@ export function OrderList({ customerId }: OrderListProps) {
                     <div>
                       <p className="font-medium">{getBusinessName(order)}</p>
                       <p className="text-sm text-muted-foreground">
-                        {order.items.length} {order.items.length === 1 ? 'item' : 'items'}
+                        {order.items.length}{" "}
+                        {order.items.length === 1 ? "item" : "items"}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <p className="font-medium">{order.totalAmount.toLocaleString()} ETB</p>
+                    <p className="font-medium">
+                      {order.totalAmount.toLocaleString()} ETB
+                    </p>
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </div>
                 </div>

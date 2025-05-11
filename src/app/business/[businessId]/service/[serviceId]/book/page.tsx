@@ -528,7 +528,13 @@ export default function BookAppointmentPage({
                       <CalendarComponent
                         mode="single"
                         selected={date}
-                        onSelect={setDate}
+                        onSelect={(newDate) => {
+                          console.log(
+                            "Date selected in service booking page:",
+                            newDate
+                          );
+                          setDate(newDate);
+                        }}
                         disabled={(date) => {
                           // Disable dates in the past
                           const today = dayjs().startOf("day").toDate();

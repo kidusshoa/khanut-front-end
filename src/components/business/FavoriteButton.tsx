@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { userService } from "@/services/user";
+import { favoritesApi } from "@/services/favorites";
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 
@@ -34,8 +34,7 @@ export function FavoriteButton({
   useEffect(() => {
     const checkFavoriteStatus = async () => {
       try {
-        const favorites = await userService.getCustomerFavorites();
-        const isFav = favorites.some((fav: any) => fav.businessId === businessId);
+        const isFav = await favoritesApi.isFavorite(businessId);
         setIsFavorite(isFav);
       } catch (error) {
         console.error("Error checking favorite status:", error);
@@ -50,23 +49,23 @@ export function FavoriteButton({
   const toggleFavorite = async () => {
     try {
       setIsLoading(true);
-      
+
+      const result = await favoritesApi.toggleFavorite(businessId);
+
       if (isFavorite) {
-        await userService.removeFromFavorites(businessId);
         toast({
           title: "Removed from favorites",
           description: "Business has been removed from your favorites",
           variant: "default",
         });
       } else {
-        await userService.addToFavorites(businessId);
         toast({
           title: "Added to favorites",
           description: "Business has been added to your favorites",
           variant: "default",
         });
       }
-      
+
       setIsFavorite(!isFavorite);
       if (onToggle) onToggle(!isFavorite);
     } catch (error) {
@@ -113,7 +112,9 @@ export function FavoriteButton({
           isFavorite ? "fill-current" : "fill-none"
         )}
       />
-      {showText && <span className="ml-2">{isFavorite ? "Favorited" : "Favorite"}</span>}
+      {showText && (
+        <span className="ml-2">{isFavorite ? "Favorited" : "Favorite"}</span>
+      )}
     </Button>
   );
 }

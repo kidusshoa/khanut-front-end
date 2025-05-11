@@ -415,7 +415,13 @@ export function StaffAvailabilityCalendar({
                   <Calendar
                     mode="single"
                     selected={selectedDate}
-                    onSelect={(date) => date && setSelectedDate(date)}
+                    onSelect={(date) => {
+                      console.log(
+                        "Date selected in StaffAvailabilityCalendar:",
+                        date
+                      );
+                      if (date) setSelectedDate(date);
+                    }}
                     className="rounded-md border"
                     modifiers={{
                       unavailable: (date) => isDateUnavailable(date),
@@ -569,7 +575,10 @@ export function StaffAvailabilityCalendar({
                         <Calendar
                           mode="single"
                           selected={field.value}
-                          onSelect={field.onChange}
+                          onSelect={(date) => {
+                            console.log("Start date selected:", date);
+                            field.onChange(date);
+                          }}
                           disabled={(date) => date < new Date()}
                           initialFocus
                         />
@@ -609,7 +618,10 @@ export function StaffAvailabilityCalendar({
                         <Calendar
                           mode="single"
                           selected={field.value}
-                          onSelect={field.onChange}
+                          onSelect={(date) => {
+                            console.log("End date selected:", date);
+                            field.onChange(date);
+                          }}
                           disabled={(date) =>
                             date < new Date() ||
                             (form.getValues().startDate &&

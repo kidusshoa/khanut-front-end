@@ -17,7 +17,6 @@ import {
   Settings,
   Menu,
   X,
-  Bell,
   Search,
   User,
   ChevronRight,
@@ -37,6 +36,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { AuthProvider, useAuth } from "@/components/AuthProvider";
+import { AdminNotificationDropdown } from "@/components/admin/AdminNotificationDropdown";
 
 // Wrapper component that uses AuthProvider
 export default function AdminLayoutWrapper({
@@ -285,69 +285,7 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
             </div>
 
             <div className="flex items-center gap-3">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="relative">
-                    <Bell size={20} />
-                    <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-orange-500"></span>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-80">
-                  <DropdownMenuLabel className="flex justify-between items-center">
-                    <span>Notifications</span>
-                    <Button variant="ghost" size="sm" className="h-8 px-2">
-                      Refresh
-                    </Button>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <div className="max-h-80 overflow-y-auto">
-                    <div className="p-3 hover:bg-gray-50 cursor-pointer border-b">
-                      <p className="font-medium text-sm">
-                        New business registration
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Addis Tech Solutions has registered and awaits approval
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {dayjs().subtract(2, "hour").fromNow()}
-                      </p>
-                    </div>
-                    <div className="p-3 hover:bg-gray-50 cursor-pointer border-b">
-                      <p className="font-medium text-sm">
-                        New review submitted
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        A review for Abyssinia Restaurant requires moderation
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {dayjs().subtract(5, "hour").fromNow()}
-                      </p>
-                    </div>
-                    <div className="p-3 hover:bg-gray-50 cursor-pointer">
-                      <p className="font-medium text-sm">
-                        User account warning
-                      </p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Multiple failed login attempts detected for user Samuel
-                        Tesfaye
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {dayjs().subtract(1, "day").fromNow()}
-                      </p>
-                    </div>
-                  </div>
-                  <DropdownMenuSeparator />
-                  <div className="p-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full justify-center text-orange-600 hover:text-orange-700 hover:bg-orange-50"
-                    >
-                      View all notifications
-                    </Button>
-                  </div>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <AdminNotificationDropdown />
 
               <div className="h-6 w-px bg-border"></div>
 

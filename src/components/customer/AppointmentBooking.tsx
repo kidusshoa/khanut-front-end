@@ -205,7 +205,10 @@ export function AppointmentBooking({
             <Calendar
               mode="single"
               selected={date}
-              onSelect={setDate}
+              onSelect={(newDate) => {
+                console.log("Date selected in AppointmentBooking:", newDate);
+                setDate(newDate);
+              }}
               disabled={disabledDates}
               initialFocus
             />

@@ -21,6 +21,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { serviceApi } from "@/services/service";
 import { AddServiceModal } from "@/components/business/AddServiceModal";
+import { EditServiceModal } from "@/components/business/EditServiceModal";
 import { toast } from "react-hot-toast";
 import dayjs from "dayjs";
 // Replaced date-fns with dayjs
@@ -61,6 +62,7 @@ export default function BusinessServicesPage({
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
 
   // Fetch services
@@ -71,6 +73,7 @@ export default function BusinessServicesPage({
   } = useQuery({
     queryKey: ["services", businessId],
     queryFn: () => serviceApi.getBusinessServices(businessId),
+    enabled: !!businessId,
   });
 
   const handleAddService = async () => {
@@ -80,7 +83,7 @@ export default function BusinessServicesPage({
 
   const handleEditService = (service: Service) => {
     setSelectedService(service);
-    setIsAddModalOpen(true);
+    setIsEditModalOpen(true);
   };
 
   const handleDeleteService = async (serviceId: string) => {
@@ -98,12 +101,10 @@ export default function BusinessServicesPage({
 
   const handleServiceAdded = () => {
     refetch();
-    toast.success("Service added successfully");
   };
 
   const handleServiceUpdated = () => {
     refetch();
-    toast.success("Service updated successfully");
   };
 
   const formatPrice = (price: number) => {
@@ -241,7 +242,9 @@ export default function BusinessServicesPage({
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => router.push(`/services/${service._id}`)}
+              onClick={() =>
+                router.push(`/business/${businessId}/services/${service._id}`)
+              }
             >
               <Eye className="h-4 w-4" />
             </Button>
@@ -358,6 +361,15 @@ export default function BusinessServicesPage({
           initialServiceType={
             activeTab !== "all" ? (activeTab as any) : undefined
           }
+        />
+      )}
+
+      {isEditModalOpen && selectedService && (
+        <EditServiceModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          service={selectedService}
+          onServiceUpdated={handleServiceUpdated}
         />
       )}
     </DashboardLayout>

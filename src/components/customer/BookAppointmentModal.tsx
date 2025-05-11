@@ -5,18 +5,24 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
   DialogTitle,
-  DialogFooter
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Loader2, CalendarIcon } from "lucide-react";
 import { appointmentBookingSchema } from "@/lib/validations/service";
 import { appointmentApi } from "@/services/appointment";
@@ -24,7 +30,11 @@ import { paymentApi } from "@/services/payment";
 import { toast } from "react-hot-toast";
 import dayjs from "dayjs";
 // Replaced date-fns with dayjs
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 interface BookAppointmentModalProps {
@@ -95,19 +105,24 @@ export function BookAppointmentModal({
   useEffect(() => {
     const fetchTimeSlots = async () => {
       if (!selectedDate || !service?._id) return;
-      
+
       try {
         setIsLoadingTimeSlots(true);
         const formattedDate = dayjs(selectedDate).format("YYYY-MM-DD");
         setValue("date", formattedDate);
-        
-        const response = await appointmentApi.getAvailableTimeSlots(service._id, formattedDate);
-        
+
+        const response = await appointmentApi.getAvailableTimeSlots(
+          service._id,
+          formattedDate
+        );
+
         if (response.available) {
           setAvailableTimeSlots(response.timeSlots);
         } else {
           setAvailableTimeSlots([]);
-          toast.error(response.message || "No available time slots on this date");
+          toast.error(
+            response.message || "No available time slots on this date"
+          );
         }
       } catch (error) {
         console.error("Error fetching time slots:", error);
@@ -136,14 +151,16 @@ export function BookAppointmentModal({
 
     try {
       setIsSubmitting(true);
-      
+
       // Create appointment
       const appointment = await appointmentApi.createAppointment(data);
-      
+
       // Initialize payment if service has a price
       if (service.price > 0) {
-        const paymentResponse = await paymentApi.initializeAppointmentPayment(appointment._id);
-        
+        const paymentResponse = await paymentApi.initializeAppointmentPayment(
+          appointment._id
+        );
+
         // Redirect to payment page
         if (paymentResponse.checkoutUrl) {
           window.location.href = paymentResponse.checkoutUrl;
@@ -155,7 +172,7 @@ export function BookAppointmentModal({
         // If service is free, just redirect to appointments page
         router.push(`/customer/${data.customerId}/appointments`);
       }
-      
+
       toast.success("Appointment booked successfully!");
       onClose();
     } catch (error) {
@@ -170,16 +187,16 @@ export function BookAppointmentModal({
   const disabledDays = (date: Date) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    
+
     // Disable past dates
     if (date < today) return true;
-    
+
     // Disable days not available for the service
     if (service?.availability?.days) {
       const dayName = dayjs(date).format("dddd").toLowerCase();
       return !service.availability.days.includes(dayName);
     }
-    
+
     return false;
   };
 
@@ -187,7 +204,9 @@ export function BookAppointmentModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">Book Appointment</DialogTitle>
+          <DialogTitle className="text-xl font-bold">
+            Book Appointment
+          </DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -218,14 +237,22 @@ export function BookAppointmentModal({
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {selectedDate ? dayjs(selectedDate).format("PPP") : "Select a date"}
+                  {selectedDate
+                    ? dayjs(selectedDate).format("PPP")
+                    : "Select a date"}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0">
                 <Calendar
                   mode="single"
                   selected={selectedDate}
-                  onSelect={setSelectedDate}
+                  onSelect={(date) => {
+                    console.log("Date selected in BookAppointmentModal:", date);
+                    setSelectedDate(date);
+                    if (date) {
+                      setValue("date", dayjs(date).format("YYYY-MM-DD"));
+                    }
+                  }}
                   disabled={disabledDays}
                   initialFocus
                 />
@@ -275,7 +302,9 @@ export function BookAppointmentModal({
               </p>
             )}
             {errors.startTime && (
-              <p className="text-red-500 text-sm mt-1">{errors.startTime.message}</p>
+              <p className="text-red-500 text-sm mt-1">
+                {errors.startTime.message}
+              </p>
             )}
           </div>
 
@@ -293,8 +322,8 @@ export function BookAppointmentModal({
             <Button type="button" variant="outline" onClick={onClose}>
               Cancel
             </Button>
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               disabled={isSubmitting || !watch("startTime")}
               className="bg-orange-600 hover:bg-orange-700"
             >

@@ -39,15 +39,41 @@ export const serviceApi = {
     try {
       const { page = 1, limit = 10, sort, order, search, serviceType } = params;
 
-      let url = `/services/business/${businessId}?page=${page}&limit=${limit}`;
+      // First try using the fetch API directly to our Next.js API route
+      try {
+        let url = `/api/business/${businessId}/services?page=${page}&limit=${limit}`;
 
-      if (sort) url += `&sort=${sort}`;
-      if (order) url += `&order=${order}`;
-      if (search) url += `&search=${search}`;
-      if (serviceType) url += `&serviceType=${serviceType}`;
+        if (sort) url += `&sort=${sort}`;
+        if (order) url += `&order=${order}`;
+        if (search) url += `&search=${search}`;
+        if (serviceType) url += `&serviceType=${serviceType}`;
 
-      const response = await api.get(url);
-      return response.data;
+        const response = await fetch(url, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch business services");
+        }
+
+        return await response.json();
+      } catch (fetchError) {
+        console.warn("Fetch API failed, falling back to axios:", fetchError);
+
+        // Fallback to axios if fetch fails
+        let url = `/services/business/${businessId}?page=${page}&limit=${limit}`;
+
+        if (sort) url += `&sort=${sort}`;
+        if (order) url += `&order=${order}`;
+        if (search) url += `&search=${search}`;
+        if (serviceType) url += `&serviceType=${serviceType}`;
+
+        const response = await api.get(url);
+        return response.data;
+      }
     } catch (error) {
       console.error("Error fetching business services:", error);
       throw error;

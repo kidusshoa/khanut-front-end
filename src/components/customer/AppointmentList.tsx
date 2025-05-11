@@ -76,7 +76,7 @@ export function AppointmentList({ customerId }: AppointmentListProps) {
     let filtered = appointments;
 
     // Apply status filter
-    if (statusFilter) {
+    if (statusFilter && statusFilter !== "all") {
       filtered = filtered.filter(
         (appointment) => appointment.status === statusFilter
       );
@@ -259,7 +259,7 @@ export function AppointmentList({ customerId }: AppointmentListProps) {
             </div>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All statuses</SelectItem>
+            <SelectItem value="all">All statuses</SelectItem>
             <SelectItem value="pending">Pending</SelectItem>
             <SelectItem value="confirmed">Confirmed</SelectItem>
             <SelectItem value="completed">Completed</SelectItem>

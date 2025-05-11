@@ -55,7 +55,14 @@ interface Order {
   businessId: string;
   items: OrderItem[];
   totalAmount: number;
-  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  status:
+    | "pending_payment"
+    | "payment_received"
+    | "processing"
+    | "shipped"
+    | "delivered"
+    | "cancelled"
+    | "refunded";
   paymentStatus: "pending" | "paid" | "failed";
   shippingAddress?: {
     street: string;
@@ -83,20 +90,36 @@ export function OrderDetailsModal({
 }: OrderDetailsModalProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<
-    "pending" | "processing" | "shipped" | "delivered" | "cancelled"
+    | "pending_payment"
+    | "payment_received"
+    | "processing"
+    | "shipped"
+    | "delivered"
+    | "cancelled"
+    | "refunded"
   >(order.status);
 
   // Get status badge
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "pending":
+      case "pending_payment":
         return (
           <Badge
             variant="outline"
             className="bg-yellow-50 text-yellow-700 border-yellow-200"
           >
             <Clock className="mr-1 h-3 w-3" />
-            Pending
+            Pending Payment
+          </Badge>
+        );
+      case "payment_received":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-purple-50 text-purple-700 border-purple-200"
+          >
+            <CheckCircle className="mr-1 h-3 w-3" />
+            Payment Received
           </Badge>
         );
       case "processing":
@@ -139,8 +162,26 @@ export function OrderDetailsModal({
             Cancelled
           </Badge>
         );
+      case "refunded":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-orange-50 text-orange-700 border-orange-200"
+          >
+            <XCircle className="mr-1 h-3 w-3" />
+            Refunded
+          </Badge>
+        );
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return (
+          <Badge variant="outline">
+            {status
+              .replace(/_/g, " ")
+              .split(" ")
+              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(" ")}
+          </Badge>
+        );
     }
   };
 
@@ -197,9 +238,15 @@ export function OrderDetailsModal({
   // Get available status options based on current status
   const getStatusOptions = () => {
     switch (order.status) {
-      case "pending":
+      case "pending_payment":
         return [
-          { value: "pending", label: "Pending" },
+          { value: "pending_payment", label: "Pending Payment" },
+          { value: "payment_received", label: "Payment Received" },
+          { value: "cancelled", label: "Cancelled" },
+        ];
+      case "payment_received":
+        return [
+          { value: "payment_received", label: "Payment Received" },
           { value: "processing", label: "Processing" },
           { value: "cancelled", label: "Cancelled" },
         ];
@@ -213,11 +260,17 @@ export function OrderDetailsModal({
         return [
           { value: "shipped", label: "Shipped" },
           { value: "delivered", label: "Delivered" },
+          { value: "cancelled", label: "Cancelled" },
         ];
       case "delivered":
-        return [{ value: "delivered", label: "Delivered" }];
+        return [
+          { value: "delivered", label: "Delivered" },
+          { value: "refunded", label: "Refunded" },
+        ];
       case "cancelled":
         return [{ value: "cancelled", label: "Cancelled" }];
+      case "refunded":
+        return [{ value: "refunded", label: "Refunded" }];
       default:
         return [];
     }
@@ -377,15 +430,19 @@ export function OrderDetailsModal({
               onValueChange={(value) =>
                 setSelectedStatus(
                   value as
-                    | "pending"
+                    | "pending_payment"
+                    | "payment_received"
                     | "processing"
                     | "shipped"
                     | "delivered"
                     | "cancelled"
+                    | "refunded"
                 )
               }
               disabled={
-                order.status === "delivered" || order.status === "cancelled"
+                order.status === "delivered" ||
+                order.status === "cancelled" ||
+                order.status === "refunded"
               }
             >
               <SelectTrigger className="w-[200px]">
@@ -411,7 +468,8 @@ export function OrderDetailsModal({
                 isUpdating ||
                 selectedStatus === order.status ||
                 order.status === "delivered" ||
-                order.status === "cancelled"
+                order.status === "cancelled" ||
+                order.status === "refunded"
               }
             >
               Update Status

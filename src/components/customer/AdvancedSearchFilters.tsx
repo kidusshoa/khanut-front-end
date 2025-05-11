@@ -163,16 +163,19 @@ export default function AdvancedSearchFilters({
             <div>
               <Label className="text-sm font-medium mb-2 block">Category</Label>
               <Select
-                value={localFilters.category || ""}
+                value={localFilters.category || "all"}
                 onValueChange={(value) =>
-                  handleLocalFilterChange("category", value || undefined)
+                  handleLocalFilterChange(
+                    "category",
+                    value === "all" ? undefined : value
+                  )
                 }
               >
                 <SelectTrigger>
                   <SelectValue placeholder="All categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All categories</SelectItem>
+                  <SelectItem value="all">All categories</SelectItem>
                   {categories.map((category) => (
                     <SelectItem key={category} value={category}>
                       {category}
@@ -189,7 +192,10 @@ export default function AdvancedSearchFilters({
               </Label>
               <div className="space-y-2">
                 {serviceTypeOptions.map((option) => (
-                  <div key={option.value} className="flex items-center space-x-2">
+                  <div
+                    key={option.value}
+                    className="flex items-center space-x-2"
+                  >
                     <Checkbox
                       id={`service-type-${option.value}`}
                       checked={
@@ -221,11 +227,11 @@ export default function AdvancedSearchFilters({
               </Label>
               <div className="flex items-center space-x-2">
                 <Select
-                  value={localFilters.minRating?.toString() || ""}
+                  value={localFilters.minRating?.toString() || "any"}
                   onValueChange={(value) =>
                     handleLocalFilterChange(
                       "minRating",
-                      value ? parseFloat(value) : undefined
+                      value && value !== "any" ? parseFloat(value) : undefined
                     )
                   }
                 >
@@ -233,7 +239,7 @@ export default function AdvancedSearchFilters({
                     <SelectValue placeholder="Any rating" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Any rating</SelectItem>
+                    <SelectItem value="any">Any rating</SelectItem>
                     <SelectItem value="3">
                       <div className="flex items-center">
                         <span className="mr-2">3+</span>
@@ -303,16 +309,19 @@ export default function AdvancedSearchFilters({
               <Label className="text-sm font-medium mb-2 block">Sort By</Label>
               <div className="flex gap-2">
                 <Select
-                  value={localFilters.sortBy || ""}
+                  value={localFilters.sortBy || "default"}
                   onValueChange={(value) =>
-                    handleLocalFilterChange("sortBy", value || undefined)
+                    handleLocalFilterChange(
+                      "sortBy",
+                      value === "default" ? undefined : value
+                    )
                   }
                 >
                   <SelectTrigger className="flex-1">
                     <SelectValue placeholder="Default" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Default</SelectItem>
+                    <SelectItem value="default">Default</SelectItem>
                     {sortOptions.map((option) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
@@ -324,10 +333,7 @@ export default function AdvancedSearchFilters({
                 <Select
                   value={localFilters.order || "desc"}
                   onValueChange={(value) =>
-                    handleLocalFilterChange(
-                      "order",
-                      value as "asc" | "desc"
-                    )
+                    handleLocalFilterChange("order", value as "asc" | "desc")
                   }
                   disabled={!localFilters.sortBy}
                 >

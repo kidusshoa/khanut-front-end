@@ -25,19 +25,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Handle direct business ID access (redirect to dashboard)
+  // Handle direct business ID access (no need to redirect to dashboard)
+  // The main business page is already the dashboard
   if (path.match(/^\/business\/[^\/]+\/?$/) && !path.includes("/register/")) {
     const businessId = path.split("/")[2];
-    // If authenticated and role is business, go to dashboard, otherwise view page
-    if (token && token.role === "business") {
-      return NextResponse.redirect(
-        new URL(`/business/${businessId}/dashboard`, request.url)
-      );
-    } else {
+    // If not authenticated as business, redirect to view page
+    if (!token || token.role !== "business") {
       return NextResponse.redirect(
         new URL(`/business/${businessId}/view`, request.url)
       );
     }
+    // Otherwise, continue to the business dashboard page
+    return NextResponse.next();
   }
 
   // Check if user is authenticated
@@ -85,7 +84,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // Special handling for business dashboard
-    if (path.includes("/dashboard")) {
+    if (path.includes("/dashboard") || path.match(/^\/business\/[^\/]+\/?$/)) {
       try {
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/api/business/status`,
@@ -105,6 +104,14 @@ export async function middleware(request: NextRequest) {
           const businessId = path.split("/")[2];
           return NextResponse.redirect(
             new URL(`/business/${businessId}/pending`, request.url)
+          );
+        }
+
+        // If we're at /business/[businessId]/dashboard, redirect to /business/[businessId]
+        if (path.includes("/dashboard")) {
+          const businessId = path.split("/")[2];
+          return NextResponse.redirect(
+            new URL(`/business/${businessId}`, request.url)
           );
         }
       } catch (error) {

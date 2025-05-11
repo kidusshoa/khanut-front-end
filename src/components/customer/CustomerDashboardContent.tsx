@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import {
   Calendar,
   ShoppingBag,
   Heart,
-  Clock,
   MapPin,
   ArrowRight,
   Star,
@@ -22,11 +21,8 @@ import {
   Coffee,
   Store,
   Briefcase,
-  ShoppingCart,
-  Search,
   RefreshCw,
 } from "lucide-react";
-import { motion } from "framer-motion";
 import {
   Card,
   CardContent,
@@ -36,14 +32,11 @@ import {
 } from "@/components/ui/card";
 import CustomerDashboardLayout from "@/components/layout/CustomerDashboardLayout";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { serviceApi } from "@/services/service";
 import { appointmentApi } from "@/services/appointment";
 import { orderApi } from "@/services/order";
 import dayjs from "dayjs";
 import Link from "next/link";
-import Image from "next/image";
 import SearchBar from "./SearchBar";
 
 // Import dashboard API
@@ -86,58 +79,26 @@ export default function CustomerDashboardContent({
   const [recommendationMethod, setRecommendationMethod] =
     useState<string>("hybrid");
 
-  // Fetch recommended services
+  // Fetch recommended businesses with error handling
   const {
     data: recommendedBusinesses,
-    isLoading: isBusinessesLoading,
+    isLoading: isServicesLoading, // Keep the same variable name for UI compatibility
     refetch: refetchRecommendations,
   } = useQuery({
     queryKey: ["recommendedBusinesses", customerId, recommendationMethod],
     queryFn: () =>
       dashboardApi.getRecommendedBusinesses(4, recommendationMethod as any),
     enabled: !!session?.user?.id,
+    retry: 1, // Only retry once to avoid infinite loops
   });
 
-  // Fetch services for recommended businesses
-  const { data: recommendedServices, isLoading: isServicesLoading } = useQuery({
-    queryKey: ["recommendedServices", recommendedBusinesses],
-    queryFn: async () => {
-      try {
-        if (!recommendedBusinesses || recommendedBusinesses.length === 0) {
-          return await serviceApi.getAllServices({ limit: 4 });
-        }
-
-        // For each recommended business, get their top service
-        const services = [];
-        for (const business of recommendedBusinesses) {
-          const businessServices = await serviceApi.getBusinessServices(
-            business._id,
-            { limit: 1 }
-          );
-          if (businessServices && businessServices.length > 0) {
-            // Add business info to the service
-            businessServices[0].businessName = business.name;
-            businessServices[0].businessId = business._id;
-            businessServices[0].predictionScore = business.predictionScore;
-            businessServices[0].recommendationMethod =
-              business.recommendationMethod;
-            services.push(businessServices[0]);
-          }
-        }
-
-        return services.length > 0
-          ? services
-          : await serviceApi.getAllServices({ limit: 4 });
-      } catch (error) {
-        console.error(
-          "Error fetching services for recommended businesses:",
-          error
-        );
-        // Fallback to regular service listing
-        return serviceApi.getAllServices({ limit: 4 });
-      }
-    },
-    enabled: !!recommendedBusinesses && recommendedBusinesses.length > 0,
+  // Fetch top-rated businesses as fallback when recommendations are empty
+  const { data: topRatedBusinesses, isLoading: isTopRatedLoading } = useQuery({
+    queryKey: ["topRatedBusinesses"],
+    queryFn: () => dashboardApi.getTopRatedBusinesses(4),
+    enabled:
+      !!session?.user?.id &&
+      (!recommendedBusinesses || recommendedBusinesses.length === 0),
   });
 
   const formatCurrency = (amount: number) => {
@@ -255,7 +216,7 @@ export default function CustomerDashboardContent({
                     {stats?.favoriteServices || 0}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Saved services
+                    Saved businesses
                   </p>
                 </>
               )}
@@ -271,7 +232,7 @@ export default function CustomerDashboardContent({
             <CardContent>
               <div className="text-2xl font-bold">15+</div>
               <p className="text-xs text-muted-foreground">
-                Services in your area
+                Businesses in your area
               </p>
             </CardContent>
           </Card>
@@ -525,7 +486,7 @@ export default function CustomerDashboardContent({
           </div>
         </div>
 
-        {/* Recommended Services */}
+        {/* Recommended Businesses */}
         <div>
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-2">
             <div className="flex flex-col md:flex-row md:items-center gap-4">
@@ -544,12 +505,14 @@ export default function CustomerDashboardContent({
                   <option value="hybrid">Hybrid Recommendations</option>
                   <option value="collaborative">Based on Similar Users</option>
                   <option value="content">Based on Your Interests</option>
+                  <option value="top-rated">Top-Rated Businesses</option>
                 </select>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => refetchRecommendations()}
                   className="h-8 w-8 p-0"
+                  title="Refresh recommendations"
                 >
                   <RefreshCw className="h-4 w-4" />
                 </Button>
@@ -557,7 +520,7 @@ export default function CustomerDashboardContent({
             </div>
             <Button variant="ghost" size="sm" asChild>
               <Link
-                href={`/customer/${customerId}/services`}
+                href={`/customer/${customerId}/search`}
                 className="flex items-center gap-1"
               >
                 View all <ArrowRight className="h-4 w-4" />
@@ -569,74 +532,77 @@ export default function CustomerDashboardContent({
             <div className="flex justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
-          ) : recommendedServices && recommendedServices.length > 0 ? (
+          ) : recommendedBusinesses && recommendedBusinesses.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {recommendedServices.map((service: any) => (
+              {recommendedBusinesses.map((business: any) => (
                 <Link
-                  key={service._id}
-                  href={`/customer/${customerId}/services/${service._id}`}
+                  key={business._id}
+                  href={`/customer/${customerId}/businesses/${business._id}`}
                   className="group"
                 >
                   <div className="rounded-lg overflow-hidden border border-border bg-card transition-all hover:shadow-md">
                     <div className="aspect-video relative overflow-hidden">
-                      {service.images && service.images.length > 0 ? (
+                      {business.coverImage ? (
                         <img
-                          src={service.images[0]}
-                          alt={service.name}
+                          src={business.coverImage}
+                          alt={business.name}
                           className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                        />
+                      ) : business.logo ? (
+                        <img
+                          src={business.logo}
+                          alt={business.name}
+                          className="object-contain w-full h-full group-hover:scale-105 transition-transform duration-300"
                         />
                       ) : (
                         <div className="w-full h-full bg-muted flex items-center justify-center">
-                          <ShoppingBag className="h-8 w-8 text-muted-foreground" />
+                          <Store className="h-8 w-8 text-muted-foreground" />
                         </div>
                       )}
-                      <Badge
-                        className={`absolute top-2 right-2 ${
-                          service.serviceType === "appointment"
-                            ? "bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400"
-                            : service.serviceType === "product"
-                            ? "bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400"
-                            : "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
-                        }`}
-                      >
-                        {service.serviceType === "appointment"
-                          ? "Appointment"
-                          : service.serviceType === "product"
-                          ? "Product"
-                          : "In-Person"}
-                      </Badge>
+                      {business.category && (
+                        <Badge className="absolute top-2 right-2 bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">
+                          {business.category}
+                        </Badge>
+                      )}
                     </div>
                     <div className="p-4">
                       <h3 className="font-medium line-clamp-1 group-hover:text-orange-600 transition-colors">
-                        {service.name}
+                        {business.name}
                       </h3>
-                      {service.businessName && (
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {service.businessName}
-                        </p>
-                      )}
                       <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
-                        {service.description}
+                        {business.description}
                       </p>
                       <div className="flex items-center justify-between mt-2">
-                        <p className="font-medium text-orange-600">
-                          {formatCurrency(service.price)}
-                        </p>
                         <div className="flex items-center">
-                          {service.predictionScore ? (
+                          <MapPin className="h-4 w-4 text-muted-foreground mr-1" />
+                          <span className="text-xs text-muted-foreground">
+                            {business.address?.city || "Location"}
+                          </span>
+                        </div>
+                        <div className="flex items-center">
+                          {business.predictionScore ? (
                             <div
                               className="flex items-center"
-                              title={`Prediction score: ${service.predictionScore}`}
+                              title={`Prediction score: ${business.predictionScore}`}
                             >
                               <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
                               <span className="text-sm ml-1">
-                                {service.predictionScore.toFixed(1)}
+                                {typeof business.predictionScore === "number"
+                                  ? business.predictionScore.toFixed(1)
+                                  : "4.5"}
+                              </span>
+                            </div>
+                          ) : business.avgRating ? (
+                            <div className="flex items-center">
+                              <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                              <span className="text-sm ml-1">
+                                {business.avgRating.toFixed(1)}
                               </span>
                             </div>
                           ) : (
                             <div className="flex items-center">
                               <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                              <span className="text-sm ml-1">4.8</span>
+                              <span className="text-sm ml-1">4.5</span>
                             </div>
                           )}
                         </div>
@@ -645,6 +611,99 @@ export default function CustomerDashboardContent({
                   </div>
                 </Link>
               ))}
+            </div>
+          ) : isTopRatedLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+          ) : topRatedBusinesses && topRatedBusinesses.length > 0 ? (
+            <div>
+              <div className="mb-4 bg-orange-50 dark:bg-orange-900/20 p-3 rounded-md">
+                <p className="text-sm text-orange-700 dark:text-orange-400">
+                  <span className="font-medium">Top-rated businesses</span> -
+                  We're showing you the highest-rated businesses while we learn
+                  your preferences.
+                </p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {topRatedBusinesses.map((business: any) => (
+                  <Link
+                    key={business._id}
+                    href={`/customer/${customerId}/businesses/${business._id}`}
+                    className="group"
+                  >
+                    <div className="rounded-lg overflow-hidden border border-border bg-card transition-all hover:shadow-md">
+                      <div className="aspect-video relative overflow-hidden">
+                        {business.coverImage ? (
+                          <img
+                            src={business.coverImage}
+                            alt={business.name}
+                            className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-300"
+                          />
+                        ) : business.logo ? (
+                          <img
+                            src={business.logo}
+                            alt={business.name}
+                            className="object-contain w-full h-full group-hover:scale-105 transition-transform duration-300"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-muted flex items-center justify-center">
+                            <Store className="h-8 w-8 text-muted-foreground" />
+                          </div>
+                        )}
+                        {business.category && (
+                          <Badge className="absolute top-2 right-2 bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400">
+                            {business.category}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="p-4">
+                        <h3 className="font-medium line-clamp-1 group-hover:text-orange-600 transition-colors">
+                          {business.name}
+                        </h3>
+                        <p className="text-sm text-muted-foreground line-clamp-2 mt-1">
+                          {business.description}
+                        </p>
+                        <div className="flex items-center justify-between mt-2">
+                          <div className="flex items-center">
+                            <MapPin className="h-4 w-4 text-muted-foreground mr-1" />
+                            <span className="text-xs text-muted-foreground">
+                              {business.address?.city || "Location"}
+                            </span>
+                          </div>
+                          <div className="flex items-center">
+                            {business.predictionScore ? (
+                              <div
+                                className="flex items-center"
+                                title={`Rating: ${business.predictionScore}`}
+                              >
+                                <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                                <span className="text-sm ml-1">
+                                  {typeof business.predictionScore === "number"
+                                    ? business.predictionScore.toFixed(1)
+                                    : "4.5"}
+                                </span>
+                              </div>
+                            ) : business.avgRating ? (
+                              <div className="flex items-center">
+                                <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                                <span className="text-sm ml-1">
+                                  {business.avgRating.toFixed(1)}
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center">
+                                <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                                <span className="text-sm ml-1">4.5</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
             </div>
           ) : (
             <div className="text-center py-12 bg-muted/50 rounded-lg">
@@ -655,8 +714,8 @@ export default function CustomerDashboardContent({
                 We'll show personalized recommendations as you use the platform.
               </p>
               <Button asChild className="bg-orange-600 hover:bg-orange-700">
-                <Link href={`/customer/${customerId}/services`}>
-                  Browse Services
+                <Link href={`/customer/${customerId}/search`}>
+                  Browse Businesses
                 </Link>
               </Button>
             </div>

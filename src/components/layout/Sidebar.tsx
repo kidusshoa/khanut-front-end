@@ -4,19 +4,19 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { 
-  LayoutDashboard, 
-  Calendar, 
-  ShoppingBag, 
-  Package, 
-  BarChart, 
-  Settings, 
-  Users, 
+import {
+  LayoutDashboard,
+  Calendar,
+  ShoppingBag,
+  Package,
+  BarChart,
+  Settings,
+  Users,
   MessageSquare,
   ChevronLeft,
   ChevronRight,
   Store,
-  LogOut
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -35,31 +35,41 @@ export default function Sidebar({ businessId }: SidebarProps) {
       title: "Dashboard",
       icon: <LayoutDashboard className="h-5 w-5" />,
       href: `/business/${businessId}`,
-      active: pathname === `/business/${businessId}`,
+      active:
+        pathname === `/business/${businessId}` ||
+        pathname === `/business/${businessId}/dashboard`,
     },
     {
       title: "Services",
       icon: <Store className="h-5 w-5" />,
       href: `/business/${businessId}/services`,
-      active: pathname === `/business/${businessId}/services` || pathname.startsWith(`/business/${businessId}/services/`),
+      active:
+        pathname === `/business/${businessId}/services` ||
+        pathname.startsWith(`/business/${businessId}/services/`),
     },
     {
       title: "Appointments",
       icon: <Calendar className="h-5 w-5" />,
       href: `/business/${businessId}/appointments`,
-      active: pathname === `/business/${businessId}/appointments` || pathname.startsWith(`/business/${businessId}/appointments/`),
+      active:
+        pathname === `/business/${businessId}/appointments` ||
+        pathname.startsWith(`/business/${businessId}/appointments/`),
     },
     {
       title: "Orders",
       icon: <ShoppingBag className="h-5 w-5" />,
       href: `/business/${businessId}/orders`,
-      active: pathname === `/business/${businessId}/orders` || pathname.startsWith(`/business/${businessId}/orders/`),
+      active:
+        pathname === `/business/${businessId}/orders` ||
+        pathname.startsWith(`/business/${businessId}/orders/`),
     },
     {
       title: "Products",
       icon: <Package className="h-5 w-5" />,
       href: `/business/${businessId}/products`,
-      active: pathname === `/business/${businessId}/products` || pathname.startsWith(`/business/${businessId}/products/`),
+      active:
+        pathname === `/business/${businessId}/products` ||
+        pathname.startsWith(`/business/${businessId}/products/`),
     },
     {
       title: "Analytics",
@@ -71,13 +81,17 @@ export default function Sidebar({ businessId }: SidebarProps) {
       title: "Customers",
       icon: <Users className="h-5 w-5" />,
       href: `/business/${businessId}/customers`,
-      active: pathname === `/business/${businessId}/customers` || pathname.startsWith(`/business/${businessId}/customers/`),
+      active:
+        pathname === `/business/${businessId}/customers` ||
+        pathname.startsWith(`/business/${businessId}/customers/`),
     },
     {
       title: "Messages",
       icon: <MessageSquare className="h-5 w-5" />,
       href: `/business/${businessId}/messages`,
-      active: pathname === `/business/${businessId}/messages` || pathname.startsWith(`/business/${businessId}/messages/`),
+      active:
+        pathname === `/business/${businessId}/messages` ||
+        pathname.startsWith(`/business/${businessId}/messages/`),
     },
     {
       title: "Settings",
@@ -112,7 +126,11 @@ export default function Sidebar({ businessId }: SidebarProps) {
           onClick={() => setCollapsed(!collapsed)}
           className="ml-auto"
         >
-          {collapsed ? <ChevronRight className="h-5 w-5" /> : <ChevronLeft className="h-5 w-5" />}
+          {collapsed ? (
+            <ChevronRight className="h-5 w-5" />
+          ) : (
+            <ChevronLeft className="h-5 w-5" />
+          )}
         </Button>
       </div>
 
@@ -130,8 +148,14 @@ export default function Sidebar({ businessId }: SidebarProps) {
           >
             {item.icon}
             <motion.span
-              initial={{ opacity: collapsed ? 0 : 1, display: collapsed ? "none" : "block" }}
-              animate={{ opacity: collapsed ? 0 : 1, display: collapsed ? "none" : "block" }}
+              initial={{
+                opacity: collapsed ? 0 : 1,
+                display: collapsed ? "none" : "block",
+              }}
+              animate={{
+                opacity: collapsed ? 0 : 1,
+                display: collapsed ? "none" : "block",
+              }}
               transition={{ duration: 0.2 }}
               className={cn("font-medium", collapsed && "hidden")}
             >
@@ -152,8 +176,14 @@ export default function Sidebar({ businessId }: SidebarProps) {
         >
           <LogOut className="h-5 w-5" />
           <motion.span
-            initial={{ opacity: collapsed ? 0 : 1, display: collapsed ? "none" : "block" }}
-            animate={{ opacity: collapsed ? 0 : 1, display: collapsed ? "none" : "block" }}
+            initial={{
+              opacity: collapsed ? 0 : 1,
+              display: collapsed ? "none" : "block",
+            }}
+            animate={{
+              opacity: collapsed ? 0 : 1,
+              display: collapsed ? "none" : "block",
+            }}
             transition={{ duration: 0.2 }}
             className={cn("font-medium", collapsed && "hidden")}
           >

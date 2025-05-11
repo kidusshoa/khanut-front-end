@@ -58,7 +58,14 @@ interface Order {
     price: number;
   }>;
   totalAmount: number;
-  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  status:
+    | "pending_payment"
+    | "payment_received"
+    | "processing"
+    | "shipped"
+    | "delivered"
+    | "cancelled"
+    | "refunded";
   paymentStatus: "pending" | "paid" | "failed";
   paymentMethod: string;
   shippingAddress?: {
@@ -161,13 +168,22 @@ export default function OrdersContent({ businessId }: OrdersContentProps) {
   // Get status badge
   const getStatusBadge = (status: string): React.ReactNode => {
     switch (status) {
-      case "pending":
+      case "pending_payment":
         return (
           <Badge
             variant="outline"
             className="bg-yellow-50 text-yellow-700 border-yellow-200"
           >
-            Pending
+            Pending Payment
+          </Badge>
+        );
+      case "payment_received":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-purple-50 text-purple-700 border-purple-200"
+          >
+            Payment Received
           </Badge>
         );
       case "processing":
@@ -206,13 +222,26 @@ export default function OrdersContent({ businessId }: OrdersContentProps) {
             Cancelled
           </Badge>
         );
+      case "refunded":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-orange-50 text-orange-700 border-orange-200"
+          >
+            Refunded
+          </Badge>
+        );
       default:
         return (
           <Badge
             variant="outline"
             className="bg-gray-50 text-gray-700 border-gray-200"
           >
-            {status.charAt(0).toUpperCase() + status.slice(1)}
+            {status
+              .replace(/_/g, " ")
+              .split(" ")
+              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(" ")}
           </Badge>
         );
     }
@@ -435,8 +464,11 @@ export default function OrdersContent({ businessId }: OrdersContentProps) {
 
   // Calculate order statistics
   const totalOrders = orders.length;
-  const pendingOrders = orders.filter(
-    (o: Order) => o.status === "pending"
+  const pendingPaymentOrders = orders.filter(
+    (o: Order) => o.status === "pending_payment"
+  ).length;
+  const paymentReceivedOrders = orders.filter(
+    (o: Order) => o.status === "payment_received"
   ).length;
   const processingOrders = orders.filter(
     (o: Order) => o.status === "processing"
@@ -449,6 +481,9 @@ export default function OrdersContent({ businessId }: OrdersContentProps) {
   ).length;
   const cancelledOrders = orders.filter(
     (o: Order) => o.status === "cancelled"
+  ).length;
+  const refundedOrders = orders.filter(
+    (o: Order) => o.status === "refunded"
   ).length;
 
   // Calculate total revenue
@@ -556,12 +591,12 @@ export default function OrdersContent({ businessId }: OrdersContentProps) {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Pending Orders
+                Pending Payment
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-yellow-600">
-                {pendingOrders}
+                {pendingPaymentOrders}
               </div>
             </CardContent>
           </Card>
@@ -569,7 +604,7 @@ export default function OrdersContent({ businessId }: OrdersContentProps) {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Processing Orders
+                Processing
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -595,11 +630,13 @@ export default function OrdersContent({ businessId }: OrdersContentProps) {
         <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
           <TabsList>
             <TabsTrigger value="all">All Orders</TabsTrigger>
-            <TabsTrigger value="pending">Pending</TabsTrigger>
+            <TabsTrigger value="pending_payment">Pending Payment</TabsTrigger>
+            <TabsTrigger value="payment_received">Payment Received</TabsTrigger>
             <TabsTrigger value="processing">Processing</TabsTrigger>
             <TabsTrigger value="shipped">Shipped</TabsTrigger>
             <TabsTrigger value="delivered">Delivered</TabsTrigger>
             <TabsTrigger value="cancelled">Cancelled</TabsTrigger>
+            <TabsTrigger value="refunded">Refunded</TabsTrigger>
           </TabsList>
 
           <TabsContent value={activeTab} className="mt-6">
@@ -638,12 +675,28 @@ export default function OrdersContent({ businessId }: OrdersContentProps) {
               <div className="space-y-4">
                 <div className="flex items-center">
                   <div className="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
-                  <div className="w-1/2 text-sm">Pending</div>
+                  <div className="w-1/2 text-sm">Pending Payment</div>
                   <div className="w-1/2 flex justify-between">
-                    <span className="font-medium">{pendingOrders}</span>
+                    <span className="font-medium">{pendingPaymentOrders}</span>
                     <span className="text-muted-foreground">
                       {totalOrders
-                        ? Math.round((pendingOrders / totalOrders) * 100)
+                        ? Math.round((pendingPaymentOrders / totalOrders) * 100)
+                        : 0}
+                      %
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full bg-purple-500 mr-2"></div>
+                  <div className="w-1/2 text-sm">Payment Received</div>
+                  <div className="w-1/2 flex justify-between">
+                    <span className="font-medium">{paymentReceivedOrders}</span>
+                    <span className="text-muted-foreground">
+                      {totalOrders
+                        ? Math.round(
+                            (paymentReceivedOrders / totalOrders) * 100
+                          )
                         : 0}
                       %
                     </span>
@@ -700,6 +753,20 @@ export default function OrdersContent({ businessId }: OrdersContentProps) {
                     <span className="text-muted-foreground">
                       {totalOrders
                         ? Math.round((cancelledOrders / totalOrders) * 100)
+                        : 0}
+                      %
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center">
+                  <div className="w-3 h-3 rounded-full bg-orange-500 mr-2"></div>
+                  <div className="w-1/2 text-sm">Refunded</div>
+                  <div className="w-1/2 flex justify-between">
+                    <span className="font-medium">{refundedOrders}</span>
+                    <span className="text-muted-foreground">
+                      {totalOrders
+                        ? Math.round((refundedOrders / totalOrders) * 100)
                         : 0}
                       %
                     </span>

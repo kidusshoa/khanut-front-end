@@ -1,7 +1,6 @@
-import api from "./api";
 import { getAuthToken } from "@/lib/auth";
 
-const API_URL = "http://localhost:4000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export interface DashboardStats {
   totalAppointments: number;
@@ -52,9 +51,14 @@ export const dashboardApi = {
   // Get recommended businesses
   getRecommendedBusinesses: async (
     limit: number = 4,
-    method: "hybrid" | "collaborative" | "content" = "hybrid"
+    method: "hybrid" | "collaborative" | "content" | "top-rated" = "hybrid"
   ): Promise<RecommendedBusiness[]> => {
     try {
+      // If method is top-rated, use the top-rated businesses endpoint
+      if (method === "top-rated") {
+        return await dashboardApi.getTopRatedBusinesses(limit);
+      }
+
       const token = await getAuthToken();
 
       const response = await fetch(
@@ -71,10 +75,50 @@ export const dashboardApi = {
         throw new Error(errorData.message || "Failed to fetch recommendations");
       }
 
-      return response.json();
+      const data = await response.json();
+      console.log("Recommended businesses data:", data); // Debug log
+      return data.recommendations || [];
     } catch (error) {
       console.error("Error fetching recommended businesses:", error);
-      throw error;
+      return [];
+    }
+  },
+
+  // Get top-rated businesses as fallback
+  getTopRatedBusinesses: async (
+    limit: number = 4
+  ): Promise<RecommendedBusiness[]> => {
+    try {
+      const token = await getAuthToken();
+
+      const response = await fetch(
+        `${API_URL}/api/customer/top?limit=${limit}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.message || "Failed to fetch top-rated businesses"
+        );
+      }
+
+      const data = await response.json();
+      console.log("Top-rated businesses data:", data);
+
+      // Format the data to match the RecommendedBusiness interface
+      return data.map((business: any) => ({
+        ...business,
+        predictionScore: business.avgRating || 4.5,
+        recommendationMethod: "top-rated",
+      }));
+    } catch (error) {
+      console.error("Error fetching top-rated businesses:", error);
+      return [];
     }
   },
 };

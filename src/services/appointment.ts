@@ -3,10 +3,9 @@ import {
   RecurringAppointmentInput,
 } from "@/lib/validations/service";
 import api from "./api";
-import { RecurringAppointment } from "@/lib/types/staff";
 import { getAuthToken } from "@/lib/auth";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 export interface TimeSlot {
   startTime: string;
@@ -265,9 +264,75 @@ export const appointmentApi = {
   createAppointment: async (
     appointmentData: AppointmentBookingInput & { staffId?: string }
   ) => {
+    console.log("Creating appointment with data:", appointmentData);
+
+    // Validate required fields
+    if (!appointmentData.serviceId) throw new Error("Service ID is required");
+    if (!appointmentData.businessId) throw new Error("Business ID is required");
+    if (!appointmentData.customerId) throw new Error("Customer ID is required");
+    if (!appointmentData.date) throw new Error("Date is required");
+    if (!appointmentData.startTime) throw new Error("Start time is required");
+    if (!appointmentData.endTime) throw new Error("End time is required");
+
     try {
-      const response = await api.post(`/appointments`, appointmentData);
-      return response.data;
+      // First try using the fetch API with authentication
+      try {
+        const token = await getAuthToken();
+        console.log(
+          "Auth token retrieved:",
+          token ? "Token exists" : "No token"
+        );
+
+        if (!token) {
+          throw new Error("Authentication required");
+        }
+
+        const apiUrl = `${API_URL}/api/appointments`;
+        console.log("Posting to URL:", apiUrl);
+
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(appointmentData),
+        });
+
+        console.log("Response status:", response.status);
+
+        if (!response.ok) {
+          let errorMessage = "Failed to create appointment";
+          try {
+            const errorData = await response.json();
+            console.error("Error response from server:", errorData);
+            errorMessage = errorData.message || errorMessage;
+          } catch (parseError) {
+            console.error("Could not parse error response:", parseError);
+          }
+          throw new Error(errorMessage);
+        }
+
+        const responseData = await response.json();
+        console.log("Appointment created successfully:", responseData);
+        return responseData;
+      } catch (fetchError) {
+        console.warn("Fetch API failed, falling back to axios:", fetchError);
+
+        // Fallback to axios if fetch fails
+        try {
+          const response = await api.post(`/appointments`, appointmentData);
+          console.log("Axios response:", response.data);
+          return response.data;
+        } catch (axiosError: any) {
+          console.error("Axios error:", axiosError);
+          const errorMessage =
+            axiosError.response?.data?.message ||
+            axiosError.message ||
+            "Failed to create appointment";
+          throw new Error(errorMessage);
+        }
+      }
     } catch (error) {
       console.error("Error creating appointment:", error);
       throw error;

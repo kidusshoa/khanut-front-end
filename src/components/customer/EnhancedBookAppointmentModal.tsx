@@ -463,6 +463,10 @@ export function EnhancedBookAppointmentModal({
                                 mode="single"
                                 selected={selectedDate}
                                 onSelect={(date) => {
+                                  console.log(
+                                    "Date selected in EnhancedBookAppointmentModal:",
+                                    date
+                                  );
                                   setSelectedDate(date);
                                   if (date) {
                                     field.onChange(
@@ -704,7 +708,10 @@ export function EnhancedBookAppointmentModal({
                     <Calendar
                       mode="single"
                       selected={recurrenceEndDate}
-                      onSelect={handleRecurrenceEndDateChange}
+                      onSelect={(date) => {
+                        console.log("Recurrence end date selected:", date);
+                        handleRecurrenceEndDateChange(date);
+                      }}
                       disabled={(date) => {
                         if (!selectedDate) return true;
                         return date < selectedDate;

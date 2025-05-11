@@ -122,24 +122,13 @@ export const userService = {
     }
   },
 
-  // Add business to favorites
-  async addToFavorites(businessId: string) {
+  // Toggle business favorite status
+  async toggleFavorite(businessId: string) {
     try {
-      const response = await api.post(`/customer/favorites/${businessId}`);
+      const response = await api.patch(`/customer/favorites/${businessId}`);
       return response.data;
     } catch (error) {
-      console.error("Error adding business to favorites:", error);
-      throw error;
-    }
-  },
-
-  // Remove business from favorites
-  async removeFromFavorites(businessId: string) {
-    try {
-      const response = await api.delete(`/customer/favorites/${businessId}`);
-      return response.data;
-    } catch (error) {
-      console.error("Error removing business from favorites:", error);
+      console.error("Error toggling business favorite status:", error);
       throw error;
     }
   },

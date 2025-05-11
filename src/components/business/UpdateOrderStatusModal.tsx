@@ -39,7 +39,14 @@ interface Order {
   businessId: string;
   items: OrderItem[];
   totalAmount: number;
-  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+  status:
+    | "pending_payment"
+    | "payment_received"
+    | "processing"
+    | "shipped"
+    | "delivered"
+    | "cancelled"
+    | "refunded";
   paymentStatus: "pending" | "paid" | "failed";
   shippingAddress?: {
     street: string;
@@ -67,15 +74,27 @@ export function UpdateOrderStatusModal({
 }: UpdateOrderStatusModalProps) {
   const [isUpdating, setIsUpdating] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<
-    "pending" | "processing" | "shipped" | "delivered" | "cancelled"
+    | "pending_payment"
+    | "payment_received"
+    | "processing"
+    | "shipped"
+    | "delivered"
+    | "cancelled"
+    | "refunded"
   >(order.status);
 
   // Get available status options based on current status
   const getStatusOptions = () => {
     switch (order.status) {
-      case "pending":
+      case "pending_payment":
         return [
-          { value: "pending", label: "Pending" },
+          { value: "pending_payment", label: "Pending Payment" },
+          { value: "payment_received", label: "Payment Received" },
+          { value: "cancelled", label: "Cancelled" },
+        ];
+      case "payment_received":
+        return [
+          { value: "payment_received", label: "Payment Received" },
           { value: "processing", label: "Processing" },
           { value: "cancelled", label: "Cancelled" },
         ];
@@ -89,11 +108,17 @@ export function UpdateOrderStatusModal({
         return [
           { value: "shipped", label: "Shipped" },
           { value: "delivered", label: "Delivered" },
+          { value: "cancelled", label: "Cancelled" },
         ];
       case "delivered":
-        return [{ value: "delivered", label: "Delivered" }];
+        return [
+          { value: "delivered", label: "Delivered" },
+          { value: "refunded", label: "Refunded" },
+        ];
       case "cancelled":
         return [{ value: "cancelled", label: "Cancelled" }];
+      case "refunded":
+        return [{ value: "refunded", label: "Refunded" }];
       default:
         return [];
     }
@@ -134,17 +159,20 @@ export function UpdateOrderStatusModal({
               onValueChange={(value) =>
                 setSelectedStatus(
                   value as
-                    | "pending"
+                    | "pending_payment"
+                    | "payment_received"
                     | "processing"
                     | "shipped"
                     | "delivered"
                     | "cancelled"
+                    | "refunded"
                 )
               }
               disabled={
                 isUpdating ||
                 order.status === "delivered" ||
-                order.status === "cancelled"
+                order.status === "cancelled" ||
+                order.status === "refunded"
               }
             >
               <SelectTrigger>
@@ -171,7 +199,8 @@ export function UpdateOrderStatusModal({
               isUpdating ||
               selectedStatus === order.status ||
               order.status === "delivered" ||
-              order.status === "cancelled"
+              order.status === "cancelled" ||
+              order.status === "refunded"
             }
           >
             {isUpdating ? (

@@ -335,7 +335,13 @@ export default function BusinessAppointmentsClient({ businessId }: Props) {
               <CalendarComponent
                 mode="single"
                 selected={selectedDate}
-                onSelect={setSelectedDate}
+                onSelect={(date) => {
+                  console.log(
+                    "Date selected in BusinessAppointmentClient:",
+                    date
+                  );
+                  setSelectedDate(date);
+                }}
                 initialFocus
               />
               {selectedDate && (
