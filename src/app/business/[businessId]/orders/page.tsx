@@ -1,9 +1,13 @@
 import OrdersContent from "./OrdersContent";
 
-export default async function BusinessOrdersPage({ params }: any) {
-  // Handle both Promise and non-Promise cases
-  const resolvedParams = params instanceof Promise ? await params : params;
-  const businessId = resolvedParams.businessId;
+// Define the params type
+interface PageParams {
+  businessId: string;
+}
+
+export default function BusinessOrdersPage({ params }: { params: PageParams }) {
+  // Use the businessId directly without awaiting
+  const businessId = params.businessId;
 
   return <OrdersContent businessId={businessId} />;
 }

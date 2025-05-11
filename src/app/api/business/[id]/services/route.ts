@@ -4,11 +4,14 @@ import { authOptions } from "@/auth";
 
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const businessId = context.params.id;
-    
+    // Extract the ID from the URL instead of params
+    const requestUrl = new URL(request.url);
+    const pathParts = requestUrl.pathname.split("/");
+    const businessId = pathParts[pathParts.length - 2];
+
     if (!businessId) {
       return NextResponse.json(
         { error: "Business ID is required" },
@@ -16,18 +19,17 @@ export async function GET(
       );
     }
 
-    // Get query parameters
-    const url = new URL(request.url);
-    const page = url.searchParams.get("page") || "1";
-    const limit = url.searchParams.get("limit") || "10";
-    const sort = url.searchParams.get("sort") || "";
-    const order = url.searchParams.get("order") || "";
-    const search = url.searchParams.get("search") || "";
-    const serviceType = url.searchParams.get("serviceType") || "";
+    // Get query parameters from the same URL
+    const page = requestUrl.searchParams.get("page") || "1";
+    const limit = requestUrl.searchParams.get("limit") || "10";
+    const sort = requestUrl.searchParams.get("sort") || "";
+    const order = requestUrl.searchParams.get("order") || "";
+    const search = requestUrl.searchParams.get("search") || "";
+    const serviceType = requestUrl.searchParams.get("serviceType") || "";
 
     // Build the API URL
     let apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/services/business/${businessId}?page=${page}&limit=${limit}`;
-    
+
     if (sort) apiUrl += `&sort=${sort}`;
     if (order) apiUrl += `&order=${order}`;
     if (search) apiUrl += `&search=${search}`;
@@ -35,7 +37,7 @@ export async function GET(
 
     // Get session for authentication
     const session = await getServerSession(authOptions);
-    
+
     // Prepare headers
     const headers: HeadersInit = {
       "Content-Type": "application/json",

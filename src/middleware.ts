@@ -8,7 +8,13 @@ export async function middleware(request: NextRequest) {
   const search = request.nextUrl.search;
 
   // Public paths that don't require authentication
-  const publicPaths = ["/login", "/register", "/verify", "/"];
+  const publicPaths = [
+    "/login",
+    "/register",
+    "/verify",
+    "/",
+    "/business/login",
+  ];
 
   // Check if this is a public business view page
   const isPublicBusinessView = path.match(/^\/business\/[^\/]+\/view\/?$/);
@@ -74,13 +80,13 @@ export async function middleware(request: NextRequest) {
 
   // Business route protection
   if (path.startsWith("/business") && !isPublicBusinessView && !isPendingPage) {
-    // Skip protection for business registration
-    if (path.includes("/register/")) {
+    // Skip protection for business registration and login
+    if (path.includes("/register/") || path.includes("/login")) {
       return NextResponse.next();
     }
 
-    if (token.role !== "business") {
-      return NextResponse.redirect(new URL("/login", request.url));
+    if (token?.role !== "business") {
+      return NextResponse.redirect(new URL("/business/login", request.url));
     }
 
     // Special handling for business dashboard

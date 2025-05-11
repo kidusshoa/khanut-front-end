@@ -1,9 +1,12 @@
+"use client";
+
+import { useParams } from "next/navigation";
 import MessagesContent from "./MessagesContent";
 
-export default async function BusinessMessagesPage({ params }: any) {
-  // Handle both Promise and non-Promise cases
-  const resolvedParams = params instanceof Promise ? await params : params;
-  const businessId = resolvedParams.businessId;
+export default function BusinessMessagesPage() {
+  // Use the useParams hook to get the businessId
+  const params = useParams();
+  const businessId = params.businessId as string;
 
   return <MessagesContent businessId={businessId} />;
 }

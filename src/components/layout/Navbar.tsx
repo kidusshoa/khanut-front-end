@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { Search, Moon, Sun, Menu, X } from "lucide-react";
-import { NotificationDropdown } from "@/components/notifications/NotificationDropdown";
+import { ConditionalNotificationDropdown } from "@/components/notifications/ConditionalNotificationDropdown";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -100,7 +100,7 @@ export default function Navbar({
       </div>
 
       <div className="flex items-center gap-2">
-        <NotificationDropdown />
+        <ConditionalNotificationDropdown />
 
         {mounted && (
           <Button

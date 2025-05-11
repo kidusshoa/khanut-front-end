@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Menu, X, ShoppingBag, Heart, User, Home, Grid3X3 } from "lucide-react";
@@ -15,7 +16,10 @@ interface CustomerNavbarProps {
   cartCount?: number;
 }
 
-export default function CustomerNavbar({ customerId, cartCount = 0 }: CustomerNavbarProps) {
+export default function CustomerNavbar({
+  customerId,
+  cartCount = 0,
+}: CustomerNavbarProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
@@ -48,11 +52,20 @@ export default function CustomerNavbar({ customerId, cartCount = 0 }: CustomerNa
       <div className="container mx-auto px-4">
         <div className="flex h-16 items-center justify-between">
           {/* Logo */}
-          <Link href={`/customer/${customerId}`} className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-md bg-orange-500 flex items-center justify-center text-white font-bold">
-              K
-            </div>
-            <span className="font-semibold text-lg hidden sm:inline-block">Khanut</span>
+          <Link
+            href={`/customer/${customerId}`}
+            className="flex items-center gap-2"
+          >
+            <Image
+              src="/logo.png"
+              alt="Khanut Logo"
+              width={32}
+              height={32}
+              className="h-8 w-auto"
+            />
+            <span className="font-semibold text-lg hidden sm:inline-block">
+              Khanut
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -81,11 +94,13 @@ export default function CustomerNavbar({ customerId, cartCount = 0 }: CustomerNa
               variant="ghost"
               size="icon"
               className="relative"
-              onClick={() => window.location.href = `/customer/${customerId}/cart`}
+              onClick={() =>
+                (window.location.href = `/customer/${customerId}/cart`)
+              }
             >
               <ShoppingBag className="h-5 w-5" />
               {cartCount > 0 && (
-                <Badge 
+                <Badge
                   className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-orange-500 text-white"
                   variant="default"
                 >
@@ -101,7 +116,11 @@ export default function CustomerNavbar({ customerId, cartCount = 0 }: CustomerNa
               className="md:hidden"
               onClick={() => setMenuOpen(!menuOpen)}
             >
-              {menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+              {menuOpen ? (
+                <X className="h-5 w-5" />
+              ) : (
+                <Menu className="h-5 w-5" />
+              )}
             </Button>
           </div>
         </div>

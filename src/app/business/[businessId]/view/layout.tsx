@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Home, Menu, X } from "lucide-react";
 
@@ -37,6 +38,13 @@ export default function BusinessViewLayout({
       <header className="border-b bg-white dark:bg-gray-950">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <Link href="/" className="flex items-center space-x-2">
+            <Image
+              src="/logo.png"
+              alt="Khanut Logo"
+              width={32}
+              height={32}
+              className="h-8 w-auto"
+            />
             <span className="font-bold text-xl">Khanut</span>
           </Link>
 

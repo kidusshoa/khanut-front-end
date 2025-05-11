@@ -1,9 +1,11 @@
 "use client";
+import { useParams } from "next/navigation";
 import BusinessAnalyticsContent from "./BusinessAnalyticsContent";
 
-export default async function BusinessAnalyticsPage({ params }: any) {
-  const resolvedParams = params instanceof Promise ? await params : params;
-  const businessId = resolvedParams.businessId;
+export default function BusinessAnalyticsPage() {
+  // Use the useParams hook to get the businessId
+  const params = useParams();
+  const businessId = params.businessId as string;
 
   return <BusinessAnalyticsContent businessId={businessId} />;
 }

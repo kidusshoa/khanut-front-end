@@ -26,11 +26,20 @@ interface SidebarProps {
   businessId: string;
 }
 
+// Define the type for menu items
+interface MenuItem {
+  title: string;
+  icon: React.ReactNode;
+  href: string;
+  active: boolean;
+  disabled?: boolean;
+}
+
 export default function Sidebar({ businessId }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
-  const menuItems = [
+  const menuItems: MenuItem[] = [
     {
       title: "Dashboard",
       icon: <LayoutDashboard className="h-5 w-5" />,
@@ -86,12 +95,11 @@ export default function Sidebar({ businessId }: SidebarProps) {
         pathname.startsWith(`/business/${businessId}/customers/`),
     },
     {
-      title: "Messages",
+      title: "Messages (Coming Soon)",
       icon: <MessageSquare className="h-5 w-5" />,
-      href: `/business/${businessId}/messages`,
-      active:
-        pathname === `/business/${businessId}/messages` ||
-        pathname.startsWith(`/business/${businessId}/messages/`),
+      href: `#`, // Disabled link
+      active: false,
+      disabled: true,
     },
     {
       title: "Settings",
@@ -135,34 +143,63 @@ export default function Sidebar({ businessId }: SidebarProps) {
       </div>
 
       <div className="flex-1 py-6 flex flex-col gap-2 overflow-y-auto">
-        {menuItems.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className={cn(
-              "flex items-center gap-3 px-4 py-3 mx-2 rounded-md transition-colors",
-              item.active
-                ? "bg-orange-100 text-orange-600 dark:bg-orange-900/20 dark:text-orange-500"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            )}
-          >
-            {item.icon}
-            <motion.span
-              initial={{
-                opacity: collapsed ? 0 : 1,
-                display: collapsed ? "none" : "block",
-              }}
-              animate={{
-                opacity: collapsed ? 0 : 1,
-                display: collapsed ? "none" : "block",
-              }}
-              transition={{ duration: 0.2 }}
-              className={cn("font-medium", collapsed && "hidden")}
+        {menuItems.map((item) =>
+          item.disabled ? (
+            // Render a div for disabled items
+            <div
+              key={item.href}
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 mx-2 rounded-md transition-colors cursor-not-allowed opacity-60",
+                "text-muted-foreground"
+              )}
+              title="This feature is coming soon"
             >
-              {item.title}
-            </motion.span>
-          </Link>
-        ))}
+              {item.icon}
+              <motion.span
+                initial={{
+                  opacity: collapsed ? 0 : 1,
+                  display: collapsed ? "none" : "block",
+                }}
+                animate={{
+                  opacity: collapsed ? 0 : 1,
+                  display: collapsed ? "none" : "block",
+                }}
+                transition={{ duration: 0.2 }}
+                className={cn("font-medium", collapsed && "hidden")}
+              >
+                {item.title}
+              </motion.span>
+            </div>
+          ) : (
+            // Render a Link for enabled items
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex items-center gap-3 px-4 py-3 mx-2 rounded-md transition-colors",
+                item.active
+                  ? "bg-orange-100 text-orange-600 dark:bg-orange-900/20 dark:text-orange-500"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              {item.icon}
+              <motion.span
+                initial={{
+                  opacity: collapsed ? 0 : 1,
+                  display: collapsed ? "none" : "block",
+                }}
+                animate={{
+                  opacity: collapsed ? 0 : 1,
+                  display: collapsed ? "none" : "block",
+                }}
+                transition={{ duration: 0.2 }}
+                className={cn("font-medium", collapsed && "hidden")}
+              >
+                {item.title}
+              </motion.span>
+            </Link>
+          )
+        )}
       </div>
 
       <div className="p-4 border-t border-border mt-auto">

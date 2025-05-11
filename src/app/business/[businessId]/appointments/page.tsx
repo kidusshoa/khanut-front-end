@@ -1,8 +1,11 @@
 "use client";
+import { useParams } from "next/navigation";
 import BusinessAppointmentsClient from "./BusinessAppointmentClient";
 
-export default async function BusinessAppointmentsPage({ params }: any) {
-  const resolvedParams = params instanceof Promise ? await params : params;
-  const businessId = resolvedParams.businessId;
+export default function BusinessAppointmentsPage() {
+  // Use the useParams hook to get the businessId
+  const params = useParams();
+  const businessId = params.businessId as string;
+
   return <BusinessAppointmentsClient businessId={businessId} />;
 }

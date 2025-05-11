@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -133,9 +134,13 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
       >
         <div className="flex items-center justify-between p-4 border-b">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-md bg-orange-500 flex items-center justify-center text-white font-bold">
-              K
-            </div>
+            <Image
+              src="/logo.png"
+              alt="Khanut Logo"
+              width={32}
+              height={32}
+              className="h-8 w-auto"
+            />
             <h2 className="text-xl font-bold bg-gradient-to-r from-orange-500 to-orange-700 bg-clip-text text-transparent">
               Khanut Admin
             </h2>

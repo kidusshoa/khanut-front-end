@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { signIn, useSession } from "next-auth/react";
 import { Loader2, Mail, Lock, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import Cookies from "js-cookie";
 import axios from "axios";
 import { loginSchema, LoginInput } from "@/lib/validations/auth";
@@ -149,6 +150,15 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="flex justify-center">
+          <Image
+            src="/logo.png"
+            alt="Khanut Logo"
+            width={80}
+            height={80}
+            className="h-20 w-auto"
+          />
+        </div>
         <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
           Sign in to your account
         </h2>

@@ -6,18 +6,18 @@ import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
-import { 
-  Menu, 
-  X, 
-  Search, 
-  ShoppingBag, 
-  Calendar, 
-  User, 
+import {
+  Menu,
+  X,
+  Search,
+  ShoppingBag,
+  Calendar,
+  User,
   LogOut,
   Heart,
   Moon,
   Sun,
-  Bell
+  Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -72,7 +72,7 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
 
     getCartCount();
     window.addEventListener("storage", getCartCount);
-    
+
     return () => {
       window.removeEventListener("storage", getCartCount);
     };
@@ -129,10 +129,16 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
         <div className="container mx-auto px-4 flex h-16 items-center justify-between">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-md bg-orange-500 flex items-center justify-center text-white font-bold">
-              K
-            </div>
-            <span className="font-semibold text-lg hidden sm:inline-block">Khanut</span>
+            <Image
+              src="/logo.png"
+              alt="Khanut Logo"
+              width={32}
+              height={32}
+              className="h-8 w-auto"
+            />
+            <span className="font-semibold text-lg hidden sm:inline-block">
+              Khanut
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
@@ -172,7 +178,7 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
             >
               <ShoppingBag className="h-5 w-5" />
               {cartCount > 0 && (
-                <Badge 
+                <Badge
                   className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-orange-500 text-white"
                   variant="default"
                 >
@@ -201,7 +207,10 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
             {status === "authenticated" ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                  <Button
+                    variant="ghost"
+                    className="relative h-8 w-8 rounded-full"
+                  >
                     <Avatar className="h-8 w-8">
                       <AvatarImage
                         src={session?.user?.image || ""}
@@ -252,7 +261,7 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem 
+                  <DropdownMenuItem
                     className="text-red-600 focus:text-red-600"
                     onClick={() => signOut()}
                   >
@@ -262,8 +271,8 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button 
-                variant="default" 
+              <Button
+                variant="default"
                 size="sm"
                 className="bg-orange-600 hover:bg-orange-700"
                 onClick={() => router.push("/login")}
@@ -442,7 +451,10 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
               transition={{ duration: 0.2 }}
               className="fixed top-0 left-0 right-0 bg-background p-4 border-b border-border z-50"
             >
-              <form onSubmit={handleSearch} className="container mx-auto flex items-center gap-2">
+              <form
+                onSubmit={handleSearch}
+                className="container mx-auto flex items-center gap-2"
+              >
                 <Input
                   type="text"
                   placeholder="Search for services, businesses..."
@@ -451,7 +463,10 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   autoFocus
                 />
-                <Button type="submit" className="bg-orange-600 hover:bg-orange-700">
+                <Button
+                  type="submit"
+                  className="bg-orange-600 hover:bg-orange-700"
+                >
                   <Search className="h-4 w-4 mr-2" />
                   Search
                 </Button>
@@ -470,9 +485,7 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
       </AnimatePresence>
 
       {/* Main Content */}
-      <main className="flex-1">
-        {children}
-      </main>
+      <main className="flex-1">{children}</main>
 
       {/* Footer */}
       <footer className="border-t border-border bg-background">
@@ -486,23 +499,64 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
                 <span className="font-semibold text-lg">Khanut</span>
               </div>
               <p className="text-sm text-muted-foreground mb-4">
-                Connecting customers with local services and businesses in Ethiopia.
+                Connecting customers with local services and businesses in
+                Ethiopia.
               </p>
               <div className="flex gap-4">
                 <Button variant="ghost" size="icon" className="rounded-full">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-5 w-5"
+                  >
                     <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
                   </svg>
                 </Button>
                 <Button variant="ghost" size="icon" className="rounded-full">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-                    <rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-5 w-5"
+                  >
+                    <rect
+                      x="2"
+                      y="2"
+                      width="20"
+                      height="20"
+                      rx="5"
+                      ry="5"
+                    ></rect>
                     <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
                     <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line>
                   </svg>
                 </Button>
                 <Button variant="ghost" size="icon" className="rounded-full">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-5 w-5"
+                  >
                     <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path>
                   </svg>
                 </Button>
@@ -512,22 +566,34 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
               <h3 className="font-medium text-lg mb-4">Services</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/services?type=appointment" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <Link
+                    href="/services?type=appointment"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     Appointments
                   </Link>
                 </li>
                 <li>
-                  <Link href="/services?type=product" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <Link
+                    href="/services?type=product"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     Products
                   </Link>
                 </li>
                 <li>
-                  <Link href="/services?type=in_person" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <Link
+                    href="/services?type=in_person"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     In-Person Services
                   </Link>
                 </li>
                 <li>
-                  <Link href="/categories" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <Link
+                    href="/categories"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     Categories
                   </Link>
                 </li>
@@ -537,22 +603,34 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
               <h3 className="font-medium text-lg mb-4">Company</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <Link
+                    href="/about"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     About Us
                   </Link>
                 </li>
                 <li>
-                  <Link href="/contact" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <Link
+                    href="/contact"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     Contact
                   </Link>
                 </li>
                 <li>
-                  <Link href="/careers" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <Link
+                    href="/careers"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     Careers
                   </Link>
                 </li>
                 <li>
-                  <Link href="/blog" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <Link
+                    href="/blog"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     Blog
                   </Link>
                 </li>
@@ -562,17 +640,26 @@ export default function CustomerLayout({ children }: CustomerLayoutProps) {
               <h3 className="font-medium text-lg mb-4">Legal</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <Link
+                    href="/terms"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     Terms of Service
                   </Link>
                 </li>
                 <li>
-                  <Link href="/privacy" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <Link
+                    href="/privacy"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     Privacy Policy
                   </Link>
                 </li>
                 <li>
-                  <Link href="/cookies" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                  <Link
+                    href="/cookies"
+                    className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  >
                     Cookie Policy
                   </Link>
                 </li>

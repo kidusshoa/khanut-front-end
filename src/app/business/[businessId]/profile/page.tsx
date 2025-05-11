@@ -1,9 +1,17 @@
 import ProfileContent from "./ProfileContent";
 
-export default async function BusinessProfilePage({ params }: any) {
-  // Handle both Promise and non-Promise cases
-  const resolvedParams = params instanceof Promise ? await params : params;
-  const businessId = resolvedParams.businessId;
+// Define the params type
+interface PageParams {
+  businessId: string;
+}
+
+export default function BusinessProfilePage({
+  params,
+}: {
+  params: PageParams;
+}) {
+  // Use the businessId directly without awaiting
+  const businessId = params.businessId;
 
   return <ProfileContent businessId={businessId} />;
 }
