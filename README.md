@@ -1,4 +1,32 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Khanut Front-End
+
+A Next.js application for the Khanut platform - a local business finder service.
+
+## Overview
+
+Khanut is a platform that connects customers with local businesses and services. This repository contains the front-end application built with Next.js, React, and TypeScript.
+
+## Features
+
+- Customer-based search routes for better state management
+- Business and service discovery
+- User authentication and profiles
+- Review system for services
+- Real-time notifications
+- Interactive maps for business locations
+- Responsive design for all devices
+
+## Tech Stack
+
+- [Next.js 15](https://nextjs.org/) - React framework
+- [React 19](https://react.dev/) - UI library
+- [TypeScript](https://www.typescriptlang.org/) - Type safety
+- [Tailwind CSS](https://tailwindcss.com/) - Styling
+- [Zod](https://zod.dev/) - Schema validation
+- [React Hook Form](https://react-hook-form.com/) - Form handling
+- [Zustand](https://zustand-demo.pmnd.rs/) - State management
+- [React Map GL](https://visgl.github.io/react-map-gl/) - Map integration
+- [Recharts](https://recharts.org/) - Data visualization
 
 ## Getting Started
 
@@ -18,19 +46,29 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project Structure
+
+- `/app` - Next.js app router pages and layouts
+- `/components` - Reusable UI components
+- `/lib` - Utility functions and shared code
+- `/public` - Static assets
+- `/styles` - Global styles
+- `/types` - TypeScript type definitions
+- `/services` - API service integrations
+
+## Related Services
+
+- [Khanut Back-End](https://github.com/kidusshoa/khanut-back-end) - API endpoints
+- [Recommendation Service](https://github.com/kidusshoa/recommendation-service) - Personalized business recommendations
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
+To learn more about the technologies used in this project:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- [Next.js Documentation](https://nextjs.org/docs)
+- [React Documentation](https://react.dev/)
+- [TypeScript Documentation](https://www.typescriptlang.org/docs/)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deployment
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The application is configured for deployment on Vercel. Check out the [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.

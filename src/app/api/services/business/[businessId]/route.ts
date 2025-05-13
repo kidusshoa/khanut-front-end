@@ -4,20 +4,15 @@ import { authOptions } from "@/auth";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string | string[] } }
+  { params }: { params: { businessId: string } }
 ) {
   try {
-    // Extract the ID from the URL path instead of params
-    const requestUrl = new URL(request.url);
-    const pathParts = requestUrl.pathname.split("/");
-    // The ID should be the second-to-last segment in the path
-    // /api/business/{id}/services
-    const businessId = pathParts[pathParts.length - 2];
+    // Get the business ID from the URL params
+    const { businessId } = params;
 
     // Log URL information for debugging
-    console.log("Business ID from URL path:", businessId);
-    console.log("Request URL:", requestUrl.toString());
-    console.log("Request pathname:", requestUrl.pathname);
+    console.log("Business ID from params:", businessId);
+    console.log("Request URL:", request.url);
 
     if (!businessId) {
       return NextResponse.json(
@@ -26,13 +21,14 @@ export async function GET(
       );
     }
 
-    // Get query parameters from the same URL
-    const page = requestUrl.searchParams.get("page") || "1";
-    const limit = requestUrl.searchParams.get("limit") || "10";
-    const sort = requestUrl.searchParams.get("sort") || "";
-    const order = requestUrl.searchParams.get("order") || "";
-    const search = requestUrl.searchParams.get("search") || "";
-    const serviceType = requestUrl.searchParams.get("serviceType") || "";
+    // Get query parameters
+    const searchParams = new URL(request.url).searchParams;
+    const page = searchParams.get("page") || "1";
+    const limit = searchParams.get("limit") || "100"; // Get more services by default
+    const sort = searchParams.get("sort") || "";
+    const order = searchParams.get("order") || "";
+    const search = searchParams.get("search") || "";
+    const serviceType = searchParams.get("serviceType") || "";
 
     // Build the API URL
     let apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/services/business/${businessId}?page=${page}&limit=${limit}`;

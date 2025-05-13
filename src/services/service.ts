@@ -87,7 +87,21 @@ export const serviceApi = {
 
         const data = await response.json();
         console.log("Services data received:", data);
-        return data;
+
+        // Check if data is an array
+        if (Array.isArray(data)) {
+          return data;
+        } else if (
+          data &&
+          typeof data === "object" &&
+          Array.isArray(data.services)
+        ) {
+          // Some APIs might return { services: [...] }
+          return data.services;
+        } else {
+          console.warn("Unexpected data format received:", data);
+          return [];
+        }
       } catch (fetchError) {
         console.warn("Fetch API failed, falling back to axios:", fetchError);
 
@@ -105,7 +119,22 @@ export const serviceApi = {
           console.log("Trying first axios endpoint:", url);
           const response = await api.get(url);
           console.log("First axios endpoint succeeded:", response.data);
-          return response.data;
+
+          // Check if data is an array
+          const data = response.data;
+          if (Array.isArray(data)) {
+            return data;
+          } else if (
+            data &&
+            typeof data === "object" &&
+            Array.isArray(data.services)
+          ) {
+            // Some APIs might return { services: [...] }
+            return data.services;
+          } else {
+            console.warn("Unexpected data format received from axios:", data);
+            return [];
+          }
         } catch (firstAxiosError) {
           console.warn(
             "First axios endpoint failed, trying alternative:",
@@ -126,7 +155,25 @@ export const serviceApi = {
             "Alternative axios endpoint succeeded:",
             altResponse.data
           );
-          return altResponse.data;
+
+          // Check if data is an array
+          const data = altResponse.data;
+          if (Array.isArray(data)) {
+            return data;
+          } else if (
+            data &&
+            typeof data === "object" &&
+            Array.isArray(data.services)
+          ) {
+            // Some APIs might return { services: [...] }
+            return data.services;
+          } else {
+            console.warn(
+              "Unexpected data format received from alternative axios endpoint:",
+              data
+            );
+            return [];
+          }
         }
       }
     } catch (error) {

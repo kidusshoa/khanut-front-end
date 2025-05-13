@@ -65,7 +65,7 @@ export default function BusinessServicesPage({
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
 
-  // Fetch services
+  // Fetch services with improved reliability
   const {
     data: services,
     isLoading,
@@ -74,7 +74,43 @@ export default function BusinessServicesPage({
     refetch,
   } = useQuery({
     queryKey: ["services", businessId],
-    queryFn: () => serviceApi.getBusinessServices(businessId),
+    queryFn: async () => {
+      try {
+        console.log("Fetching services for business ID:", businessId);
+
+        // First try to get all services using the direct API
+        try {
+          console.log("Trying direct API call to /services/business endpoint");
+          const response = await fetch(`/api/services/business/${businessId}`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error(`Failed with status: ${response.status}`);
+          }
+
+          const data = await response.json();
+          console.log("Direct API call succeeded:", data);
+          return data;
+        } catch (directApiError) {
+          console.warn(
+            "Direct API call failed, trying serviceApi:",
+            directApiError
+          );
+
+          // Fallback to the serviceApi method
+          const data = await serviceApi.getBusinessServices(businessId);
+          console.log("serviceApi.getBusinessServices succeeded:", data);
+          return data;
+        }
+      } catch (error) {
+        console.error("All service fetching methods failed:", error);
+        throw error;
+      }
+    },
     enabled: !!businessId,
     retry: 3, // Retry up to 3 times if the request fails
     retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000), // Exponential backoff
@@ -290,8 +326,16 @@ export default function BusinessServicesPage({
 
   // Log the filtered services for debugging
   useEffect(() => {
+    console.log("Services data:", services);
     console.log("Filtered services:", filteredServices);
-  }, [filteredServices]);
+
+    // If services is an empty array, log a message
+    if (Array.isArray(services) && services.length === 0) {
+      console.log(
+        "Services array is empty. This could be normal if you haven't added any services yet."
+      );
+    }
+  }, [services, filteredServices]);
 
   return (
     <DashboardLayout businessId={businessId}>
@@ -371,13 +415,22 @@ export default function BusinessServicesPage({
                         activeTab
                       ).toLowerCase()} services yet.`}
                 </p>
-                <Button
-                  onClick={handleAddService}
-                  className="bg-orange-600 hover:bg-orange-700"
-                >
-                  <PlusCircle className="mr-2 h-4 w-4" />
-                  Add Your First Service
-                </Button>
+                <div className="flex flex-col gap-4 items-center">
+                  <Button
+                    onClick={handleAddService}
+                    className="bg-orange-600 hover:bg-orange-700"
+                  >
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Add Your First Service
+                  </Button>
+                  <Button
+                    onClick={() => refetch()}
+                    variant="outline"
+                    className="text-gray-600"
+                  >
+                    Refresh Services List
+                  </Button>
+                </div>
               </div>
             )}
           </TabsContent>
