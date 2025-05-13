@@ -73,15 +73,25 @@ export default function BusinessServicesPage({
     error,
     refetch,
   } = useQuery({
-    queryKey: ["services", businessId],
+    queryKey: ["services", businessId, activeTab],
     queryFn: async () => {
       try {
-        console.log("Fetching services for business ID:", businessId);
+        console.log(
+          "Fetching services for business ID:",
+          businessId,
+          "with tab:",
+          activeTab
+        );
 
         // First try to get all services using the direct API
         try {
-          console.log("Trying direct API call to /services/business endpoint");
-          const response = await fetch(`/api/services/business/${businessId}`, {
+          // Add serviceType parameter if not "all"
+          const serviceTypeParam =
+            activeTab !== "all" ? `&serviceType=${activeTab}` : "";
+          const url = `/api/services/business/${businessId}?limit=100${serviceTypeParam}`;
+
+          console.log("Trying direct API call to endpoint:", url);
+          const response = await fetch(url, {
             method: "GET",
             headers: {
               "Content-Type": "application/json",
@@ -102,7 +112,11 @@ export default function BusinessServicesPage({
           );
 
           // Fallback to the serviceApi method
-          const data = await serviceApi.getBusinessServices(businessId);
+          const params =
+            activeTab !== "all"
+              ? { serviceType: activeTab, limit: 100 }
+              : { limit: 100 };
+          const data = await serviceApi.getBusinessServices(businessId, params);
           console.log("serviceApi.getBusinessServices succeeded:", data);
           return data;
         }
@@ -321,7 +335,12 @@ export default function BusinessServicesPage({
     services && Array.isArray(services)
       ? activeTab === "all"
         ? services
-        : services.filter((service: any) => service.serviceType === activeTab)
+        : services.filter((service: any) => {
+            console.log(
+              `Filtering service: ${service.name}, type: ${service.serviceType}, looking for: ${activeTab}`
+            );
+            return service.serviceType === activeTab;
+          })
       : [];
 
   // Log the filtered services for debugging
@@ -329,12 +348,27 @@ export default function BusinessServicesPage({
     console.log("Services data:", services);
     console.log("Filtered services:", filteredServices);
 
+    // Log each service's serviceType to debug
+    if (Array.isArray(services)) {
+      services.forEach((service, index) => {
+        console.log(
+          `Service ${index} - ID: ${service._id}, Name: ${service.name}, Type: ${service.serviceType}`
+        );
+      });
+    }
+
     // If services is an empty array, log a message
     if (Array.isArray(services) && services.length === 0) {
       console.log(
         "Services array is empty. This could be normal if you haven't added any services yet."
       );
     }
+
+    // Check if we have any products
+    const products = Array.isArray(services)
+      ? services.filter((service) => service.serviceType === "product")
+      : [];
+    console.log(`Found ${products.length} products in services array`);
   }, [services, filteredServices]);
 
   return (
@@ -347,13 +381,23 @@ export default function BusinessServicesPage({
               Manage your business services, products, and appointments.
             </p>
           </div>
-          <Button
-            onClick={handleAddService}
-            className="bg-orange-600 hover:bg-orange-700 sm:self-start"
-          >
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Add Service
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => refetch()}
+              variant="outline"
+              className="sm:self-start"
+            >
+              <Loader2 className="mr-2 h-4 w-4" />
+              Refresh
+            </Button>
+            <Button
+              onClick={handleAddService}
+              className="bg-orange-600 hover:bg-orange-700 sm:self-start"
+            >
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Add Service
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
@@ -366,7 +410,12 @@ export default function BusinessServicesPage({
               <Calendar className="h-4 w-4" />
               <span className="hidden sm:inline">Appointments</span>
             </TabsTrigger>
-            <TabsTrigger value="product" className="flex items-center gap-1">
+            <TabsTrigger
+              value="product"
+              className={`flex items-center gap-1 ${
+                activeTab === "product" ? "bg-orange-100 text-orange-800" : ""
+              }`}
+            >
               <ShoppingBag className="h-4 w-4" />
               <span className="hidden sm:inline">Products</span>
             </TabsTrigger>
@@ -415,6 +464,20 @@ export default function BusinessServicesPage({
                         activeTab
                       ).toLowerCase()} services yet.`}
                 </p>
+                {activeTab === "product" && (
+                  <p className="text-sm text-blue-600 mb-4">
+                    <Button
+                      variant="link"
+                      className="text-blue-600 p-0 h-auto"
+                      onClick={() =>
+                        router.push(`/business/${businessId}/products`)
+                      }
+                    >
+                      Go to Products page
+                    </Button>{" "}
+                    to manage your products directly.
+                  </p>
+                )}
                 <div className="flex flex-col gap-4 items-center">
                   <Button
                     onClick={handleAddService}

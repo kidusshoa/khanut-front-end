@@ -35,6 +35,7 @@ interface AddServiceModalProps {
   onServiceAdded: (service: any) => void;
   initialServiceType?: "appointment" | "product" | "in_person";
   initialData?: any; // For editing existing services
+  forceServiceType?: boolean; // Whether to force the service type to be the initialServiceType
 }
 
 export function AddServiceModal({
@@ -44,6 +45,7 @@ export function AddServiceModal({
   onServiceAdded,
   initialServiceType = "appointment",
   initialData = null,
+  forceServiceType = false,
 }: AddServiceModalProps) {
   const [serviceType, setServiceType] = useState<
     "appointment" | "product" | "in_person"
@@ -360,6 +362,7 @@ export function AddServiceModal({
             name: data.name,
             description: data.description,
             price: Number(data.price),
+            serviceType: "product", // Explicitly set serviceType for products
           };
 
           console.log(
@@ -629,22 +632,47 @@ export function AddServiceModal({
 
         <Tabs
           defaultValue={serviceType}
-          onValueChange={(value) => setServiceType(value as any)}
+          onValueChange={(value) =>
+            !forceServiceType && setServiceType(value as any)
+          }
         >
-          <TabsList className="grid grid-cols-3 mb-6">
-            <TabsTrigger value="appointment" className="flex items-center">
-              <Calendar className="h-4 w-4 mr-2" />
-              Appointment
-            </TabsTrigger>
-            <TabsTrigger value="product" className="flex items-center">
-              <ShoppingBag className="h-4 w-4 mr-2" />
-              Product
-            </TabsTrigger>
-            <TabsTrigger value="in_person" className="flex items-center">
-              <MapPin className="h-4 w-4 mr-2" />
-              In-Person
-            </TabsTrigger>
-          </TabsList>
+          {!forceServiceType ? (
+            <TabsList className="grid grid-cols-3 mb-6">
+              <TabsTrigger value="appointment" className="flex items-center">
+                <Calendar className="h-4 w-4 mr-2" />
+                Appointment
+              </TabsTrigger>
+              <TabsTrigger value="product" className="flex items-center">
+                <ShoppingBag className="h-4 w-4 mr-2" />
+                Product
+              </TabsTrigger>
+              <TabsTrigger value="in_person" className="flex items-center">
+                <MapPin className="h-4 w-4 mr-2" />
+                In-Person
+              </TabsTrigger>
+            </TabsList>
+          ) : (
+            <div className="mb-6 flex items-center">
+              <h3 className="text-lg font-medium">
+                {serviceType === "appointment" ? (
+                  <span className="flex items-center">
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Appointment Service
+                  </span>
+                ) : serviceType === "product" ? (
+                  <span className="flex items-center">
+                    <ShoppingBag className="h-4 w-4 mr-2" />
+                    Product
+                  </span>
+                ) : (
+                  <span className="flex items-center">
+                    <MapPin className="h-4 w-4 mr-2" />
+                    In-Person Service
+                  </span>
+                )}
+              </h3>
+            </div>
+          )}
 
           {/* Appointment Form */}
           <TabsContent value="appointment">

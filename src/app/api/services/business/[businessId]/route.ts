@@ -38,6 +38,11 @@ export async function GET(
     if (search) apiUrl += `&search=${search}`;
     if (serviceType) apiUrl += `&serviceType=${serviceType}`;
 
+    console.log("API URL with serviceType:", {
+      serviceType,
+      apiUrl,
+    });
+
     console.log("Constructed API URL:", apiUrl);
 
     // Get session for authentication

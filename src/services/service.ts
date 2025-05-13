@@ -268,7 +268,13 @@ export const serviceApi = {
         serviceData.get("description") as string
       );
       simplifiedData.append("price", serviceData.get("price") as string);
-      // Don't include serviceType for /businesses/services endpoint
+      // Include serviceType for /businesses/services endpoint to ensure it's set correctly
+      if (serviceData.get("serviceType")) {
+        simplifiedData.append(
+          "serviceType",
+          serviceData.get("serviceType") as string
+        );
+      }
 
       // Add images if any
       if (serviceData.has("images")) {

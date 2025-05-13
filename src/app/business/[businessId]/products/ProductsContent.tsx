@@ -342,7 +342,11 @@ export default function ProductsContent({ businessId }: ProductsContentProps) {
           </div>
           <Button
             className="bg-orange-600 hover:bg-orange-700"
-            onClick={() => router.push(`/business/${businessId}/products/new`)}
+            onClick={() =>
+              router.push(
+                `/business/${businessId}/products/new?serviceType=product`
+              )
+            }
           >
             <Plus className="mr-2 h-4 w-4" />
             Add Product
@@ -532,11 +536,26 @@ export default function ProductsContent({ businessId }: ProductsContentProps) {
                     ? `No ${activeTab.replace("_", " ")} products found`
                     : "You don't have any products yet"}
                 </p>
+                <p className="text-sm text-blue-600 mb-4">
+                  Products are also visible on the{" "}
+                  <Button
+                    variant="link"
+                    className="text-blue-600 p-0 h-auto"
+                    onClick={() =>
+                      router.push(`/business/${businessId}/services`)
+                    }
+                  >
+                    Services page
+                  </Button>{" "}
+                  under the Products tab.
+                </p>
                 {!searchQuery && activeTab === "all" && (
                   <Button
                     className="bg-orange-600 hover:bg-orange-700"
                     onClick={() =>
-                      router.push(`/business/${businessId}/products/new`)
+                      router.push(
+                        `/business/${businessId}/products/new?serviceType=product`
+                      )
                     }
                   >
                     <Plus className="mr-2 h-4 w-4" />

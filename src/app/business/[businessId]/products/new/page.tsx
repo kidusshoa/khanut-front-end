@@ -45,6 +45,7 @@ export default function AddProductPage() {
           businessId={businessId}
           onServiceAdded={handleServiceAdded}
           initialServiceType="product"
+          forceServiceType={true} // Force the service type to be product
         />
       </div>
     </DashboardLayout>
