@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { RegisterInput, registerSchema } from "@/lib/validations/auth";
 import { authService } from "@/services/auth";
-import { useAuthStore } from "@/store/auth";
+import { useAuthStore } from "@/store/authStore";
 import Link from "next/link";
 
 export default function BusinessOwnerRegistrationPage() {

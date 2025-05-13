@@ -69,12 +69,23 @@ export default function BusinessServicesPage({
   const {
     data: services,
     isLoading,
+    isError,
+    error,
     refetch,
   } = useQuery({
     queryKey: ["services", businessId],
     queryFn: () => serviceApi.getBusinessServices(businessId),
     enabled: !!businessId,
+    retry: 3, // Retry up to 3 times if the request fails
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000), // Exponential backoff
   });
+
+  // Log any errors for debugging
+  useEffect(() => {
+    if (isError) {
+      console.error("Error fetching services:", error);
+    }
+  }, [isError, error]);
 
   const handleAddService = async () => {
     setSelectedService(null);
@@ -270,11 +281,17 @@ export default function BusinessServicesPage({
   ];
 
   // Filter services based on active tab
-  const filteredServices = services
-    ? activeTab === "all"
-      ? services
-      : services.filter((service: any) => service.serviceType === activeTab)
-    : [];
+  const filteredServices =
+    services && Array.isArray(services)
+      ? activeTab === "all"
+        ? services
+        : services.filter((service: any) => service.serviceType === activeTab)
+      : [];
+
+  // Log the filtered services for debugging
+  useEffect(() => {
+    console.log("Filtered services:", filteredServices);
+  }, [filteredServices]);
 
   return (
     <DashboardLayout businessId={businessId}>
@@ -320,7 +337,22 @@ export default function BusinessServicesPage({
               <div className="flex justify-center items-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
               </div>
-            ) : filteredServices.length > 0 ? (
+            ) : isError ? (
+              <div className="text-center py-12 bg-red-50 rounded-lg">
+                <h3 className="text-lg font-medium text-red-800 mb-2">
+                  Error loading services
+                </h3>
+                <p className="text-red-600 mb-6">
+                  There was a problem loading your services. Please try again.
+                </p>
+                <Button
+                  onClick={() => refetch()}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Retry
+                </Button>
+              </div>
+            ) : filteredServices && filteredServices.length > 0 ? (
               <DataTable
                 columns={columns}
                 data={filteredServices}

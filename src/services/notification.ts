@@ -49,11 +49,27 @@ export const notificationApi = {
         return [];
       }
 
-      // The backend endpoint is just /api/notifications
-      // The userId is determined from the auth token
-      const url = `${API_URL}/api/notifications${
+      // Try to get the user role from the token
+      let userRole = "customer"; // Default role
+      try {
+        const tokenData = JSON.parse(atob(token.split(".")[1]));
+        userRole = tokenData.role || "customer";
+      } catch (e) {
+        console.warn("Could not parse token for role information");
+      }
+
+      // Use different endpoints based on user role
+      let url = `${API_URL}/api/notifications${
         unreadOnly ? "?unreadOnly=true" : ""
       }`;
+
+      if (userRole === "business") {
+        url = `${API_URL}/api/business/notifications${
+          unreadOnly ? "?unreadOnly=true" : ""
+        }`;
+      }
+
+      console.log(`Using notifications endpoint for role ${userRole}: ${url}`);
 
       const response = await fetch(url, {
         method: "GET",
@@ -65,13 +81,17 @@ export const notificationApi = {
 
       if (!response.ok) {
         console.warn(`Failed to fetch notifications: ${response.status}`);
-        // If the endpoint is not found (404), return mock data
-        if (response.status === 404) {
-          // Set the userId for the mock notifications
-          return MOCK_NOTIFICATIONS.map((notification) => ({
-            ...notification,
-            userId: userId,
-          }));
+        // If the endpoint is not found (404) or forbidden (403), return mock data or empty array
+        if (response.status === 404 || response.status === 403) {
+          if (userRole === "business") {
+            return []; // Empty array for business users
+          } else {
+            // Set the userId for the mock notifications for customers
+            return MOCK_NOTIFICATIONS.map((notification) => ({
+              ...notification,
+              userId: userId,
+            }));
+          }
         }
         return [];
       }
@@ -102,16 +122,30 @@ export const notificationApi = {
         };
       }
 
-      const response = await fetch(
-        `${API_URL}/api/notifications/${notificationId}/read`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      // Try to get the user role from the token
+      let userRole = "customer"; // Default role
+      try {
+        const tokenData = JSON.parse(atob(token.split(".")[1]));
+        userRole = tokenData.role || "customer";
+      } catch (e) {
+        console.warn("Could not parse token for role information");
+      }
+
+      // Use different endpoints based on user role
+      let url = `${API_URL}/api/notifications/${notificationId}/read`;
+      if (userRole === "business") {
+        url = `${API_URL}/api/business/notifications/${notificationId}/read`;
+      }
+
+      console.log(`Using mark as read endpoint for role ${userRole}: ${url}`);
+
+      const response = await fetch(url, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (!response.ok) {
         console.warn(`Failed to mark notification as read: ${response.status}`);
@@ -149,16 +183,32 @@ export const notificationApi = {
         return { message: "All notifications marked as read" };
       }
 
-      const response = await fetch(
-        `${API_URL}/api/notifications/mark-all-read`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      // Try to get the user role from the token
+      let userRole = "customer"; // Default role
+      try {
+        const tokenData = JSON.parse(atob(token.split(".")[1]));
+        userRole = tokenData.role || "customer";
+      } catch (e) {
+        console.warn("Could not parse token for role information");
+      }
+
+      // Use different endpoints based on user role
+      let url = `${API_URL}/api/notifications/mark-all-read`;
+      if (userRole === "business") {
+        url = `${API_URL}/api/business/notifications/mark-all-read`;
+      }
+
+      console.log(
+        `Using mark all as read endpoint for role ${userRole}: ${url}`
       );
+
+      const response = await fetch(url, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (!response.ok) {
         console.warn(
@@ -192,16 +242,32 @@ export const notificationApi = {
         return { message: "Notification deleted successfully" };
       }
 
-      const response = await fetch(
-        `${API_URL}/api/notifications/${notificationId}`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
+      // Try to get the user role from the token
+      let userRole = "customer"; // Default role
+      try {
+        const tokenData = JSON.parse(atob(token.split(".")[1]));
+        userRole = tokenData.role || "customer";
+      } catch (e) {
+        console.warn("Could not parse token for role information");
+      }
+
+      // Use different endpoints based on user role
+      let url = `${API_URL}/api/notifications/${notificationId}`;
+      if (userRole === "business") {
+        url = `${API_URL}/api/business/notifications/${notificationId}`;
+      }
+
+      console.log(
+        `Using delete notification endpoint for role ${userRole}: ${url}`
       );
+
+      const response = await fetch(url, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (!response.ok) {
         console.warn(`Failed to delete notification: ${response.status}`);
@@ -231,7 +297,26 @@ export const notificationApi = {
         return { count: 0 };
       }
 
-      const response = await fetch(`${API_URL}/api/notifications/unread`, {
+      // Try to get the user role from the token
+      let userRole = "customer"; // Default role
+      try {
+        const tokenData = JSON.parse(atob(token.split(".")[1]));
+        userRole = tokenData.role || "customer";
+      } catch (e) {
+        console.warn("Could not parse token for role information");
+      }
+
+      // Use different endpoints based on user role
+      let endpoint = `${API_URL}/api/notifications/unread`;
+      if (userRole === "business") {
+        endpoint = `${API_URL}/api/business/notifications/unread`;
+      }
+
+      console.log(
+        `Using notifications endpoint for role ${userRole}: ${endpoint}`
+      );
+
+      const response = await fetch(endpoint, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -243,9 +328,9 @@ export const notificationApi = {
         console.warn(
           `Failed to fetch unread notification count: ${response.status}`
         );
-        // If the endpoint is not found (404), return a count of 1 for the mock notification
-        if (response.status === 404) {
-          return { count: 1 };
+        // If the endpoint is not found (404) or forbidden (403), return a count of 0
+        if (response.status === 404 || response.status === 403) {
+          return { count: 0 };
         }
         return { count: 0 };
       }

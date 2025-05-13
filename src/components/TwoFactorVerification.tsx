@@ -8,6 +8,7 @@ import { authService } from "@/services/auth";
 import { useAuthStore } from "@/store/authStore";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Cookies from "js-cookie";
 
 export default function TwoFactorVerification() {
   const router = useRouter();
@@ -67,22 +68,54 @@ export default function TwoFactorVerification() {
 
     try {
       const response = await authService.verify2FA(tempEmail, data.code);
+
+      // Check if the response contains the expected data
+      if (!response.user || !response.accessToken) {
+        console.error("Incomplete verification response:", response);
+        setError("code", {
+          type: "manual",
+          message: "Verification failed. Please try again.",
+        });
+        return;
+      }
+
+      // Update auth store with user data and token
       setUser(response.user);
       setAccessToken(response.accessToken);
 
+      // Store tokens in cookies for persistence
+      Cookies.set("client-token", response.accessToken);
+      if (response.refreshToken) {
+        Cookies.set("refresh-token", response.refreshToken);
+      }
+
+      // Store user role in cookie for easier access
+      Cookies.set("user-role", response.user.role);
+      Cookies.set("user-id", response.user.id);
+
       // Route based on role
       if (response.user.role === "business") {
-        router.push("/business/register");
+        router.push(`/business/register/${response.user.id}`);
       } else if (response.user.role === "customer") {
         router.push("/login"); // Redirect customers to login page
       } else {
         router.push("/dashboard");
       }
-    } catch (error) {
-      setError("code", {
-        type: "manual",
-        message: "Invalid verification code",
-      });
+    } catch (error: any) {
+      console.error("Verification error:", error);
+
+      // Provide more specific error messages based on the error
+      if (error.response?.status === 400) {
+        setError("code", {
+          type: "manual",
+          message: error.response.data?.message || "Invalid or expired code",
+        });
+      } else {
+        setError("code", {
+          type: "manual",
+          message: "Verification failed. Please try again.",
+        });
+      }
     }
   };
 

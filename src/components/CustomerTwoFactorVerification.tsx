@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import { TwoFactorInput, twoFactorSchema } from "@/lib/validations/auth";
 import { Loader2 } from "lucide-react";
+import Cookies from "js-cookie";
 import { authService } from "@/services/auth";
 
 export function CustomerTwoFactorVerification() {
@@ -65,16 +66,44 @@ export function CustomerTwoFactorVerification() {
     try {
       // Use the authService instead of direct fetch
       const result = await authService.verify2FA(tempEmail, data.code);
+
+      // Check if the response contains the expected data
+      if (!result.user || !result.accessToken) {
+        console.error("Incomplete verification response:", result);
+        setError("code", {
+          type: "manual",
+          message: "Verification failed. Please try again.",
+        });
+        return;
+      }
+
+      // Update auth store with user data and token
       setUser(result.user);
       setAccessToken(result.accessToken);
 
+      // Store tokens in cookies for persistence
+      Cookies.set("client-token", result.accessToken);
+      if (result.refreshToken) {
+        Cookies.set("refresh-token", result.refreshToken);
+      }
+
       // Redirect to login after successful verification
       router.push("/login");
-    } catch (error) {
-      setError("code", {
-        type: "manual",
-        message: "Invalid verification code",
-      });
+    } catch (error: any) {
+      console.error("Verification error:", error);
+
+      // Provide more specific error messages based on the error
+      if (error.response?.status === 400) {
+        setError("code", {
+          type: "manual",
+          message: error.response.data?.message || "Invalid or expired code",
+        });
+      } else {
+        setError("code", {
+          type: "manual",
+          message: "Verification failed. Please try again.",
+        });
+      }
     }
   };
 

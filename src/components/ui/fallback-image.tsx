@@ -30,24 +30,20 @@ export function FallbackImage({
 
   // If no src or error loading image, show fallback
   if (!src || error) {
-    const FallbackIcon = 
-      fallbackType === "user" ? User :
-      fallbackType === "service" ? Store :
-      Building;
+    const FallbackIcon =
+      fallbackType === "user"
+        ? User
+        : fallbackType === "service"
+        ? Store
+        : Building;
 
     return (
-      <div 
-        className={cn(
-          "flex items-center justify-center bg-muted",
-          className
-        )}
+      <div
+        className={cn("flex items-center justify-center bg-muted", className)}
         style={{ width, height }}
       >
-        <FallbackIcon 
-          className={cn(
-            "text-muted-foreground",
-            fallbackClassName
-          )} 
+        <FallbackIcon
+          className={cn("text-muted-foreground", fallbackClassName)}
         />
       </div>
     );
@@ -55,15 +51,16 @@ export function FallbackImage({
 
   // If src is provided and no error, show image
   return fill ? (
-    <Image
-      src={src}
-      alt={alt}
-      className={className}
-      fill
-      onError={() => setError(true)}
-    />
+    <div className={cn("relative", className)} style={{ width, height }}>
+      <img
+        src={src}
+        alt={alt}
+        className="object-cover w-full h-full"
+        onError={() => setError(true)}
+      />
+    </div>
   ) : (
-    <Image
+    <img
       src={src}
       alt={alt}
       className={className}

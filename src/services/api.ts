@@ -24,6 +24,21 @@ api.interceptors.request.use(
     if (token) {
       config.headers["Authorization"] = `Bearer ${token}`;
     }
+
+    // For FormData, let the browser set the Content-Type with boundary
+    if (config.data instanceof FormData) {
+      // Remove Content-Type header to let browser set it with correct boundary
+      delete config.headers["Content-Type"];
+
+      // Log the request for debugging
+      console.log("Sending FormData request:", {
+        url: config.url,
+        method: config.method,
+        headers: config.headers,
+        data: Object.fromEntries(config.data.entries()),
+      });
+    }
+
     return config;
   },
   (error) => {

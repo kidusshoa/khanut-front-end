@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
+import toast from "react-hot-toast";
 import {
   Search,
   Filter,
@@ -16,6 +17,9 @@ import {
   ArrowUpDown,
   Eye,
 } from "lucide-react";
+import { serviceApi } from "@/services/service";
+import { getBusinessServices } from "@/services/businessApi";
+import api from "@/services/api";
 import {
   Card,
   CardContent,
@@ -56,74 +60,22 @@ import { Badge } from "@/components/ui/badge";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { FallbackImage } from "@/components/ui/fallback-image";
 
-// Mock data for products
-const mockProducts = [
-  {
-    id: "p1",
-    name: "Premium Coffee Beans",
-    description: "Freshly roasted Ethiopian coffee beans, 500g package",
-    price: 350.00,
-    inventory: 45,
-    sku: "COF-001",
-    category: "Coffee",
-    images: ["/placeholder-product.jpg"],
-    status: "in_stock",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 30), // 30 days ago
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 5), // 5 days ago
-  },
-  {
-    id: "p2",
-    name: "Handmade Ceramic Mug",
-    description: "Artisan crafted ceramic mug, perfect for coffee or tea",
-    price: 250.00,
-    inventory: 20,
-    sku: "MUG-002",
-    category: "Kitchenware",
-    images: ["/placeholder-product.jpg"],
-    status: "in_stock",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 45), // 45 days ago
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 10), // 10 days ago
-  },
-  {
-    id: "p3",
-    name: "Coffee Grinder",
-    description: "Manual coffee grinder with adjustable settings",
-    price: 650.00,
-    inventory: 12,
-    sku: "GRD-003",
-    category: "Kitchenware",
-    images: ["/placeholder-product.jpg"],
-    status: "in_stock",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 60), // 60 days ago
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15), // 15 days ago
-  },
-  {
-    id: "p4",
-    name: "Coffee Gift Set",
-    description: "Gift set including coffee beans, mug, and brewing guide",
-    price: 850.00,
-    inventory: 0,
-    sku: "GFT-004",
-    category: "Gift Sets",
-    images: ["/placeholder-product.jpg"],
-    status: "out_of_stock",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 90), // 90 days ago
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 20), // 20 days ago
-  },
-  {
-    id: "p5",
-    name: "Coffee Filter Papers",
-    description: "Pack of 100 filter papers for pour-over coffee",
-    price: 120.00,
-    inventory: 75,
-    sku: "FLT-005",
-    category: "Accessories",
-    images: ["/placeholder-product.jpg"],
-    status: "in_stock",
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 15), // 15 days ago
-    updatedAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2), // 2 days ago
-  },
-];
+// Define the product interface
+interface Product {
+  _id: string;
+  name: string;
+  description: string;
+  price: number;
+  inventory?: number;
+  sku?: string;
+  serviceType: string;
+  businessId: string;
+  images: string[];
+  status?: string;
+  createdAt: string;
+  updatedAt: string;
+  categoryId?: string;
+}
 
 interface ProductsContentProps {
   businessId: string;
@@ -135,20 +87,120 @@ export default function ProductsContent({ businessId }: ProductsContentProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [products, setProducts] = useState(mockProducts);
-  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isProductDetailsOpen, setIsProductDetailsOpen] = useState(false);
   const [sortField, setSortField] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+  const [error, setError] = useState<string | null>(null);
 
-  // Simulate loading
+  // Fetch products from API
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setIsLoading(false);
-    }, 1000);
+    const fetchProducts = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        let fetchedProducts: Product[] = [];
+        let correctBusinessId = businessId;
 
-    return () => clearTimeout(timer);
-  }, []);
+        // First, try to get the correct businessId from the business status
+        try {
+          const statusResponse = await api.get("/business/status");
+          correctBusinessId = statusResponse.data.businessId;
+          console.log(
+            "Got correct business ID from status:",
+            correctBusinessId
+          );
+        } catch (statusError) {
+          console.error("Failed to get business status:", statusError);
+          // Continue with the provided businessId
+        }
+
+        try {
+          // First try to fetch products using the getServicesByType API
+          console.log(
+            "Trying getServicesByType API with businessId:",
+            correctBusinessId
+          );
+          const response = await serviceApi.getServicesByType(
+            correctBusinessId,
+            "product",
+            {
+              limit: 100,
+            }
+          );
+
+          // The response is an array of services directly, not an object with a services property
+          console.log("API Response from getServicesByType:", response);
+
+          // Map the response to our Product interface and add status
+          if (Array.isArray(response)) {
+            fetchedProducts = response.map((service: any) => ({
+              ...service,
+              status:
+                service.inventory && service.inventory > 0
+                  ? "in_stock"
+                  : "out_of_stock",
+            }));
+          }
+        } catch (typeError) {
+          console.error("Error with getServicesByType API:", typeError);
+          console.log("Falling back to getBusinessServices API...");
+
+          // Fallback to getBusinessServices API
+          try {
+            console.log(
+              "Calling getBusinessServices with businessId:",
+              correctBusinessId
+            );
+            const allServices = await getBusinessServices(correctBusinessId);
+            console.log("API Response from getBusinessServices:", allServices);
+
+            // Filter for products only and map to our Product interface
+            if (Array.isArray(allServices)) {
+              fetchedProducts = allServices
+                .filter((service: any) => service.serviceType === "product")
+                .map((service: any) => ({
+                  ...service,
+                  status:
+                    service.inventory && service.inventory > 0
+                      ? "in_stock"
+                      : "out_of_stock",
+                }));
+            } else {
+              console.log(
+                "getBusinessServices did not return an array:",
+                allServices
+              );
+            }
+          } catch (fallbackError) {
+            console.error("Error with fallback API:", fallbackError);
+            throw fallbackError; // Re-throw to be caught by the outer catch
+          }
+        }
+
+        setProducts(fetchedProducts);
+
+        // Log the number of products found
+        console.log(`Found ${fetchedProducts.length} products`);
+
+        // If no products were found but there was no error, set a friendly message
+        if (fetchedProducts.length === 0) {
+          console.log("No products found for this business");
+        }
+      } catch (err: any) {
+        console.error("Error fetching products:", err);
+        setError(err.message || "Failed to load products");
+        toast.error("Failed to load products. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (businessId) {
+      fetchProducts();
+    }
+  }, [businessId]);
 
   // Filter products based on active tab
   const filteredProducts = products.filter((product) => {
@@ -173,9 +225,9 @@ export default function ProductsContent({ businessId }: ProductsContentProps) {
   // Sort products
   const sortedProducts = [...searchedProducts].sort((a, b) => {
     if (!sortField) return 0;
-    
+
     let valueA, valueB;
-    
+
     switch (sortField) {
       case "name":
         valueA = a.name;
@@ -196,7 +248,7 @@ export default function ProductsContent({ businessId }: ProductsContentProps) {
       default:
         return 0;
     }
-    
+
     if (valueA < valueB) return sortDirection === "asc" ? -1 : 1;
     if (valueA > valueB) return sortDirection === "asc" ? 1 : -1;
     return 0;
@@ -224,10 +276,29 @@ export default function ProductsContent({ businessId }: ProductsContentProps) {
   };
 
   // Handle delete product
-  const handleDeleteProduct = (productId: string) => {
+  const handleDeleteProduct = async (productId: string) => {
     if (confirm("Are you sure you want to delete this product?")) {
-      // In a real app, you would call an API to delete the product
-      setProducts(products.filter((product) => product.id !== productId));
+      try {
+        setIsLoading(true);
+        // Call the API to delete the product
+        await serviceApi.deleteService(productId);
+
+        // Update the local state
+        setProducts(products.filter((product) => product._id !== productId));
+        toast.success("Product deleted successfully");
+
+        // Close the product details dialog if open
+        if (isProductDetailsOpen) {
+          setIsProductDetailsOpen(false);
+        }
+      } catch (err: any) {
+        console.error("Error deleting product:", err);
+        toast.error(
+          err.message || "Failed to delete product. Please try again."
+        );
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -236,6 +307,24 @@ export default function ProductsContent({ businessId }: ProductsContentProps) {
       <DashboardLayout businessId={businessId}>
         <div className="flex items-center justify-center min-h-[60vh]">
           <Loader2 className="h-8 w-8 animate-spin text-orange-600" />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  if (error) {
+    return (
+      <DashboardLayout businessId={businessId}>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
+          <AlertTriangle className="h-12 w-12 text-red-500" />
+          <h2 className="text-xl font-semibold">Error Loading Products</h2>
+          <p className="text-muted-foreground">{error}</p>
+          <Button
+            onClick={() => window.location.reload()}
+            className="bg-orange-600 hover:bg-orange-700"
+          >
+            Try Again
+          </Button>
         </div>
       </DashboardLayout>
     );
@@ -251,7 +340,7 @@ export default function ProductsContent({ businessId }: ProductsContentProps) {
               Manage your product inventory and catalog
             </p>
           </div>
-          <Button 
+          <Button
             className="bg-orange-600 hover:bg-orange-700"
             onClick={() => router.push(`/business/${businessId}/products/new`)}
           >
@@ -342,13 +431,15 @@ export default function ProductsContent({ businessId }: ProductsContentProps) {
                           )}
                         </Button>
                       </TableHead>
-                      <TableHead className="hidden md:table-cell">Status</TableHead>
+                      <TableHead className="hidden md:table-cell">
+                        Status
+                      </TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {sortedProducts.map((product) => (
-                      <TableRow key={product.id}>
+                      <TableRow key={product._id}>
                         <TableCell>
                           <div className="flex items-center gap-3">
                             <div className="h-10 w-10 rounded-md overflow-hidden bg-muted">
@@ -383,14 +474,20 @@ export default function ProductsContent({ businessId }: ProductsContentProps) {
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
                           <Badge
-                            variant={product.status === "in_stock" ? "default" : "secondary"}
+                            variant={
+                              product.status === "in_stock"
+                                ? "default"
+                                : "secondary"
+                            }
                             className={
                               product.status === "in_stock"
                                 ? "bg-green-500 hover:bg-green-600"
                                 : "bg-red-500 hover:bg-red-600"
                             }
                           >
-                            {product.status === "in_stock" ? "In Stock" : "Out of Stock"}
+                            {product.status === "in_stock"
+                              ? "In Stock"
+                              : "Out of Stock"}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
@@ -405,14 +502,14 @@ export default function ProductsContent({ businessId }: ProductsContentProps) {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleEditProduct(product.id)}
+                              onClick={() => handleEditProduct(product._id)}
                             >
                               <Edit className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => handleDeleteProduct(product.id)}
+                              onClick={() => handleDeleteProduct(product._id)}
                               className="text-red-500 hover:text-red-600"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -436,9 +533,11 @@ export default function ProductsContent({ businessId }: ProductsContentProps) {
                     : "You don't have any products yet"}
                 </p>
                 {!searchQuery && activeTab === "all" && (
-                  <Button 
+                  <Button
                     className="bg-orange-600 hover:bg-orange-700"
-                    onClick={() => router.push(`/business/${businessId}/products/new`)}
+                    onClick={() =>
+                      router.push(`/business/${businessId}/products/new`)
+                    }
                   >
                     <Plus className="mr-2 h-4 w-4" />
                     Add Your First Product
@@ -485,7 +584,9 @@ export default function ProductsContent({ businessId }: ProductsContentProps) {
                 </div>
                 <div className="space-y-6">
                   <div>
-                    <h3 className="text-xl font-bold">{selectedProduct.name}</h3>
+                    <h3 className="text-xl font-bold">
+                      {selectedProduct.name}
+                    </h3>
                     <p className="text-muted-foreground mt-2">
                       {selectedProduct.description}
                     </p>
@@ -502,27 +603,41 @@ export default function ProductsContent({ businessId }: ProductsContentProps) {
                     </div>
                     <div>
                       <p className="text-sm font-medium">Inventory</p>
-                      <p className="text-xl font-bold">{selectedProduct.inventory}</p>
+                      <p className="text-xl font-bold">
+                        {selectedProduct.inventory || 0}
+                      </p>
                     </div>
                     <div>
                       <p className="text-sm font-medium">SKU</p>
-                      <p className="text-muted-foreground">{selectedProduct.sku}</p>
+                      <p className="text-muted-foreground">
+                        {selectedProduct.sku || "N/A"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-sm font-medium">Category</p>
-                      <p className="text-muted-foreground">{selectedProduct.category}</p>
+                      <p className="text-muted-foreground">
+                        {selectedProduct.categoryId
+                          ? selectedProduct.categoryId
+                          : "Uncategorized"}
+                      </p>
                     </div>
                     <div>
                       <p className="text-sm font-medium">Status</p>
                       <Badge
-                        variant={selectedProduct.status === "in_stock" ? "default" : "secondary"}
+                        variant={
+                          selectedProduct.status === "in_stock"
+                            ? "default"
+                            : "secondary"
+                        }
                         className={
                           selectedProduct.status === "in_stock"
                             ? "bg-green-500 hover:bg-green-600"
                             : "bg-red-500 hover:bg-red-600"
                         }
                       >
-                        {selectedProduct.status === "in_stock" ? "In Stock" : "Out of Stock"}
+                        {selectedProduct.status === "in_stock"
+                          ? "In Stock"
+                          : "Out of Stock"}
                       </Badge>
                     </div>
                   </div>
@@ -537,7 +652,7 @@ export default function ProductsContent({ businessId }: ProductsContentProps) {
                 </Button>
                 <Button
                   variant="outline"
-                  onClick={() => handleEditProduct(selectedProduct.id)}
+                  onClick={() => handleEditProduct(selectedProduct._id)}
                 >
                   <Edit className="mr-2 h-4 w-4" />
                   Edit Product
@@ -545,7 +660,7 @@ export default function ProductsContent({ businessId }: ProductsContentProps) {
                 <Button
                   variant="destructive"
                   onClick={() => {
-                    handleDeleteProduct(selectedProduct.id);
+                    handleDeleteProduct(selectedProduct._id);
                     setIsProductDetailsOpen(false);
                   }}
                 >

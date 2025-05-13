@@ -27,6 +27,13 @@ export const authService = {
     return response.data;
   },
 
+  async getUserRole(email: string) {
+    const response = await api.post("/auth/get-role", {
+      email,
+    });
+    return response.data;
+  },
+
   async logout(refreshToken: string) {
     const response = await api.post("/auth/logout", {
       token: refreshToken,

@@ -6,12 +6,12 @@ export const businessRegistrationSchema = z.object({
   category: z.string().min(2, "Business category is required"),
   city: z.string().min(2, "City is required"),
   address: z.string().min(5, "Address is required"),
-  latitude: z.string().or(z.number()),
-  longitude: z.string().or(z.number()),
+  latitude: z.number(),
+  longitude: z.number(),
   email: z.string().email("Invalid email").optional(),
   phone: z.string().regex(/^\+?[\d\s-]{10,}$/, "Invalid phone number format"),
   website: z.string().url("Invalid website URL").optional(),
-  businessImage: z.any().optional(), // For file upload
+  profilePicture: z.any().optional(), // For file upload - renamed to match backend
 });
 
 export type BusinessRegistrationInput = z.infer<

@@ -11,12 +11,15 @@ import Image from "next/image";
 import Cookies from "js-cookie";
 import axios from "axios";
 import { loginSchema, LoginInput } from "@/lib/validations/auth";
+import { useAuthStore } from "@/store/authStore";
+import { authService } from "@/services/auth";
 
 export default function LoginPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const { data: session } = useSession();
+  const { setTempEmail, setTempRole } = useAuthStore();
 
   const {
     register,
@@ -31,37 +34,34 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       // First, try direct API login to get the token
-      const apiResponse = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`,
-        {
-          email: data.email,
-          password: data.password,
-        }
-      );
+      const apiResponse = await authService.login({
+        email: data.email,
+        password: data.password,
+      });
 
       // If API login is successful, store the token in cookies
-      if (apiResponse.data && apiResponse.data.accessToken) {
+      if (apiResponse && apiResponse.accessToken) {
         // Store tokens in cookies with expiration based on "Remember me"
         const expirationDays = rememberMe ? 30 : 1;
-        Cookies.set("client-token", apiResponse.data.accessToken, {
+        Cookies.set("client-token", apiResponse.accessToken, {
           expires: expirationDays,
           sameSite: "strict",
           secure: process.env.NODE_ENV === "production",
         });
-        Cookies.set("user-role", apiResponse.data.role, {
+        Cookies.set("user-role", apiResponse.role, {
           expires: expirationDays,
           sameSite: "strict",
           secure: process.env.NODE_ENV === "production",
         });
-        Cookies.set("user-id", apiResponse.data.userId, {
+        Cookies.set("user-id", apiResponse.userId, {
           expires: expirationDays,
           sameSite: "strict",
           secure: process.env.NODE_ENV === "production",
         });
 
         // Get user info from API response
-        const role = apiResponse.data.role;
-        const userId = apiResponse.data.userId;
+        const role = apiResponse.role;
+        const userId = apiResponse.userId;
 
         // Also perform NextAuth sign in for session management
         await signIn("credentials", {
@@ -87,7 +87,7 @@ export default function LoginPage() {
                 `${process.env.NEXT_PUBLIC_API_URL}/api/business/status`,
                 {
                   headers: {
-                    Authorization: `Bearer ${apiResponse.data.accessToken}`,
+                    Authorization: `Bearer ${apiResponse.accessToken}`,
                   },
                 }
               );
@@ -95,10 +95,7 @@ export default function LoginPage() {
               if (!response.ok) {
                 console.error("Business status check failed:", response.status);
                 // Store token in localStorage for other components to use
-                localStorage.setItem(
-                  "accessToken",
-                  apiResponse.data.accessToken
-                );
+                localStorage.setItem("accessToken", apiResponse.accessToken);
                 router.push(`/business/${userId}/pending`);
                 return;
               }
@@ -107,7 +104,7 @@ export default function LoginPage() {
               console.log("Business status response:", data);
 
               // Store token in localStorage for other components to use
-              localStorage.setItem("accessToken", apiResponse.data.accessToken);
+              localStorage.setItem("accessToken", apiResponse.accessToken);
 
               if (data.status === "approved" && data.approved === true) {
                 router.push(`/business/${userId}/dashboard`);
@@ -117,7 +114,7 @@ export default function LoginPage() {
             } catch (error) {
               console.error("Error checking business status:", error);
               // Store token in localStorage for other components to use
-              localStorage.setItem("accessToken", apiResponse.data.accessToken);
+              localStorage.setItem("accessToken", apiResponse.accessToken);
               router.push(`/business/${userId}/pending`);
             }
             break;
@@ -136,12 +133,50 @@ export default function LoginPage() {
       }
     } catch (error) {
       console.error("Login error:", error);
-      setError("root", {
-        type: "manual",
-        message: axios.isAxiosError(error)
-          ? error.response?.data?.message || "Invalid credentials"
-          : "An unexpected error occurred",
-      });
+
+      // Check if this is a 2FA verification required error
+      if (
+        axios.isAxiosError(error) &&
+        error.response?.status === 403 &&
+        error.response.data?.message?.includes("2FA verification required")
+      ) {
+        // Store the email and role in the auth store for verification
+        setTempEmail(data.email);
+
+        // Determine the role by checking the email against the database
+        try {
+          // Make a lightweight request to get the user role
+          const userResponse = await authService.getUserRole(data.email);
+
+          if (userResponse && userResponse.role) {
+            setTempRole(userResponse.role);
+
+            // Redirect to the appropriate verification page based on role
+            if (userResponse.role === "business") {
+              router.push("/verify/business");
+            } else if (userResponse.role === "customer") {
+              router.push("/verify/customer");
+            } else {
+              router.push("/verify"); // Generic verification page
+            }
+            return;
+          }
+        } catch (roleError) {
+          console.error("Error getting user role:", roleError);
+          // If we can't determine the role, use the generic verification page
+          setTempRole("unknown");
+          router.push("/verify");
+          return;
+        }
+      } else {
+        // Handle other errors
+        setError("root", {
+          type: "manual",
+          message: axios.isAxiosError(error)
+            ? error.response?.data?.message || "Invalid credentials"
+            : "An unexpected error occurred",
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }

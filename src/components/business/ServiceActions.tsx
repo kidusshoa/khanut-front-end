@@ -12,6 +12,7 @@ import {
   CalendarDays,
   Building,
   Loader2,
+  Heart,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -66,6 +67,17 @@ export function ServiceActions({ service }: ServiceActionsProps) {
   const [selectedTime, setSelectedTime] = useState<string | undefined>(
     undefined
   );
+  const [isFavorite, setIsFavorite] = useState(false);
+
+  const toggleFavorite = () => {
+    setIsFavorite(!isFavorite);
+    if (!isFavorite) {
+      toast.success(`Added ${service.name} to favorites`);
+    } else {
+      toast.success(`Removed ${service.name} from favorites`);
+    }
+    // TODO: Implement API call to save favorite status
+  };
 
   // Reset selected date and time when modal is opened
   useEffect(() => {
@@ -652,6 +664,18 @@ export function ServiceActions({ service }: ServiceActionsProps) {
   return (
     <div className="mt-4 space-y-2">
       {renderActionButton()}
+
+      {/* Favorite Button */}
+      <Button
+        variant="outline"
+        className={`w-full ${
+          isFavorite ? "text-red-500 border-red-200 hover:bg-red-50" : ""
+        }`}
+        onClick={toggleFavorite}
+      >
+        <Heart className={`mr-2 h-4 w-4 ${isFavorite ? "fill-current" : ""}`} />
+        {isFavorite ? "Remove from Favorites" : "Add to Favorites"}
+      </Button>
 
       {/* View Business Button */}
       <Button

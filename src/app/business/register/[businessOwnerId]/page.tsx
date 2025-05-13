@@ -58,35 +58,119 @@ export default function BusinessRegistrationPage({
   };
 
   const handleLocationSelect = (latitude: number, longitude: number) => {
-    setValue("latitude", latitude.toString());
-    setValue("longitude", longitude.toString());
+    // Store as numbers, not strings
+    setValue("latitude", latitude);
+    setValue("longitude", longitude);
+
+    console.log("Location selected:", { latitude, longitude });
   };
 
   const onSubmit = async (data: BusinessRegistrationInput) => {
     try {
       setIsSubmitting(true);
+      console.log("Form data submitted:", data);
+
       const formData = new FormData();
+      // Add address to the business model
+      if (data.address) {
+        formData.append("address", data.address);
+      }
+
+      // Make sure all required fields are present
+      const requiredFields = [
+        "name",
+        "description",
+        "category",
+        "city",
+        "latitude",
+        "longitude",
+      ];
+      const missingFields = requiredFields.filter(
+        (field) => !data[field as keyof BusinessRegistrationInput]
+      );
+
+      if (missingFields.length > 0) {
+        console.error("Missing required fields:", missingFields);
+        throw new Error(`Missing required fields: ${missingFields.join(", ")}`);
+      }
+
+      // Add the business owner ID
       formData.append("businessOwnerId", businessOwnerId);
 
-      Object.entries(data).forEach(([key, value]) => {
-        if (value !== undefined) {
-          if (key === "businessImage" && value instanceof FileList) {
-            formData.append(key, value[0]);
-          } else {
-            formData.append(key, String(value));
-          }
-        }
-      });
+      // Explicitly add each required field to ensure correct order and naming
+      formData.append("name", data.name);
+      formData.append("description", data.description);
+      formData.append("category", data.category);
+      formData.append("city", data.city);
+      formData.append("latitude", data.latitude.toString());
+      formData.append("longitude", data.longitude.toString());
+      formData.append("phone", data.phone);
+
+      // Add optional fields
+      if (data.email) {
+        formData.append("email", data.email);
+      }
+
+      if (data.website) {
+        formData.append("website", data.website);
+      }
+
+      // Handle file upload
+      if (data.profilePicture instanceof FileList && data.profilePicture[0]) {
+        console.log("Adding file: profilePicture", data.profilePicture[0].name);
+        formData.append("profilePicture", data.profilePicture[0]);
+      }
+
+      // Log the form data being sent
+      console.log("FormData entries:", Object.fromEntries(formData.entries()));
+
+      // Log each field individually for debugging
+      console.log("Required fields check:");
+      console.log("- name:", data.name);
+      console.log("- description:", data.description);
+      console.log("- category:", data.category);
+      console.log("- city:", data.city);
+      console.log("- latitude:", data.latitude);
+      console.log("- longitude:", data.longitude);
+      console.log("- phone:", data.phone);
+      console.log("- address:", data.address);
 
       await businessService.register(formData);
       router.push("/business/pending");
     } catch (error: any) {
-      setError("root", {
-        type: "manual",
-        message:
-          error.response?.data?.message ||
-          "Registration failed. Please try again.",
-      });
+      console.error("Business registration error:", error);
+
+      // Handle different types of errors
+      if (error.message && error.message.includes("Missing required fields")) {
+        // Handle missing fields error
+        setError("root", {
+          type: "manual",
+          message: error.message,
+        });
+      } else if (error.response?.data) {
+        // Handle API error response
+        const errorMessage =
+          error.response.data.message || JSON.stringify(error.response.data);
+        console.error("API Error Message:", errorMessage);
+
+        setError("root", {
+          type: "manual",
+          message: errorMessage,
+        });
+
+        // Log detailed error information
+        console.error("API Error Response:", {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data,
+        });
+      } else {
+        // Handle other errors
+        setError("root", {
+          type: "manual",
+          message: "Registration failed. Please try again.",
+        });
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -141,7 +225,7 @@ export default function BusinessRegistrationPage({
                     <label className="relative cursor-pointer bg-white rounded-md font-medium text-orange-600 hover:text-orange-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-orange-500">
                       <span>Upload a file</span>
                       <input
-                        {...register("businessImage")}
+                        {...register("profilePicture")}
                         type="file"
                         className="sr-only"
                         accept="image/*"
@@ -197,6 +281,33 @@ export default function BusinessRegistrationPage({
               )}
             </div>
 
+            {/* Business Category */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Business Category *
+              </label>
+              <select
+                {...register("category")}
+                className={`mt-1 block w-full rounded-md border ${
+                  errors.category ? "border-red-500" : "border-gray-300"
+                } shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm`}
+              >
+                <option value="">Select a category</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Food">Food & Beverages</option>
+                <option value="Clothing">Clothing & Fashion</option>
+                <option value="Health">Health & Beauty</option>
+                <option value="Home">Home & Furniture</option>
+                <option value="Services">Services</option>
+                <option value="Other">Other</option>
+              </select>
+              {errors.category && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.category.message}
+                </p>
+              )}
+            </div>
+
             {/* Address */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -212,6 +323,25 @@ export default function BusinessRegistrationPage({
               {errors.address && (
                 <p className="mt-1 text-sm text-red-600">
                   {errors.address.message}
+                </p>
+              )}
+            </div>
+
+            {/* City */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                City *
+              </label>
+              <input
+                {...register("city")}
+                type="text"
+                className={`mt-1 block w-full rounded-md border ${
+                  errors.city ? "border-red-500" : "border-gray-300"
+                } shadow-sm focus:border-orange-500 focus:ring-orange-500 sm:text-sm`}
+              />
+              {errors.city && (
+                <p className="mt-1 text-sm text-red-600">
+                  {errors.city.message}
                 </p>
               )}
             </div>
@@ -275,8 +405,32 @@ export default function BusinessRegistrationPage({
 
             {/* Error Message */}
             {errors.root && (
-              <div className="rounded-md bg-red-50 p-4">
-                <p className="text-sm text-red-600">{errors.root.message}</p>
+              <div className="rounded-md bg-red-50 p-4 border border-red-300">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <svg
+                      className="h-5 w-5 text-red-400"
+                      xmlns="http://www.w3.org/2000/svg"
+                      viewBox="0 0 20 20"
+                      fill="currentColor"
+                      aria-hidden="true"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h3 className="text-sm font-medium text-red-800">
+                      Registration Error
+                    </h3>
+                    <div className="mt-2 text-sm text-red-700">
+                      <p>{errors.root.message}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 

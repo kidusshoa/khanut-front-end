@@ -153,29 +153,67 @@ export const getBusinessServices = async (businessId: string) => {
   try {
     console.log("Fetching services for business ID:", businessId);
 
-    const url = `${API_URL}/api/services/business/${businessId}`;
-    console.log("Services URL:", url);
+    // Try the primary endpoint first
+    try {
+      const url = `${API_URL}/api/services/business/${businessId}`;
+      console.log("Primary services URL:", url);
 
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      credentials: "include",
-    });
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include",
+      });
 
-    if (!response.ok) {
-      console.error(
-        "Services endpoint failed:",
-        response.status,
-        response.statusText
-      );
-      return []; // Return empty array instead of throwing
+      if (!response.ok) {
+        console.error(
+          "Primary services endpoint failed:",
+          response.status,
+          response.statusText
+        );
+        throw new Error(`Primary endpoint failed: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log("Services data received from primary endpoint:", data);
+      return data;
+    } catch (primaryError) {
+      console.warn("Primary endpoint failed, trying fallback:", primaryError);
+
+      // Try fallback endpoint
+      try {
+        const fallbackUrl = `${API_URL}/api/businesses/${businessId}/services`;
+        console.log("Fallback services URL:", fallbackUrl);
+
+        const fallbackResponse = await fetch(fallbackUrl, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+        });
+
+        if (!fallbackResponse.ok) {
+          console.error(
+            "Fallback services endpoint failed:",
+            fallbackResponse.status,
+            fallbackResponse.statusText
+          );
+          return []; // Return empty array if both endpoints fail
+        }
+
+        const fallbackData = await fallbackResponse.json();
+        console.log(
+          "Services data received from fallback endpoint:",
+          fallbackData
+        );
+        return fallbackData;
+      } catch (fallbackError) {
+        console.error("Fallback endpoint also failed:", fallbackError);
+        return []; // Return empty array if both endpoints fail
+      }
     }
-
-    const data = await response.json();
-    console.log("Services data received:", data);
-    return data;
   } catch (error) {
     console.error("Error fetching business services:", error);
     return []; // Return empty array on error

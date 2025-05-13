@@ -10,13 +10,14 @@ import {
 } from "@/lib/validations/customer";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
-import axios from "axios";
+import { useAuthStore } from "@/store/authStore";
+import { authService } from "@/services/auth";
 
 export default function CustomerRegistrationPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [tempEmail, setTempEmail] = useState<string | null>(null);
-  const [tempRole, setTempRole] = useState<string | null>(null);
+  const setTempEmail = useAuthStore((state) => state.setTempEmail);
+  const setTempRole = useAuthStore((state) => state.setTempRole);
 
   const {
     register,
@@ -30,26 +31,25 @@ export default function CustomerRegistrationPage() {
   const onSubmit = async (data: CustomerRegistrationInput) => {
     setIsSubmitting(true);
     try {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/api/auth/register`,
-        {
-          name: data.name,
-          email: data.email,
-          phone: data.phone,
-          password: data.password,
-          role: "customer",
-        }
-      );
+      await authService.register({
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        password: data.password,
+        role: "customer",
+      });
 
-      if (response.status === 201) {
-        setTempEmail(data.email);
-        setTempRole("customer");
-        router.push("/verify/customer");
-      }
+      // Store email and role in auth store
+      setTempEmail(data.email);
+      setTempRole("customer");
+
+      // Navigate to verification page
+      router.push("/verify/customer");
     } catch (error: any) {
       setError("email", {
         type: "manual",
-        message: "This email may already be in use",
+        message:
+          error.response?.data?.message || "This email may already be in use",
       });
     } finally {
       setIsSubmitting(false);

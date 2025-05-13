@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { BusinessTwoFactorVerification } from "@/components/BusinessTwoFactorVerification";
-import { useAuthStore } from "@/store/auth";
+import { useAuthStore } from "@/store/authStore";
 
 export default function BusinessVerifyPage() {
   const router = useRouter();
