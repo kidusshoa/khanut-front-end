@@ -56,6 +56,32 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 - `/types` - TypeScript type definitions
 - `/services` - API service integrations
 
+## Important Implementation Details
+
+### Business ID Handling
+
+The application uses a special mechanism to handle business IDs. There are two business IDs in play:
+
+1. **URL Business ID**: This is the business ID that appears in the URL (e.g., `/business/68224afb1326bc75790cdd80/dashboard`)
+2. **Actual Business ID**: This is the business ID stored in the database (e.g., `682254767119f0cd755c7403`)
+
+To ensure the application uses the correct business ID, we use the `getCorrectBusinessId` function in `src/lib/business-utils.ts`. This function:
+
+1. First tries to get the business ID from the business status API (`/api/business/status`)
+2. If that fails, it tries to verify the URL business ID by making a request to `/api/businesses/{urlBusinessId}`
+3. If both fail, it falls back to using the URL business ID
+
+This approach ensures that the application always uses the correct business ID, even if the URL contains an outdated or incorrect ID.
+
+### Authentication
+
+Authentication is handled using a combination of cookies and localStorage. The `getAuthToken` function in `src/lib/auth-utils.ts` retrieves the authentication token from:
+
+1. Cookies (`client-token`)
+2. localStorage (`accessToken`)
+
+This ensures that the application can authenticate API requests even if the user refreshes the page or opens a new tab.
+
 ## Related Services
 
 - [Khanut Back-End](https://github.com/kidusshoa/khanut-back-end) - API endpoints

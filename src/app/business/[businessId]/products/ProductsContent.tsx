@@ -20,6 +20,8 @@ import {
 import { serviceApi } from "@/services/service";
 import { getBusinessServices } from "@/services/businessApi";
 import api from "@/services/api";
+import { getCorrectBusinessId } from "@/lib/business-utils";
+import { handleApiError } from "@/lib/api-utils";
 import {
   Card,
   CardContent,
@@ -101,27 +103,14 @@ export default function ProductsContent({ businessId }: ProductsContentProps) {
         setIsLoading(true);
         setError(null);
         let fetchedProducts: Product[] = [];
-        let correctBusinessId = businessId;
 
-        // First, try to get the correct businessId from the business status
-        try {
-          const statusResponse = await api.get("/business/status");
-          correctBusinessId = statusResponse.data.businessId;
-          console.log(
-            "Got correct business ID from status:",
-            correctBusinessId
-          );
-        } catch (statusError) {
-          console.error("Failed to get business status:", statusError);
-          // Continue with the provided businessId
-        }
+        // Get the correct business ID using our utility function
+        const correctBusinessId = await getCorrectBusinessId(businessId);
+        console.log("Using business ID:", correctBusinessId);
 
         try {
           // First try to fetch products using the getServicesByType API
-          console.log(
-            "Trying getServicesByType API with businessId:",
-            correctBusinessId
-          );
+          console.log("Trying getServicesByType API");
           const response = await serviceApi.getServicesByType(
             correctBusinessId,
             "product",
@@ -130,31 +119,28 @@ export default function ProductsContent({ businessId }: ProductsContentProps) {
             }
           );
 
-          // The response is an array of services directly, not an object with a services property
-          console.log("API Response from getServicesByType:", response);
-
           // Map the response to our Product interface and add status
           if (Array.isArray(response)) {
             fetchedProducts = response.map((service: any) => ({
               ...service,
+              sku: service.sku || "", // Ensure sku is never undefined
               status:
                 service.inventory && service.inventory > 0
                   ? "in_stock"
                   : "out_of_stock",
             }));
+            console.log(
+              `Found ${fetchedProducts.length} products via getServicesByType`
+            );
           }
         } catch (typeError) {
-          console.error("Error with getServicesByType API:", typeError);
+          // Handle the error with our utility function
+          handleApiError(typeError, "Error fetching products by type");
           console.log("Falling back to getBusinessServices API...");
 
           // Fallback to getBusinessServices API
           try {
-            console.log(
-              "Calling getBusinessServices with businessId:",
-              correctBusinessId
-            );
             const allServices = await getBusinessServices(correctBusinessId);
-            console.log("API Response from getBusinessServices:", allServices);
 
             // Filter for products only and map to our Product interface
             if (Array.isArray(allServices)) {
@@ -162,27 +148,52 @@ export default function ProductsContent({ businessId }: ProductsContentProps) {
                 .filter((service: any) => service.serviceType === "product")
                 .map((service: any) => ({
                   ...service,
+                  sku: service.sku || "", // Ensure sku is never undefined
                   status:
                     service.inventory && service.inventory > 0
                       ? "in_stock"
                       : "out_of_stock",
                 }));
-            } else {
               console.log(
-                "getBusinessServices did not return an array:",
-                allServices
+                `Found ${fetchedProducts.length} products via getBusinessServices`
               );
+            } else {
+              console.log("getBusinessServices did not return an array");
             }
           } catch (fallbackError) {
-            console.error("Error with fallback API:", fallbackError);
+            handleApiError(fallbackError, "Error fetching business services");
             throw fallbackError; // Re-throw to be caught by the outer catch
           }
         }
 
-        setProducts(fetchedProducts);
+        // Try direct API call as a last resort if no products were found
+        if (fetchedProducts.length === 0) {
+          try {
+            console.log("Trying direct API call as last resort");
+            const response = await api.get(
+              `/services/business/${correctBusinessId}?serviceType=product&limit=100`
+            );
 
-        // Log the number of products found
-        console.log(`Found ${fetchedProducts.length} products`);
+            if (Array.isArray(response.data)) {
+              fetchedProducts = response.data.map((service: any) => ({
+                ...service,
+                sku: service.sku || "", // Ensure sku is never undefined
+                status:
+                  service.inventory && service.inventory > 0
+                    ? "in_stock"
+                    : "out_of_stock",
+              }));
+              console.log(
+                `Found ${fetchedProducts.length} products via direct API call`
+              );
+            }
+          } catch (directError) {
+            handleApiError(directError, "Error with direct API call");
+            // Continue with empty products array
+          }
+        }
+
+        setProducts(fetchedProducts);
 
         // If no products were found but there was no error, set a friendly message
         if (fetchedProducts.length === 0) {
@@ -218,7 +229,9 @@ export default function ProductsContent({ businessId }: ProductsContentProps) {
     return (
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchQuery.toLowerCase())
+      (product.sku
+        ? product.sku.toLowerCase().includes(searchQuery.toLowerCase())
+        : false)
     );
   });
 
@@ -226,32 +239,37 @@ export default function ProductsContent({ businessId }: ProductsContentProps) {
   const sortedProducts = [...searchedProducts].sort((a, b) => {
     if (!sortField) return 0;
 
-    let valueA, valueB;
-
+    // Use nullish coalescing to handle undefined values
     switch (sortField) {
       case "name":
-        valueA = a.name;
-        valueB = b.name;
-        break;
+        const nameA = a.name || "";
+        const nameB = b.name || "";
+        return sortDirection === "asc"
+          ? nameA.localeCompare(nameB)
+          : nameB.localeCompare(nameA);
+
       case "price":
-        valueA = a.price;
-        valueB = b.price;
-        break;
+        const priceA = a.price || 0;
+        const priceB = b.price || 0;
+        return sortDirection === "asc" ? priceA - priceB : priceB - priceA;
+
       case "inventory":
-        valueA = a.inventory;
-        valueB = b.inventory;
-        break;
+        const inventoryA = a.inventory || 0;
+        const inventoryB = b.inventory || 0;
+        return sortDirection === "asc"
+          ? inventoryA - inventoryB
+          : inventoryB - inventoryA;
+
       case "sku":
-        valueA = a.sku;
-        valueB = b.sku;
-        break;
+        const skuA = a.sku || "";
+        const skuB = b.sku || "";
+        return sortDirection === "asc"
+          ? skuA.localeCompare(skuB)
+          : skuB.localeCompare(skuA);
+
       default:
         return 0;
     }
-
-    if (valueA < valueB) return sortDirection === "asc" ? -1 : 1;
-    if (valueA > valueB) return sortDirection === "asc" ? 1 : -1;
-    return 0;
   });
 
   // Handle sort
@@ -291,11 +309,9 @@ export default function ProductsContent({ businessId }: ProductsContentProps) {
         if (isProductDetailsOpen) {
           setIsProductDetailsOpen(false);
         }
-      } catch (err: any) {
-        console.error("Error deleting product:", err);
-        toast.error(
-          err.message || "Failed to delete product. Please try again."
-        );
+      } catch (err) {
+        // Use our error handling utility
+        handleApiError(err, "Failed to delete product");
       } finally {
         setIsLoading(false);
       }
@@ -448,11 +464,16 @@ export default function ProductsContent({ businessId }: ProductsContentProps) {
                           <div className="flex items-center gap-3">
                             <div className="h-10 w-10 rounded-md overflow-hidden bg-muted">
                               <FallbackImage
-                                src={product.images[0] || ""}
+                                src={
+                                  product.images && product.images.length > 0
+                                    ? product.images[0]
+                                    : null
+                                }
                                 alt={product.name}
                                 width={40}
                                 height={40}
-                                fallbackSrc="/placeholder-product.jpg"
+                                fallbackSrc="/placeholder.png"
+                                fallbackType="service"
                                 className="h-full w-full object-cover"
                               />
                             </div>
@@ -592,11 +613,17 @@ export default function ProductsContent({ businessId }: ProductsContentProps) {
                 <div>
                   <div className="aspect-square rounded-md overflow-hidden bg-muted mb-4">
                     <FallbackImage
-                      src={selectedProduct.images[0] || ""}
+                      src={
+                        selectedProduct.images &&
+                        selectedProduct.images.length > 0
+                          ? selectedProduct.images[0]
+                          : null
+                      }
                       alt={selectedProduct.name}
                       width={400}
                       height={400}
-                      fallbackSrc="/placeholder-product.jpg"
+                      fallbackSrc="/placeholder.png"
+                      fallbackType="service"
                       className="h-full w-full object-cover"
                     />
                   </div>

@@ -27,6 +27,7 @@ import api from "@/services/api";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "react-hot-toast";
+import { getCorrectBusinessId } from "@/lib/business-utils";
 
 interface AddServiceModalProps {
   isOpen: boolean;
@@ -65,20 +66,36 @@ export function AddServiceModal({
 
   // Get the correct business ID on component mount
   useEffect(() => {
-    const getCorrectBusinessId = async () => {
+    const fetchCorrectBusinessId = async () => {
       try {
-        const statusResponse = await api.get("/business/status");
-        const id = statusResponse.data.businessId;
-        console.log("Got correct business ID from status:", id);
-        setCorrectBusinessId(id);
-      } catch (statusError) {
-        console.error("Failed to get business status:", statusError);
-        // Continue with the provided businessId
+        console.log("Initial businessId from props:", businessId);
+
+        // Use the utility function to get the correct business ID
+        const id = await getCorrectBusinessId(businessId);
+        console.log("Got correct business ID:", id);
+
+        if (id && id !== businessId) {
+          console.log(`Updating businessId from ${businessId} to ${id}`);
+          setCorrectBusinessId(id);
+
+          // Store the correct business ID in localStorage for future use
+          if (typeof window !== "undefined") {
+            localStorage.setItem("correctBusinessId", id);
+            console.log("Stored correct business ID in localStorage:", id);
+          }
+        } else {
+          console.log("Using businessId from props:", businessId);
+          setCorrectBusinessId(businessId);
+        }
+      } catch (error) {
+        console.error("Failed to get correct business ID:", error);
+        console.log("Continuing with provided businessId:", businessId);
+        setCorrectBusinessId(businessId);
       }
     };
 
-    getCorrectBusinessId();
-  }, []);
+    fetchCorrectBusinessId();
+  }, [businessId]);
 
   // Appointment form
   const appointmentForm = useForm({
@@ -128,14 +145,30 @@ export function AddServiceModal({
     },
   });
 
+  // Update form values when correctBusinessId changes
+  useEffect(() => {
+    inPersonForm.setValue("businessId", correctBusinessId);
+    console.log("Updated in-person form businessId to:", correctBusinessId);
+  }, [correctBusinessId, inPersonForm]);
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      console.log("Image selected:", {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+      });
+
       const reader = new FileReader();
       reader.onloadend = () => {
-        setImagePreview(reader.result as string);
+        const result = reader.result as string;
+        console.log("Image preview generated, length:", result.length);
+        setImagePreview(result);
       };
       reader.readAsDataURL(file);
+    } else {
+      console.log("No image file selected or file selection canceled");
     }
   };
 
@@ -508,12 +541,13 @@ export function AddServiceModal({
 
         // First try the /businesses/services endpoint with minimal data
         try {
-          // For the /businesses/services endpoint, we only need these fields
-          // The backend will handle the serviceType field
+          // For the /businesses/services endpoint, we need these fields
+          // Explicitly include serviceType for in-person services
           const basicService = {
             name: data.name,
             description: data.description,
             price: Number(data.price),
+            serviceType: "in_person", // Explicitly set serviceType for in-person services
           };
 
           console.log(
@@ -579,8 +613,13 @@ export function AddServiceModal({
       formData.append("name", data.name);
       formData.append("description", data.description);
       formData.append("price", String(data.price));
+
       // The serviceType is required by the Service model schema for both endpoints
+      // This is critical - the backend will return a 500 error if this is missing
       formData.append("serviceType", "in_person");
+
+      // Log to confirm serviceType is being set
+      console.log("Setting serviceType to 'in_person' in FormData");
 
       // For the /services endpoint, we need these additional fields
       formData.append("businessId", data.businessId); // This should now have the correct ID

@@ -14,6 +14,7 @@ import { ServiceActions } from "./ServiceActions";
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
+import { FallbackImage } from "@/components/ui/fallback-image";
 
 interface ServiceCardProps {
   service: {
@@ -93,22 +94,18 @@ export function ServiceCard({
   return (
     <Card className="overflow-hidden">
       <div className="relative h-48 w-full">
-        {service.images && service.images.length > 0 ? (
-          <div className="h-full w-full relative">
-            <img
-              src={service.images[0]}
-              alt={service.name}
-              className="h-full w-full object-cover"
-              onError={(e) => {
-                e.currentTarget.src = "/placeholder-product.jpg";
-              }}
-            />
-          </div>
-        ) : (
-          <div className="h-full w-full bg-gray-200 flex items-center justify-center">
-            <span className="text-gray-400">No image</span>
-          </div>
-        )}
+        <FallbackImage
+          src={
+            service.images && service.images.length > 0
+              ? service.images[0]
+              : null
+          }
+          alt={service.name}
+          fallbackSrc="/placeholder.png"
+          fallbackType="service"
+          className="h-full w-full"
+          fill={true}
+        />
         <div className="absolute top-2 right-2">
           <Badge className="bg-orange-600">
             <div className="flex items-center">

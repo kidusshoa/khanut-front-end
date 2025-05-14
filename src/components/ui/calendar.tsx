@@ -7,43 +7,18 @@ import { DayPicker } from "react-day-picker";
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 
-// Add debugging
-const debug = (message: string, ...args: any[]) => {
-  console.log(`[Calendar] ${message}`, ...args);
-};
-
 export type CalendarProps = React.ComponentProps<typeof DayPicker>;
 
 function Calendar({
   className,
   classNames,
   showOutsideDays = true,
-  onSelect,
   ...props
 }: CalendarProps) {
-  // Add custom onSelect handler with debugging
-  const handleSelect = React.useCallback(
-    (date: Date | undefined) => {
-      debug("Date selected in Calendar component:", date);
-      if (onSelect) {
-        // Ensure we're passing a valid date object
-        if (date) {
-          const validDate = new Date(date);
-          debug("Passing valid date to parent:", validDate);
-          onSelect(validDate);
-        } else {
-          onSelect(date);
-        }
-      }
-    },
-    [onSelect]
-  );
-
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
       className={cn("p-3", className)}
-      onSelect={handleSelect}
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
         month: "space-y-4",

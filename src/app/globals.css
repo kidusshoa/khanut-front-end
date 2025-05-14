@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import react-day-picker styles */
+@import "react-day-picker/dist/style.css";
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -98,8 +101,6 @@
     animation: infinite-scroll 15s linear infinite;
   }
 }
-
-
 
 @layer base {
   * {

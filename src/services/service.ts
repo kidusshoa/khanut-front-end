@@ -1,5 +1,7 @@
 import { ServiceInput } from "@/lib/validations/service";
 import api from "./api";
+import { getAuthToken } from "@/lib/auth-utils";
+import { handleApiError } from "@/lib/api-utils";
 
 interface PaginationParams {
   page?: number;
@@ -55,10 +57,30 @@ export const serviceApi = {
     try {
       const { page = 1, limit = 10, sort, order, search, serviceType } = params;
 
+      // Check if we have a stored correct business ID
+      let correctBusinessId = businessId;
+      if (typeof window !== "undefined") {
+        const storedBusinessId = localStorage.getItem("correctBusinessId");
+        if (storedBusinessId) {
+          console.log(
+            "Using stored correct business ID for fetching services:",
+            storedBusinessId
+          );
+          correctBusinessId = storedBusinessId;
+        }
+      }
+
+      console.log(
+        "Fetching services for business ID:",
+        correctBusinessId,
+        "Original business ID:",
+        businessId
+      );
+
       // First try using the fetch API directly to our Next.js API route
       try {
         // Use the correct path format for the API route
-        let url = `/api/business/${businessId}/services?page=${page}&limit=${limit}`;
+        let url = `/api/business/${correctBusinessId}/services?page=${page}&limit=${limit}`;
 
         if (sort) url += `&sort=${sort}`;
         if (order) url += `&order=${order}`;
@@ -109,7 +131,7 @@ export const serviceApi = {
         // Try multiple endpoints to ensure we get the data
         try {
           // First try the services/business endpoint
-          let url = `/services/business/${businessId}?page=${page}&limit=${limit}`;
+          let url = `/services/business/${correctBusinessId}?page=${page}&limit=${limit}`;
 
           if (sort) url += `&sort=${sort}`;
           if (order) url += `&order=${order}`;
@@ -142,7 +164,7 @@ export const serviceApi = {
           );
 
           // Try alternative endpoint
-          let altUrl = `/businesses/${businessId}/services?page=${page}&limit=${limit}`;
+          let altUrl = `/businesses/${correctBusinessId}/services?page=${page}&limit=${limit}`;
 
           if (sort) altUrl += `&sort=${sort}`;
           if (order) altUrl += `&order=${order}`;
@@ -201,53 +223,125 @@ export const serviceApi = {
   ) => {
     try {
       const { page = 1, limit = 10, sort, order, search } = params;
+      const token = await getAuthToken();
 
-      // Try the primary endpoint first
-      try {
-        let url = `/services/business/${businessId}/type/${type}?page=${page}&limit=${limit}`;
-
-        if (sort) url += `&sort=${sort}`;
-        if (order) url += `&order=${order}`;
-        if (search) url += `&search=${search}`;
-
-        console.log("Trying primary endpoint for services by type:", url);
-        const response = await api.get(url);
-        console.log("Primary endpoint succeeded:", response.data);
-        return response.data;
-      } catch (primaryError) {
-        console.warn("Primary endpoint failed, trying fallback:", primaryError);
-
-        // Fallback: Get all services and filter by type
-        try {
-          // Use a direct API call as a fallback to avoid circular reference
-          console.log("Trying to get all services and filter by type");
-          const response = await api.get(`/services/business/${businessId}`);
-          const allServices = response.data;
-
-          if (Array.isArray(allServices)) {
-            // Filter the services by type
-            const filteredServices = allServices.filter(
-              (service) => service.serviceType === type
-            );
-            console.log(
-              `Filtered ${filteredServices.length} services of type ${type}`
-            );
-            return filteredServices;
-          } else {
-            console.warn(
-              "getBusinessServices did not return an array:",
-              allServices
-            );
-            return [];
-          }
-        } catch (fallbackError) {
-          console.error("Fallback also failed:", fallbackError);
-          throw fallbackError;
+      // Check if we have a stored correct business ID
+      let correctBusinessId = businessId;
+      if (typeof window !== "undefined") {
+        const storedBusinessId = localStorage.getItem("correctBusinessId");
+        if (storedBusinessId) {
+          console.log(
+            "Using stored correct business ID for fetching services by type:",
+            storedBusinessId
+          );
+          correctBusinessId = storedBusinessId;
         }
       }
+
+      console.log(
+        "Fetching services by type for business ID:",
+        correctBusinessId,
+        "Original business ID:",
+        businessId,
+        "Type:",
+        type
+      );
+
+      // Try multiple endpoints with proper error handling
+      const endpoints = [
+        // Primary endpoint
+        {
+          url: `/services/business/${correctBusinessId}/type/${type}?page=${page}&limit=${limit}${
+            sort ? `&sort=${sort}` : ""
+          }${order ? `&order=${order}` : ""}${
+            search ? `&search=${search}` : ""
+          }`,
+          name: "Primary endpoint",
+        },
+        // Fallback endpoint 1
+        {
+          url: `/services/business/${correctBusinessId}?serviceType=${type}&page=${page}&limit=${limit}${
+            sort ? `&sort=${sort}` : ""
+          }${order ? `&order=${order}` : ""}${
+            search ? `&search=${search}` : ""
+          }`,
+          name: "Fallback endpoint 1",
+        },
+        // Fallback endpoint 2
+        {
+          url: `/businesses/${correctBusinessId}/services?serviceType=${type}&page=${page}&limit=${limit}${
+            sort ? `&sort=${sort}` : ""
+          }${order ? `&order=${order}` : ""}${
+            search ? `&search=${search}` : ""
+          }`,
+          name: "Fallback endpoint 2",
+        },
+      ];
+
+      // Try each endpoint in sequence
+      for (const endpoint of endpoints) {
+        try {
+          console.log(`Trying ${endpoint.name}:`, endpoint.url);
+
+          const headers: Record<string, string> = {
+            "Content-Type": "application/json",
+          };
+
+          if (token) {
+            headers["Authorization"] = `Bearer ${token}`;
+          }
+
+          const response = await api.get(endpoint.url, { headers });
+          console.log(`${endpoint.name} succeeded:`, response.data);
+
+          if (Array.isArray(response.data)) {
+            return response.data;
+          } else if (
+            response.data &&
+            typeof response.data === "object" &&
+            Array.isArray(response.data.services)
+          ) {
+            return response.data.services;
+          } else {
+            console.warn(
+              `${endpoint.name} returned unexpected data format:`,
+              response.data
+            );
+            // Continue to next endpoint
+          }
+        } catch (error) {
+          handleApiError(error, `${endpoint.name} failed`);
+          // Continue to next endpoint
+        }
+      }
+
+      // Last resort: Get all services and filter by type
+      try {
+        console.log("Last resort: Getting all services and filtering by type");
+        const response = await api.get(
+          `/services/business/${correctBusinessId}`
+        );
+        const allServices = response.data;
+
+        if (Array.isArray(allServices)) {
+          const filteredServices = allServices.filter(
+            (service) => service.serviceType === type
+          );
+          console.log(
+            `Filtered ${filteredServices.length} services of type ${type}`
+          );
+          return filteredServices;
+        }
+      } catch (lastResortError) {
+        handleApiError(lastResortError, "Last resort failed");
+      }
+
+      // If all attempts fail, return empty array
+      console.warn("All endpoints failed, returning empty array");
+      return [];
     } catch (error) {
-      console.error("Error fetching services by type:", error);
-      throw error;
+      handleApiError(error, "Error fetching services by type");
+      return [];
     }
   },
 
@@ -268,12 +362,17 @@ export const serviceApi = {
         serviceData.get("description") as string
       );
       simplifiedData.append("price", serviceData.get("price") as string);
-      // Include serviceType for /businesses/services endpoint to ensure it's set correctly
-      if (serviceData.get("serviceType")) {
-        simplifiedData.append(
-          "serviceType",
-          serviceData.get("serviceType") as string
-        );
+
+      // ALWAYS include serviceType for /businesses/services endpoint to ensure it's set correctly
+      // This is required by the backend Service model
+      const serviceType = serviceData.get("serviceType") as string;
+      if (serviceType) {
+        simplifiedData.append("serviceType", serviceType);
+        console.log("Added serviceType to form data:", serviceType);
+      } else {
+        // Default to "appointment" if not specified to prevent errors
+        simplifiedData.append("serviceType", "appointment");
+        console.log("No serviceType found, defaulting to 'appointment'");
       }
 
       // Add images if any
@@ -291,14 +390,24 @@ export const serviceApi = {
           Object.fromEntries(simplifiedData.entries())
         );
 
+        // Log what we're sending to the API
+        console.log(
+          "Sending to /businesses/services with FormData:",
+          Object.fromEntries(simplifiedData.entries())
+        );
+
+        // Check if we have any File objects in the FormData
+        const hasFiles = Array.from(simplifiedData.entries()).some(
+          ([_, value]) => value instanceof File
+        );
+
+        // For files, we need to let the browser set the Content-Type with boundary
+        // Setting Content-Type manually can cause issues with file uploads
         const response = await api.post(
           `/businesses/services`,
           simplifiedData,
           {
-            headers: {
-              // Important: Don't set Content-Type for FormData with files
-              // Let the browser set it automatically with the correct boundary
-            },
+            headers: {}, // Let browser set Content-Type with boundary for files
           }
         );
         console.log(
@@ -315,11 +424,27 @@ export const serviceApi = {
         // Fallback to the /services endpoint
         console.log("Trying /services endpoint as fallback");
         try {
+          // Ensure serviceType is included in the FormData
+          if (!serviceData.has("serviceType")) {
+            console.log(
+              "Adding missing serviceType to FormData for /services endpoint"
+            );
+            serviceData.append("serviceType", "in_person");
+          }
+
+          // Log what we're sending to the API
+          console.log(
+            "Sending to /services with FormData:",
+            Object.fromEntries(serviceData.entries())
+          );
+
+          // Check if we have any File objects in the FormData
+          const hasFiles = Array.from(serviceData.entries()).some(
+            ([_, value]) => value instanceof File
+          );
+
           const response = await api.post(`/services`, serviceData, {
-            headers: {
-              // Important: Don't set Content-Type for FormData with files
-              // Let the browser set it automatically with the correct boundary
-            },
+            headers: {}, // Let browser set Content-Type with boundary for files
           });
           console.log("Success with /services endpoint:", response.data);
           return response.data;
@@ -344,10 +469,7 @@ export const serviceApi = {
       // Try the services endpoint first
       try {
         const response = await api.put(`/services/${serviceId}`, serviceData, {
-          headers: {
-            // Let the browser set the Content-Type with boundary
-            "Content-Type": undefined,
-          },
+          headers: {}, // Let browser set Content-Type with boundary for files
         });
         return response.data;
       } catch (servicesEndpointError) {
@@ -361,10 +483,7 @@ export const serviceApi = {
           `/businesses/services/${serviceId}`,
           serviceData,
           {
-            headers: {
-              // Let the browser set the Content-Type with boundary
-              "Content-Type": undefined,
-            },
+            headers: {}, // Let browser set Content-Type with boundary for files
           }
         );
         return response.data;

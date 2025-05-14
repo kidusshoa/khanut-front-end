@@ -13,10 +13,11 @@ import {
   Loader2,
   Eye,
 } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { DataTable } from "@/components/ui/data-table/DataTable";
+import { ServiceCard } from "@/components/business/ServiceCard";
 import { ColumnDef } from "@tanstack/react-table";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { serviceApi } from "@/services/service";
@@ -24,6 +25,7 @@ import { AddServiceModal } from "@/components/business/AddServiceModal";
 import { EditServiceModal } from "@/components/business/EditServiceModal";
 import { toast } from "react-hot-toast";
 import dayjs from "dayjs";
+import { getCorrectBusinessId } from "@/lib/business-utils";
 // Replaced date-fns with dayjs
 
 interface Service {
@@ -46,12 +48,19 @@ export default function BusinessServicesPage({
 }) {
   const [businessId, setBusinessId] = useState<string>("");
 
-  // Resolve params
+  // Resolve params and get correct business ID
   useEffect(() => {
     const resolveParams = async () => {
       try {
         const resolvedParams = await params;
-        setBusinessId(resolvedParams.businessId);
+        const urlBusinessId = resolvedParams.businessId;
+        console.log("URL business ID:", urlBusinessId);
+
+        // Get the correct business ID using the utility function
+        const correctId = await getCorrectBusinessId(urlBusinessId);
+        console.log("Correct business ID for services page:", correctId);
+
+        setBusinessId(correctId);
       } catch (error) {
         console.error("Error resolving params:", error);
       }
@@ -60,7 +69,7 @@ export default function BusinessServicesPage({
     resolveParams();
   }, [params]);
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("all");
+  // No longer using tabs, all services are shown
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -73,22 +82,14 @@ export default function BusinessServicesPage({
     error,
     refetch,
   } = useQuery({
-    queryKey: ["services", businessId, activeTab],
+    queryKey: ["services", businessId],
     queryFn: async () => {
       try {
-        console.log(
-          "Fetching services for business ID:",
-          businessId,
-          "with tab:",
-          activeTab
-        );
+        console.log("Fetching all services for business ID:", businessId);
 
         // First try to get all services using the direct API
         try {
-          // Add serviceType parameter if not "all"
-          const serviceTypeParam =
-            activeTab !== "all" ? `&serviceType=${activeTab}` : "";
-          const url = `/api/services/business/${businessId}?limit=100${serviceTypeParam}`;
+          const url = `/api/services/business/${businessId}?limit=100`;
 
           console.log("Trying direct API call to endpoint:", url);
           const response = await fetch(url, {
@@ -112,10 +113,7 @@ export default function BusinessServicesPage({
           );
 
           // Fallback to the serviceApi method
-          const params =
-            activeTab !== "all"
-              ? { serviceType: activeTab, limit: 100 }
-              : { limit: 100 };
+          const params = { limit: 100 };
           const data = await serviceApi.getBusinessServices(businessId, params);
           console.log("serviceApi.getBusinessServices succeeded:", data);
           return data;
@@ -330,17 +328,18 @@ export default function BusinessServicesPage({
     },
   ];
 
-  // Filter services based on active tab
+  // State for search functionality
+  const [searchTerm, setSearchTerm] = useState("");
+
+  // Filter services based on search term
   const filteredServices =
     services && Array.isArray(services)
-      ? activeTab === "all"
-        ? services
-        : services.filter((service: any) => {
-            console.log(
-              `Filtering service: ${service.name}, type: ${service.serviceType}, looking for: ${activeTab}`
-            );
-            return service.serviceType === activeTab;
-          })
+      ? services.filter(
+          (service) =>
+            searchTerm === "" ||
+            service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            service.description.toLowerCase().includes(searchTerm.toLowerCase())
+        )
       : [];
 
   // Log the filtered services for debugging
@@ -400,104 +399,68 @@ export default function BusinessServicesPage({
           </div>
         </div>
 
-        <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
-          <TabsList>
-            <TabsTrigger value="all">All Services</TabsTrigger>
-            <TabsTrigger
-              value="appointment"
-              className="flex items-center gap-1"
-            >
-              <Calendar className="h-4 w-4" />
-              <span className="hidden sm:inline">Appointments</span>
-            </TabsTrigger>
-            <TabsTrigger
-              value="product"
-              className={`flex items-center gap-1 ${
-                activeTab === "product" ? "bg-orange-100 text-orange-800" : ""
-              }`}
-            >
-              <ShoppingBag className="h-4 w-4" />
-              <span className="hidden sm:inline">Products</span>
-            </TabsTrigger>
-            <TabsTrigger value="in_person" className="flex items-center gap-1">
-              <MapPin className="h-4 w-4" />
-              <span className="hidden sm:inline">In-Person</span>
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value={activeTab} className="mt-6">
-            {isLoading ? (
-              <div className="flex justify-center items-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+        <div className="mt-6">
+          {isLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+            </div>
+          ) : isError ? (
+            <div className="text-center py-12 bg-red-50 rounded-lg">
+              <h3 className="text-lg font-medium text-red-800 mb-2">
+                Error loading services
+              </h3>
+              <p className="text-red-600 mb-6">
+                There was a problem loading your services. Please try again.
+              </p>
+              <Button
+                onClick={() => refetch()}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                Retry
+              </Button>
+            </div>
+          ) : filteredServices && filteredServices.length > 0 ? (
+            <div>
+              <div className="mb-4">
+                <Input
+                  placeholder="Search services..."
+                  className="max-w-sm"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
-            ) : isError ? (
-              <div className="text-center py-12 bg-red-50 rounded-lg">
-                <h3 className="text-lg font-medium text-red-800 mb-2">
-                  Error loading services
-                </h3>
-                <p className="text-red-600 mb-6">
-                  There was a problem loading your services. Please try again.
-                </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {filteredServices.map((service) => (
+                  <ServiceCard
+                    key={service._id}
+                    service={service}
+                    onDelete={() => handleDeleteService(service._id)}
+                    onEdit={() => handleEditService(service)}
+                    showActions={true}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-muted/50 rounded-lg">
+              <h3 className="text-lg font-medium text-foreground mb-2">
+                No services found
+              </h3>
+              <p className="text-muted-foreground mb-6">
+                You haven't added any services yet.
+              </p>
+              <div className="flex justify-center">
                 <Button
-                  onClick={() => refetch()}
-                  className="bg-red-600 hover:bg-red-700 text-white"
+                  onClick={handleAddService}
+                  className="bg-orange-600 hover:bg-orange-700"
                 >
-                  Retry
+                  <PlusCircle className="mr-2 h-4 w-4" />
+                  Add Your First Service
                 </Button>
               </div>
-            ) : filteredServices && filteredServices.length > 0 ? (
-              <DataTable
-                columns={columns}
-                data={filteredServices}
-                searchColumn="name"
-                searchPlaceholder="Search services..."
-              />
-            ) : (
-              <div className="text-center py-12 bg-muted/50 rounded-lg">
-                <h3 className="text-lg font-medium text-foreground mb-2">
-                  No services found
-                </h3>
-                <p className="text-muted-foreground mb-6">
-                  {activeTab === "all"
-                    ? "You haven't added any services yet."
-                    : `You haven't added any ${getServiceTypeLabel(
-                        activeTab
-                      ).toLowerCase()} services yet.`}
-                </p>
-                {activeTab === "product" && (
-                  <p className="text-sm text-blue-600 mb-4">
-                    <Button
-                      variant="link"
-                      className="text-blue-600 p-0 h-auto"
-                      onClick={() =>
-                        router.push(`/business/${businessId}/products`)
-                      }
-                    >
-                      Go to Products page
-                    </Button>{" "}
-                    to manage your products directly.
-                  </p>
-                )}
-                <div className="flex flex-col gap-4 items-center">
-                  <Button
-                    onClick={handleAddService}
-                    className="bg-orange-600 hover:bg-orange-700"
-                  >
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Add Your First Service
-                  </Button>
-                  <Button
-                    onClick={() => refetch()}
-                    variant="outline"
-                    className="text-gray-600"
-                  >
-                    Refresh Services List
-                  </Button>
-                </div>
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+            </div>
+          )}
+        </div>
       </div>
 
       {isAddModalOpen && (
@@ -506,9 +469,7 @@ export default function BusinessServicesPage({
           onClose={() => setIsAddModalOpen(false)}
           businessId={businessId}
           onServiceAdded={handleServiceAdded}
-          initialServiceType={
-            activeTab !== "all" ? (activeTab as any) : undefined
-          }
+          initialServiceType="appointment"
         />
       )}
 

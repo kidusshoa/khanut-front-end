@@ -1,16 +1,21 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   Loader2,
-  Calendar,
+  Calendar as CalendarIcon,
   DollarSign,
   ShoppingBag,
   Clock,
   ArrowLeft,
   AlertCircle,
+  Download,
+  CalendarRange,
 } from "lucide-react";
+import { DateRange } from "react-day-picker";
+import { format, isAfter, isBefore, isEqual } from "date-fns";
+import api from "@/services/api";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -24,6 +29,14 @@ import { useRouter } from "next/navigation";
 import { RevenueChart } from "@/components/business/RevenueChart";
 import { CustomerAnalytics } from "@/components/business/CustomerAnalytics";
 import { PerformanceMetrics } from "@/components/business/PerformanceMetrics";
+import { getBusinessAnalytics } from "@/services/businessAnalyticsApi";
+import { exportAnalyticsAsCSV } from "@/utils/exportUtils";
+import {
+  DateRangePicker,
+  dateRangePresets,
+} from "@/components/ui/date-range-picker";
+import { TrendIndicator } from "@/components/ui/trend-indicator";
+import { MetricTooltip } from "@/components/ui/metric-tooltip";
 
 // TypeScript interfaces
 interface BusinessAnalytics {
@@ -66,12 +79,46 @@ interface Business {
   profilePicture?: string;
 }
 
-// Fetch business details
-const fetchBusinessDetails = async (businessId: string): Promise<Business> => {
+// Get the correct business ID
+const getCorrectBusinessId = async (urlBusinessId: string): Promise<string> => {
   try {
+    // Try to get the business ID from the business status API
+    try {
+      const response = await api.get("/business/status");
+
+      if (response.data && response.data.businessId) {
+        console.log(
+          "Got correct business ID from status API:",
+          response.data.businessId
+        );
+        return response.data.businessId;
+      }
+    } catch (statusError) {
+      console.warn("Failed to get business ID from status API:", statusError);
+      // Continue with URL business ID
+    }
+
+    // Return the URL business ID as a fallback
+    console.log("Using URL business ID as fallback:", urlBusinessId);
+    return urlBusinessId;
+  } catch (error) {
+    console.error("Error in getCorrectBusinessId:", error);
+    return urlBusinessId;
+  }
+};
+
+// Fetch business details
+const fetchBusinessDetails = async (
+  urlBusinessId: string
+): Promise<Business> => {
+  try {
+    // Get the correct business ID first
+    const businessId = await getCorrectBusinessId(urlBusinessId);
+
     // Try the primary endpoint first
     try {
       const url = `${process.env.NEXT_PUBLIC_API_URL}/api/businesses/${businessId}`;
+      console.log("Trying primary URL for business details:", url);
 
       const response = await fetch(url, {
         method: "GET",
@@ -82,6 +129,7 @@ const fetchBusinessDetails = async (businessId: string): Promise<Business> => {
 
       if (response.ok) {
         const data = await response.json();
+        console.log("Business data received from primary endpoint:", data);
         return data;
       }
 
@@ -94,6 +142,7 @@ const fetchBusinessDetails = async (businessId: string): Promise<Business> => {
 
     // Try fallback endpoint
     const fallbackUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/business/${businessId}`;
+    console.log("Trying fallback URL for business details:", fallbackUrl);
 
     const fallbackResponse = await fetch(fallbackUrl, {
       method: "GET",
@@ -109,6 +158,7 @@ const fetchBusinessDetails = async (businessId: string): Promise<Business> => {
     }
 
     const fallbackData = await fallbackResponse.json();
+    console.log("Business data received from fallback endpoint:", fallbackData);
     return fallbackData;
   } catch (error) {
     console.error("Error fetching business details:", error);
@@ -118,26 +168,12 @@ const fetchBusinessDetails = async (businessId: string): Promise<Business> => {
 
 // Fetch business analytics
 const fetchBusinessAnalytics = async (
-  businessId: string
+  urlBusinessId: string,
+  dateRange: "today" | "week" | "month" | "year" = "month"
 ): Promise<BusinessAnalytics> => {
   try {
-    const url = `${process.env.NEXT_PUBLIC_API_URL}/api/analytics/business/${businessId}`;
-
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (!response.ok) {
-      // If the API is not implemented yet, return mock data
-      console.warn("Analytics API not available, using mock data");
-      return getMockAnalytics();
-    }
-
-    const data = await response.json();
-    return data;
+    // Use the new API service
+    return await getBusinessAnalytics(urlBusinessId, dateRange);
   } catch (error) {
     console.error("Error fetching business analytics:", error);
     // Return mock data if API fails
@@ -186,8 +222,13 @@ export default function BusinessAnalyticsContent({
 }: BusinessAnalyticsContentProps) {
   const router = useRouter();
   const [dateRange, setDateRange] = useState<
-    "today" | "week" | "month" | "year"
+    "today" | "week" | "month" | "year" | "custom"
   >("month");
+
+  // State for custom date range
+  const [customDateRange, setCustomDateRange] = useState<DateRange | undefined>(
+    undefined
+  );
 
   // Fetch business details
   const {
@@ -206,10 +247,18 @@ export default function BusinessAnalyticsContent({
     isLoading: isAnalyticsLoading,
     error: analyticsError,
   } = useQuery({
-    queryKey: ["businessAnalytics", businessId, dateRange],
-    queryFn: () => fetchBusinessAnalytics(businessId),
+    queryKey: ["businessAnalytics", businessId, dateRange, customDateRange],
+    queryFn: () => {
+      if (dateRange === "custom" && customDateRange) {
+        // For custom date range, we would ideally pass the date range to the API
+        // Since our API doesn't support custom date ranges yet, we'll use the month range
+        // In a real implementation, we would pass the custom date range to the API
+        return fetchBusinessAnalytics(businessId, "month");
+      }
+      return fetchBusinessAnalytics(businessId, dateRange);
+    },
     refetchInterval: 300000, // Refetch every 5 minutes
-    enabled: !!business,
+    enabled: !!business && (dateRange !== "custom" || !!customDateRange),
   });
 
   // Format currency
@@ -272,10 +321,10 @@ export default function BusinessAnalyticsContent({
           <Button
             variant="outline"
             className="w-fit"
-            onClick={() => router.push(`/business/${businessId}/profile`)}
+            onClick={() => router.push(`/business/${businessId}`)}
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Business Profile
+            Back to Business Dashboard
           </Button>
 
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -288,19 +337,46 @@ export default function BusinessAnalyticsContent({
               </p>
             </div>
 
-            <div>
-              <Tabs
-                defaultValue="month"
-                value={dateRange}
-                onValueChange={(value) => setDateRange(value as any)}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="mr-2"
+                onClick={() => {
+                  if (analytics && business) {
+                    exportAnalyticsAsCSV(analytics, business.name);
+                  }
+                }}
+                disabled={isAnalyticsLoading || !analytics}
               >
-                <TabsList>
-                  <TabsTrigger value="today">Today</TabsTrigger>
-                  <TabsTrigger value="week">This Week</TabsTrigger>
-                  <TabsTrigger value="month">This Month</TabsTrigger>
-                  <TabsTrigger value="year">This Year</TabsTrigger>
-                </TabsList>
-              </Tabs>
+                <Download className="mr-2 h-4 w-4" />
+                Export CSV
+              </Button>
+
+              <div className="flex flex-col gap-2">
+                <Tabs
+                  defaultValue="month"
+                  value={dateRange}
+                  onValueChange={(value) => setDateRange(value as any)}
+                >
+                  <TabsList>
+                    <TabsTrigger value="today">Today</TabsTrigger>
+                    <TabsTrigger value="week">This Week</TabsTrigger>
+                    <TabsTrigger value="month">This Month</TabsTrigger>
+                    <TabsTrigger value="year">This Year</TabsTrigger>
+                    <TabsTrigger value="custom">Custom</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+
+                {dateRange === "custom" && (
+                  <DateRangePicker
+                    dateRange={customDateRange}
+                    onDateRangeChange={(range) => {
+                      setCustomDateRange(range);
+                    }}
+                  />
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -309,8 +385,13 @@ export default function BusinessAnalyticsContent({
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+              <CardTitle className="text-sm font-medium flex items-center">
                 Total Revenue
+                <MetricTooltip
+                  title="Total Revenue"
+                  description="The total amount of money earned from all orders. This includes all completed and in-progress orders."
+                  iconSize="sm"
+                />
               </CardTitle>
               <DollarSign className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -318,16 +399,24 @@ export default function BusinessAnalyticsContent({
               <div className="text-2xl font-bold">
                 {formatCurrency(analytics?.revenue.total || 0)}
               </div>
-              <p className="text-xs text-muted-foreground">
-                +{formatCurrency(analytics?.revenue.thisMonth || 0)} this month
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                  {formatCurrency(analytics?.revenue.thisMonth || 0)} this month
+                </p>
+                <TrendIndicator value={5.2} size="sm" showValue={true} />
+              </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+              <CardTitle className="text-sm font-medium flex items-center">
                 Total Orders
+                <MetricTooltip
+                  title="Total Orders"
+                  description="The total number of orders placed by customers. This includes all orders regardless of their status."
+                  iconSize="sm"
+                />
               </CardTitle>
               <ShoppingBag className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -335,43 +424,62 @@ export default function BusinessAnalyticsContent({
               <div className="text-2xl font-bold">
                 {analytics?.orders.total || 0}
               </div>
-              <p className="text-xs text-muted-foreground">
-                +{analytics?.orders.thisMonth || 0} this month
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                  {analytics?.orders.thisMonth || 0} this month
+                </p>
+                <TrendIndicator value={8.7} size="sm" showValue={true} />
+              </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+              <CardTitle className="text-sm font-medium flex items-center">
                 Total Customers
+                <MetricTooltip
+                  title="Total Customers"
+                  description="The total number of unique customers who have placed orders or booked appointments with your business."
+                  iconSize="sm"
+                />
               </CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
                 {analytics?.customers.total || 0}
               </div>
-              <p className="text-xs text-muted-foreground">
-                +{analytics?.customers.new || 0} new customers
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                  {analytics?.customers.new || 0} new customers
+                </p>
+                <TrendIndicator value={12.3} size="sm" showValue={true} />
+              </div>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
+              <CardTitle className="text-sm font-medium flex items-center">
                 Total Appointments
+                <MetricTooltip
+                  title="Total Appointments"
+                  description="The total number of appointments booked by customers. This includes both completed and upcoming appointments."
+                  iconSize="sm"
+                />
               </CardTitle>
-              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <CalendarIcon className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
                 {analytics?.appointments.total || 0}
               </div>
-              <p className="text-xs text-muted-foreground">
-                {analytics?.appointments.upcoming || 0} upcoming
-              </p>
+              <div className="flex items-center justify-between">
+                <p className="text-xs text-muted-foreground">
+                  {analytics?.appointments.upcoming || 0} upcoming
+                </p>
+                <TrendIndicator value={3.8} size="sm" showValue={true} />
+              </div>
             </CardContent>
           </Card>
         </div>

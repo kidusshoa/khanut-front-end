@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   AreaChart,
   Area,
@@ -16,7 +16,9 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import dayjs from "dayjs";
+import { Loader2 } from "lucide-react";
+import { getRevenueChartData } from "@/services/businessAnalyticsApi";
+import { useParams } from "next/navigation";
 
 // TypeScript interfaces
 interface RevenueData {
@@ -32,63 +34,38 @@ interface RevenueChartProps {
 export function RevenueChart({
   dateRange,
 }: RevenueChartProps): React.ReactNode {
-  // Generate mock data based on date range
-  const generateMockData = (): RevenueData[] => {
-    const data: RevenueData[] = [];
+  const params = useParams();
+  const businessId = params.businessId as string;
+  const [chartData, setChartData] = useState<RevenueData[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-    if (dateRange === "today") {
-      // Hourly data for today
-      for (let i = 0; i < 24; i++) {
-        const hour = i < 10 ? `0${i}:00` : `${i}:00`;
-        data.push({
-          date: hour,
-          revenue: Math.floor(Math.random() * 500) + 50,
-          orders: Math.floor(Math.random() * 5) + 1,
-        });
-      }
-    } else if (dateRange === "week") {
-      // Daily data for the past week
-      for (let i = 6; i >= 0; i--) {
-        const date = dayjs().subtract(i, "day").toDate();
-        data.push({
-          date: dayjs(date).format("EEE"),
-          revenue: Math.floor(Math.random() * 2000) + 200,
-          orders: Math.floor(Math.random() * 15) + 3,
-        });
-      }
-    } else if (dateRange === "month") {
-      // Weekly data for the past month
-      for (let i = 0; i < 4; i++) {
-        const weekStart = dayjs()
-          .subtract(i * 7 + 6, "day")
-          .toDate();
-        const weekEnd = dayjs()
-          .subtract(i * 7, "day")
-          .toDate();
-        data.push({
-          date: `${dayjs(weekStart).format("MMM d")} - ${dayjs(weekEnd).format(
-            "MMM d"
-          )}`,
-          revenue: Math.floor(Math.random() * 8000) + 1000,
-          orders: Math.floor(Math.random() * 50) + 10,
-        });
-      }
-    } else if (dateRange === "year") {
-      // Monthly data for the past year
-      for (let i = 11; i >= 0; i--) {
-        const date = dayjs().subtract(i, "month").toDate();
-        data.push({
-          date: dayjs(date).format("MMM"),
-          revenue: Math.floor(Math.random() * 25000) + 5000,
-          orders: Math.floor(Math.random() * 200) + 50,
-        });
-      }
-    }
+  useEffect(() => {
+    const fetchRevenueData = async () => {
+      setIsLoading(true);
+      try {
+        const response = await getRevenueChartData(businessId, dateRange);
 
-    return data;
-  };
+        // Transform the data to match our component's expected format
+        const transformedData = response.labels.map((label, index) => ({
+          date: label,
+          revenue: response.datasets[0].data[index] || 0,
+          orders: response.datasets[1]
+            ? response.datasets[1].data[index] || 0
+            : 0,
+        }));
 
-  const data = generateMockData();
+        setChartData(transformedData);
+      } catch (error) {
+        console.error("Failed to fetch revenue data:", error);
+        // Set empty data on error
+        setChartData([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRevenueData();
+  }, [businessId, dateRange]);
 
   // Format currency for tooltip
   const formatCurrency = (value: number): string => {
@@ -128,55 +105,68 @@ export function RevenueChart({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart
-              data={data}
-              margin={{
-                top: 10,
-                right: 30,
-                left: 0,
-                bottom: 0,
-              }}
-            >
-              <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
-              <XAxis dataKey="date" tick={{ fontSize: 12 }} tickMargin={10} />
-              <YAxis
-                yAxisId="left"
-                tick={{ fontSize: 12 }}
-                tickFormatter={(value) => `${value.toLocaleString()}`}
-                tickMargin={10}
-              />
-              <YAxis
-                yAxisId="right"
-                orientation="right"
-                tick={{ fontSize: 12 }}
-                tickMargin={10}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Legend />
-              <Area
-                yAxisId="left"
-                type="monotone"
-                dataKey="revenue"
-                name="Revenue (ETB)"
-                stroke="#f97316"
-                fill="#fdba74"
-                fillOpacity={0.3}
-                activeDot={{ r: 8 }}
-              />
-              <Area
-                yAxisId="right"
-                type="monotone"
-                dataKey="orders"
-                name="Orders"
-                stroke="#3b82f6"
-                fill="#93c5fd"
-                fillOpacity={0.3}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
+        {isLoading ? (
+          <div className="h-[300px] flex items-center justify-center">
+            <div className="flex flex-col items-center gap-2">
+              <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
+              <p className="text-muted-foreground">Loading revenue data...</p>
+            </div>
+          </div>
+        ) : chartData.length === 0 ? (
+          <div className="h-[300px] flex items-center justify-center">
+            <p className="text-muted-foreground">No revenue data available</p>
+          </div>
+        ) : (
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={chartData}
+                margin={{
+                  top: 10,
+                  right: 30,
+                  left: 0,
+                  bottom: 0,
+                }}
+              >
+                <CartesianGrid strokeDasharray="3 3" opacity={0.2} />
+                <XAxis dataKey="date" tick={{ fontSize: 12 }} tickMargin={10} />
+                <YAxis
+                  yAxisId="left"
+                  tick={{ fontSize: 12 }}
+                  tickFormatter={(value) => `${value.toLocaleString()}`}
+                  tickMargin={10}
+                />
+                <YAxis
+                  yAxisId="right"
+                  orientation="right"
+                  tick={{ fontSize: 12 }}
+                  tickMargin={10}
+                />
+                <Tooltip content={<CustomTooltip />} />
+                <Legend />
+                <Area
+                  yAxisId="left"
+                  type="monotone"
+                  dataKey="revenue"
+                  name="Revenue (ETB)"
+                  stroke="#f97316"
+                  fill="#fdba74"
+                  fillOpacity={0.3}
+                  activeDot={{ r: 8 }}
+                />
+                <Area
+                  yAxisId="right"
+                  type="monotone"
+                  dataKey="orders"
+                  name="Orders"
+                  stroke="#3b82f6"
+                  fill="#93c5fd"
+                  fillOpacity={0.3}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

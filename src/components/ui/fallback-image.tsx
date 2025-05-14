@@ -13,6 +13,7 @@ interface FallbackImageProps {
   height?: number;
   fallbackType?: "business" | "user" | "service";
   fallbackClassName?: string;
+  fallbackSrc?: string; // Add fallbackSrc prop
   fill?: boolean;
 }
 
@@ -24,12 +25,29 @@ export function FallbackImage({
   height,
   fallbackType = "business",
   fallbackClassName,
+  fallbackSrc,
   fill = false,
 }: FallbackImageProps) {
   const [error, setError] = useState(false);
 
   // If no src or error loading image, show fallback
   if (!src || error) {
+    // If fallbackSrc is provided, use it instead of the icon
+    if (fallbackSrc) {
+      return (
+        <div className={cn("relative", className)} style={{ width, height }}>
+          <img
+            src={fallbackSrc}
+            alt={alt}
+            className="object-cover w-full h-full"
+            width={width || 100}
+            height={height || 100}
+          />
+        </div>
+      );
+    }
+
+    // Otherwise use the icon fallback
     const FallbackIcon =
       fallbackType === "user"
         ? User

@@ -13,6 +13,7 @@ import {
   Loader2,
   Eye,
   CalendarDays,
+  Plus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +35,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { AddAppointmentModal } from "@/components/business/AddAppointmentModal";
 
 // Extend dayjs plugins
 dayjs.extend(isToday);
@@ -72,6 +74,7 @@ export default function BusinessAppointmentsClient({ businessId }: Props) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState("all");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const {
     data: appointments,
@@ -322,42 +325,51 @@ export default function BusinessAppointmentsClient({ businessId }: Props) {
               Manage your customer appointments and bookings.
             </p>
           </div>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button variant="outline" className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4" />
-                {selectedDate
-                  ? dayjs(selectedDate).format("MMM D, YYYY")
-                  : "Filter by date"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="end">
-              <CalendarComponent
-                mode="single"
-                selected={selectedDate}
-                onSelect={(date) => {
-                  console.log(
-                    "Date selected in BusinessAppointmentClient:",
-                    date
-                  );
-                  setSelectedDate(date);
-                }}
-                initialFocus
-              />
-              {selectedDate && (
-                <div className="p-3 border-t border-border">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedDate(undefined)}
-                    className="w-full"
-                  >
-                    Clear date filter
-                  </Button>
-                </div>
-              )}
-            </PopoverContent>
-          </Popover>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setIsAddModalOpen(true)}
+              className="bg-orange-600 hover:bg-orange-700 text-white"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Add Appointment
+            </Button>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <CalendarDays className="h-4 w-4" />
+                  {selectedDate
+                    ? dayjs(selectedDate).format("MMM D, YYYY")
+                    : "Filter by date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <CalendarComponent
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => {
+                    console.log(
+                      "Date selected in BusinessAppointmentClient:",
+                      date
+                    );
+                    setSelectedDate(date);
+                  }}
+                  initialFocus
+                />
+                {selectedDate && (
+                  <div className="p-3 border-t border-border">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedDate(undefined)}
+                      className="w-full"
+                    >
+                      Clear date filter
+                    </Button>
+                  </div>
+                )}
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
 
         <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
@@ -408,6 +420,18 @@ export default function BusinessAppointmentsClient({ businessId }: Props) {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Add Appointment Modal */}
+      <AddAppointmentModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        businessId={businessId}
+        onAppointmentAdded={(appointment) => {
+          toast.success("Appointment added successfully!");
+          refetch(); // Refresh the appointments list
+          setIsAddModalOpen(false);
+        }}
+      />
     </DashboardLayout>
   );
 }
