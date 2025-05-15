@@ -198,7 +198,7 @@ export function AppointmentDetailsModal({
               <CalendarClock className="h-5 w-5 text-muted-foreground" />
               <div>
                 <div className="font-medium">
-                  {dayjs(appointmentDate).format("EEEE, MMMM d, yyyy")}
+                  {dayjs(appointmentDate).format("dddd, MMMM D, YYYY")}
                 </div>
                 <div className="text-sm text-muted-foreground">
                   {dayjs(appointmentDate).format("h:mm A")}

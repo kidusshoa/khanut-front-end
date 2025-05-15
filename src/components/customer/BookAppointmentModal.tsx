@@ -238,7 +238,7 @@ export function BookAppointmentModal({
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {selectedDate
-                    ? dayjs(selectedDate).format("PPP")
+                    ? dayjs(selectedDate).format("MMMM D, YYYY")
                     : "Select a date"}
                 </Button>
               </PopoverTrigger>

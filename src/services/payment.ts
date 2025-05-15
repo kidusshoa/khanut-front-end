@@ -18,7 +18,13 @@ export const paymentApi = {
   // Initialize payment for an order
   initializeOrderPayment: async (orderId: string, paymentData: any = {}) => {
     try {
+      console.log(`Initializing payment for order: ${orderId}`);
       const token = await getAuthToken();
+
+      if (!token) {
+        console.error("No auth token available for payment initialization");
+        throw new Error("Authentication required for payment");
+      }
 
       const response = await fetch(
         `${API_URL}/api/payments/order/${orderId}/initialize`,
@@ -32,12 +38,35 @@ export const paymentApi = {
         }
       );
 
+      // If the server returns an error
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to initialize payment");
+        console.warn(`Payment service returned error: ${response.status}`);
+
+        // Try to parse the error response
+        let errorMessage = "Failed to initialize payment";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+          console.error("Could not parse error response:", parseError);
+          // If we can't parse the response, use the status text
+          errorMessage = `Payment error: ${response.status} ${response.statusText}`;
+        }
+
+        throw new Error(errorMessage);
       }
 
-      return response.json();
+      const data = await response.json();
+      console.log("Payment initialization successful:", data);
+
+      // Format the response to match what ChapaPaymentButton expects
+      return {
+        success: true,
+        data: {
+          checkout_url: data.checkoutUrl || data.data?.checkout_url,
+          tx_ref: data.txRef || data.data?.tx_ref,
+        },
+      };
     } catch (error) {
       console.error("Error initializing order payment:", error);
       throw error;
@@ -50,7 +79,13 @@ export const paymentApi = {
     paymentData: any = {}
   ) => {
     try {
+      console.log(`Initializing payment for appointment: ${appointmentId}`);
       const token = await getAuthToken();
+
+      if (!token) {
+        console.error("No auth token available for payment initialization");
+        throw new Error("Authentication required for payment");
+      }
 
       const response = await fetch(
         `${API_URL}/api/payments/appointment/${appointmentId}/initialize`,
@@ -64,12 +99,35 @@ export const paymentApi = {
         }
       );
 
+      // If the server returns an error
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to initialize payment");
+        console.warn(`Payment service returned error: ${response.status}`);
+
+        // Try to parse the error response
+        let errorMessage = "Failed to initialize payment";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (parseError) {
+          console.error("Could not parse error response:", parseError);
+          // If we can't parse the response, use the status text
+          errorMessage = `Payment error: ${response.status} ${response.statusText}`;
+        }
+
+        throw new Error(errorMessage);
       }
 
-      return response.json();
+      const data = await response.json();
+      console.log("Payment initialization successful:", data);
+
+      // Format the response to match what ChapaPaymentButton expects
+      return {
+        success: true,
+        data: {
+          checkout_url: data.checkoutUrl || data.data?.checkout_url,
+          tx_ref: data.txRef || data.data?.tx_ref,
+        },
+      };
     } catch (error) {
       console.error("Error initializing appointment payment:", error);
       throw error;

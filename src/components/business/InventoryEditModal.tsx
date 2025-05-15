@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +13,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Package, Plus, Minus } from "lucide-react";
+import { Package, Plus, Minus, AlertCircle } from "lucide-react";
+import {
+  inventoryUpdateSchema,
+  InventoryUpdateInput,
+} from "@/lib/validations/inventory";
 
 interface Product {
   _id: string;
@@ -39,40 +45,55 @@ export function InventoryEditModal({
   product,
   onUpdate,
 }: InventoryEditModalProps) {
-  const [inventory, setInventory] = useState(product.inventory);
-  const [reason, setReason] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
-  // Handle inventory change
-  const handleInventoryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseInt(e.target.value);
-    if (!isNaN(value) && value >= 0) {
-      setInventory(value);
-    }
-  };
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    formState: { errors },
+  } = useForm<InventoryUpdateInput>({
+    resolver: zodResolver(inventoryUpdateSchema),
+    defaultValues: {
+      inventory: product.inventory,
+      reason: "",
+    },
+  });
+
+  // Get the current inventory value from the form
+  const inventory = watch("inventory");
 
   // Increase inventory
   const increaseInventory = () => {
-    setInventory(inventory + 1);
+    setValue("inventory", inventory + 1);
   };
 
   // Decrease inventory
   const decreaseInventory = () => {
     if (inventory > 0) {
-      setInventory(inventory - 1);
+      setValue("inventory", inventory - 1);
+    }
+  };
+
+  // Handle inventory change manually to ensure it's a valid number
+  const handleInventoryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value) && value >= 0) {
+      setValue("inventory", value);
     }
   };
 
   // Handle update
-  const handleUpdate = async () => {
-    if (inventory === product.inventory) {
+  const onSubmit = async (data: InventoryUpdateInput) => {
+    if (data.inventory === product.inventory) {
       onClose();
       return;
     }
 
     try {
       setIsUpdating(true);
-      await onUpdate(product._id, inventory, reason);
+      await onUpdate(product._id, data.inventory, data.reason);
       onClose();
     } catch (error) {
       console.error("Failed to update inventory:", error);
@@ -91,7 +112,7 @@ export function InventoryEditModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-6 mt-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 mt-4">
           {/* Product Information */}
           <div className="flex items-center gap-3">
             <div className="h-16 w-16 rounded-md overflow-hidden bg-muted flex-shrink-0">
@@ -147,6 +168,12 @@ export function InventoryEditModal({
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
+            {errors.inventory && (
+              <div className="flex items-center text-red-500 text-sm mt-1">
+                <AlertCircle className="h-4 w-4 mr-1" />
+                <span>{errors.inventory.message}</span>
+              </div>
+            )}
           </div>
 
           {/* Reason Input */}
@@ -155,8 +182,7 @@ export function InventoryEditModal({
             <Input
               id="reason"
               placeholder="e.g., New shipment, Inventory correction"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
+              {...register("reason")}
             />
           </div>
 
@@ -187,19 +213,19 @@ export function InventoryEditModal({
               </span>
             </div>
           </div>
-        </div>
 
-        <DialogFooter className="mt-6">
-          <Button variant="outline" onClick={onClose}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleUpdate}
-            disabled={isUpdating || inventory === product.inventory}
-          >
-            Update Inventory
-          </Button>
-        </DialogFooter>
+          <DialogFooter className="mt-6">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={isUpdating || inventory === product.inventory}
+            >
+              Update Inventory
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );

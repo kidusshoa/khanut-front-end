@@ -102,7 +102,10 @@ export function AddAppointmentModal({
   const fetchServices = async () => {
     try {
       setIsLoadingServices(true);
-      const servicesData = await serviceApi.getServicesByType(businessId, "appointment");
+      const servicesData = await serviceApi.getServicesByType(
+        businessId,
+        "appointment"
+      );
       setServices(servicesData);
     } catch (error) {
       console.error("Error fetching services:", error);
@@ -271,7 +274,8 @@ export function AddAppointmentModal({
                 ) : services.length > 0 ? (
                   services.map((service) => (
                     <SelectItem key={service._id} value={service._id}>
-                      {service.name} - {new Intl.NumberFormat("en-US", {
+                      {service.name} -{" "}
+                      {new Intl.NumberFormat("en-US", {
                         style: "currency",
                         currency: "ETB",
                       }).format(service.price)}
@@ -337,7 +341,7 @@ export function AddAppointmentModal({
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {selectedDate
-                    ? dayjs(selectedDate).format("PPP")
+                    ? dayjs(selectedDate).format("MMMM D, YYYY")
                     : "Select a date"}
                 </Button>
               </PopoverTrigger>
@@ -407,7 +411,9 @@ export function AddAppointmentModal({
           </div>
 
           <div>
-            <Label htmlFor="appointment-image">Appointment Image (Optional)</Label>
+            <Label htmlFor="appointment-image">
+              Appointment Image (Optional)
+            </Label>
             <Input
               id="appointment-image"
               type="file"
@@ -442,7 +448,12 @@ export function AddAppointmentModal({
             </Button>
             <Button
               type="submit"
-              disabled={isSubmitting || !watch("startTime") || !watch("serviceId") || !watch("customerId")}
+              disabled={
+                isSubmitting ||
+                !watch("startTime") ||
+                !watch("serviceId") ||
+                !watch("customerId")
+              }
             >
               {isSubmitting ? (
                 <>
@@ -458,3 +469,4 @@ export function AddAppointmentModal({
       </DialogContent>
     </Dialog>
   );
+}

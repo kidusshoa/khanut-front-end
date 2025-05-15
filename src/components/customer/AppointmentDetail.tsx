@@ -16,6 +16,7 @@ import {
   ExternalLink,
   Pencil,
 } from "lucide-react";
+import { ChapaPaymentButton } from "@/components/payment/ChapaPaymentButton";
 import dayjs from "dayjs";
 // Replaced date-fns with dayjs
 import {
@@ -63,7 +64,7 @@ export function AppointmentDetail({
   const formatDate = (dateString: string) => {
     try {
       const date = dayjs(dateString);
-      return dayjs(date).format("PPP");
+      return dayjs(date).format("MMMM D, YYYY");
     } catch (error) {
       return "Invalid date";
     }
@@ -139,19 +140,34 @@ export function AppointmentDetail({
   const handlePayment = async () => {
     try {
       setIsLoading(true);
+      console.log("Initializing payment for appointment:", appointment._id);
+
       const response = await paymentApi.initializeAppointmentPayment(
         appointment._id
       );
 
-      if (response.data?.checkout_url) {
+      console.log("Payment initialization response:", response);
+
+      // Check for checkout_url in different possible response formats
+      const checkoutUrl =
+        response.checkoutUrl ||
+        response.data?.checkout_url ||
+        response.data?.checkoutUrl;
+
+      if (checkoutUrl) {
+        console.log("Redirecting to checkout URL:", checkoutUrl);
         // Redirect to Chapa checkout
-        window.location.href = response.data.checkout_url;
+        window.location.href = checkoutUrl;
       } else {
-        toast.error("Failed to initialize payment");
+        console.error("No checkout URL found in response:", response);
+        toast.error("Failed to initialize payment: No checkout URL provided");
       }
     } catch (error) {
       console.error("Payment error:", error);
-      toast.error("Failed to process payment");
+      toast.error(
+        "Failed to process payment: " +
+          (error instanceof Error ? error.message : "Unknown error")
+      );
     } finally {
       setIsLoading(false);
     }
@@ -161,16 +177,52 @@ export function AppointmentDetail({
   const handleCancelAppointment = async () => {
     try {
       setIsLoading(true);
-      await appointmentApi.updateAppointmentStatus(
-        appointment._id,
-        "cancelled"
-      );
+      console.log("Cancelling appointment:", appointment._id);
+
+      // Make sure we have a valid appointment ID
+      if (!appointment._id) {
+        throw new Error("Invalid appointment ID");
+      }
+
+      // Add the reason if provided
+      const payload = cancelReason ? { reason: cancelReason } : undefined;
+
+      // First try to use the cancelAppointment method if it exists
+      try {
+        if (typeof appointmentApi.cancelAppointment === "function") {
+          await appointmentApi.cancelAppointment(appointment._id, payload);
+        } else {
+          // Fall back to updateAppointmentStatus
+          await appointmentApi.updateAppointmentStatus(
+            appointment._id,
+            "cancelled"
+          );
+        }
+      } catch (innerError) {
+        console.error(
+          "First cancellation method failed, trying alternative:",
+          innerError
+        );
+        // If the first method fails, try the alternative
+        await appointmentApi.updateAppointmentStatus(
+          appointment._id,
+          "cancelled"
+        );
+      }
+
       toast.success("Appointment cancelled successfully");
       setShowCancelDialog(false);
+
+      // Update the appointment status locally to avoid needing a refresh
+      appointment.status = "cancelled";
+
       if (onAppointmentUpdate) onAppointmentUpdate();
     } catch (error) {
       console.error("Cancel appointment error:", error);
-      toast.error("Failed to cancel appointment");
+      toast.error(
+        "Failed to cancel appointment: " +
+          (error instanceof Error ? error.message : "Unknown error")
+      );
     } finally {
       setIsLoading(false);
     }
@@ -353,13 +405,32 @@ export function AppointmentDetail({
 
       <CardFooter className="flex flex-col sm:flex-row gap-3 pt-0">
         {needsPayment && (
-          <Button
+          <ChapaPaymentButton
+            appointmentId={appointment._id}
+            amount={getServicePrice()}
+            customerEmail={
+              typeof appointment.customerId === "string"
+                ? ""
+                : appointment.customerId.email || ""
+            }
+            customerName={
+              typeof appointment.customerId === "string"
+                ? "Customer"
+                : appointment.customerId.name || "Customer"
+            }
             className="w-full sm:w-auto bg-orange-600 hover:bg-orange-700"
-            onClick={handlePayment}
-            disabled={isLoading}
-          >
-            {isLoading ? "Processing..." : "Pay Now"}
-          </Button>
+            onSuccess={(txRef) => {
+              toast.success("Payment initiated successfully!");
+              console.log(
+                "Payment initiated with transaction reference:",
+                txRef
+              );
+            }}
+            onError={(error) => {
+              toast.error("Payment initialization failed. Please try again.");
+              console.error("Payment error:", error);
+            }}
+          />
         )}
 
         {isUpcoming() && appointment.status === "confirmed" && (

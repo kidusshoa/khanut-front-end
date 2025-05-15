@@ -453,7 +453,7 @@ export function EnhancedBookAppointmentModal({
                                 >
                                   <CalendarIcon className="mr-2 h-4 w-4" />
                                   {selectedDate
-                                    ? dayjs(selectedDate).format("PPP")
+                                    ? dayjs(selectedDate).format("MMMM D, YYYY")
                                     : "Select a date"}
                                 </Button>
                               </FormControl>
@@ -739,7 +739,7 @@ export function EnhancedBookAppointmentModal({
                               <CalendarIcon className="h-4 w-4 text-orange-600 dark:text-orange-300" />
                             </div>
                             <span>
-                              {dayjs(date).format("EEEE, MMMM d, yyyy")}
+                              {dayjs(date).format("dddd, MMMM D, YYYY")}
                             </span>
                           </div>
                         ))}

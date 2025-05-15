@@ -6,27 +6,67 @@ import { FaSave, FaUserPlus } from "react-icons/fa";
 import { toast } from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import Cookies from "js-cookie";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import {
+  AdminSettingsInput,
+  AdminPasswordChangeInput,
+  NewAdminInput,
+  adminSettingsSchema,
+  adminPasswordChangeSchema,
+  newAdminSchema,
+} from "@/lib/validations/admin";
 
 export default function SettingsPage() {
   const router = useRouter();
-
-  const [form, setForm] = useState({
-    name: "",
-    email: "",
-    notify: false,
-    twoFactorAuth: false,
-  });
-  const [passwordForm, setPasswordForm] = useState({
-    oldPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
   const [saving, setSaving] = useState(false);
   const [isAddAdminOpen, setIsAddAdminOpen] = useState(false);
-  const [newAdmin, setNewAdmin] = useState({
-    name: "",
-    email: "",
-    password: "",
+
+  // Settings form
+  const {
+    register: registerSettings,
+    handleSubmit: handleSettingsSubmit,
+    formState: { errors: settingsErrors },
+    setValue: setSettingsValue,
+    reset: resetSettings,
+  } = useForm<AdminSettingsInput>({
+    resolver: zodResolver(adminSettingsSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      notify: false,
+      twoFactorAuth: false,
+    },
+  });
+
+  // Password change form
+  const {
+    register: registerPassword,
+    handleSubmit: handlePasswordSubmit,
+    formState: { errors: passwordErrors },
+    reset: resetPassword,
+  } = useForm<AdminPasswordChangeInput>({
+    resolver: zodResolver(adminPasswordChangeSchema),
+    defaultValues: {
+      oldPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
+  });
+
+  // New admin form
+  const {
+    register: registerNewAdmin,
+    handleSubmit: handleNewAdminSubmit,
+    formState: { errors: newAdminErrors },
+    reset: resetNewAdmin,
+  } = useForm<NewAdminInput>({
+    resolver: zodResolver(newAdminSchema),
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+    },
   });
 
   useEffect(() => {
@@ -53,35 +93,20 @@ export default function SettingsPage() {
         }
 
         const data = await res.json();
-        setForm({
-          name: data.name || "",
-          email: data.email || "",
-          notify: data.notificationsEnabled || false,
-          twoFactorAuth: data.twoFactorEnabled || false,
-        });
+        // Update form values using setValue
+        setSettingsValue("name", data.name || "");
+        setSettingsValue("email", data.email || "");
+        setSettingsValue("notify", data.notificationsEnabled || false);
+        setSettingsValue("twoFactorAuth", data.twoFactorEnabled || false);
       } catch (error) {
         console.error("Error fetching settings:", error);
         toast.error("Failed to load settings ❌");
       }
     }
     fetchSettings();
-  }, [router]);
+  }, [router, setSettingsValue]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
-  };
-
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setPasswordForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const onSettingsSubmit = async (data: AdminSettingsInput) => {
     setSaving(true);
 
     try {
@@ -92,28 +117,7 @@ export default function SettingsPage() {
         return;
       }
 
-      // Prepare the data for the API
-      const updateData = {
-        name: form.name,
-        // Only include password fields if they are filled
-        ...(passwordForm.oldPassword && passwordForm.newPassword
-          ? {
-              currentPassword: passwordForm.oldPassword,
-              newPassword: passwordForm.newPassword,
-            }
-          : {}),
-      };
-
-      // Validate password match if changing password
-      if (
-        passwordForm.newPassword &&
-        passwordForm.newPassword !== passwordForm.confirmPassword
-      ) {
-        toast.error("New passwords don't match ❌");
-        setSaving(false);
-        return;
-      }
-
+      // Make the API call
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/api/admin/settings/profile`,
         {
@@ -122,7 +126,12 @@ export default function SettingsPage() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${accessToken}`,
           },
-          body: JSON.stringify(updateData),
+          body: JSON.stringify({
+            name: data.name,
+            email: data.email,
+            notificationsEnabled: data.notify,
+            twoFactorEnabled: data.twoFactorAuth,
+          }),
         }
       );
 
@@ -131,16 +140,7 @@ export default function SettingsPage() {
         throw new Error(errorData.message || "Failed to save settings");
       }
 
-      // Reset password fields after successful update
-      if (passwordForm.newPassword) {
-        setPasswordForm({
-          oldPassword: "",
-          newPassword: "",
-          confirmPassword: "",
-        });
-      }
-
-      toast.success("Settings saved ✅");
+      toast.success("Settings saved successfully ✅");
     } catch (error) {
       console.error("Error saving settings:", error);
       toast.error(
@@ -151,7 +151,9 @@ export default function SettingsPage() {
     }
   };
 
-  const handleAddAdmin = async () => {
+  const onPasswordSubmit = async (data: AdminPasswordChangeInput) => {
+    setSaving(true);
+
     try {
       const accessToken = Cookies.get("client-token");
 
@@ -160,9 +162,45 @@ export default function SettingsPage() {
         return;
       }
 
-      // Validate inputs
-      if (!newAdmin.name || !newAdmin.email || !newAdmin.password) {
-        toast.error("All fields are required ❌");
+      // Make the API call
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/admin/settings/password`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            currentPassword: data.oldPassword,
+            newPassword: data.newPassword,
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to update password");
+      }
+
+      toast.success("Password updated successfully ✅");
+      resetPassword(); // Reset password fields
+    } catch (error) {
+      console.error("Error updating password:", error);
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update password ❌"
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const onNewAdminSubmit = async (data: NewAdminInput) => {
+    try {
+      const accessToken = Cookies.get("client-token");
+
+      if (!accessToken) {
+        router.push("/login");
         return;
       }
 
@@ -174,7 +212,7 @@ export default function SettingsPage() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${accessToken}`,
           },
-          body: JSON.stringify(newAdmin),
+          body: JSON.stringify(data),
         }
       );
 
@@ -183,8 +221,8 @@ export default function SettingsPage() {
         throw new Error(errorData.message || "Failed to add admin");
       }
 
-      toast.success("New admin added ✅");
-      setNewAdmin({ name: "", email: "", password: "" });
+      toast.success("New admin added successfully ✅");
+      resetNewAdmin(); // Reset form fields
       setIsAddAdminOpen(false);
     } catch (error) {
       console.error("Error adding admin:", error);
@@ -207,38 +245,43 @@ export default function SettingsPage() {
       </div>
 
       <form
-        onSubmit={handleSubmit}
+        onSubmit={handleSettingsSubmit(onSettingsSubmit)}
         className="bg-white rounded-lg shadow p-6 space-y-6"
       >
         <div>
           <label className="block text-sm font-medium mb-1">Name</label>
           <input
             type="text"
-            name="name"
-            value={form.name}
-            onChange={handleChange}
+            {...registerSettings("name")}
             className="w-full border rounded px-3 py-2 text-sm"
           />
+          {settingsErrors.name && (
+            <p className="text-red-500 text-xs mt-1">
+              {settingsErrors.name.message}
+            </p>
+          )}
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-1">Email</label>
           <input
             type="email"
-            name="email"
-            value={form.email}
-            onChange={handleChange}
+            {...registerSettings("email")}
             className="w-full border rounded px-3 py-2 text-sm"
           />
+          {settingsErrors.email && (
+            <p className="text-red-500 text-xs mt-1">
+              {settingsErrors.email.message}
+            </p>
+          )}
         </div>
 
         <div>
           <label className="inline-flex items-center gap-2">
             <input
               type="checkbox"
-              name="notify"
-              checked={form.notify}
-              onChange={handleChange}
+              {...registerSettings("notify")}
+              className="rounded"
             />
             Receive activity notifications
           </label>
@@ -248,44 +291,11 @@ export default function SettingsPage() {
           <label className="inline-flex items-center gap-2">
             <input
               type="checkbox"
-              name="twoFactorAuth"
-              checked={form.twoFactorAuth}
-              onChange={handleChange}
+              {...registerSettings("twoFactorAuth")}
+              className="rounded"
             />
             Enable Two-Factor Authentication
           </label>
-        </div>
-
-        <div className="border-t pt-4">
-          <h3 className="text-lg font-semibold text-gray-800 mb-4">
-            Change Password
-          </h3>
-          <div className="space-y-3">
-            <input
-              type="password"
-              name="oldPassword"
-              placeholder="Old password"
-              value={passwordForm.oldPassword}
-              onChange={handlePasswordChange}
-              className="w-full border rounded px-3 py-2 text-sm"
-            />
-            <input
-              type="password"
-              name="newPassword"
-              placeholder="New password"
-              value={passwordForm.newPassword}
-              onChange={handlePasswordChange}
-              className="w-full border rounded px-3 py-2 text-sm"
-            />
-            <input
-              type="password"
-              name="confirmPassword"
-              placeholder="Confirm new password"
-              value={passwordForm.confirmPassword}
-              onChange={handlePasswordChange}
-              className="w-full border rounded px-3 py-2 text-sm"
-            />
-          </div>
         </div>
 
         <div className="text-right">
@@ -295,6 +305,69 @@ export default function SettingsPage() {
             disabled={saving}
           >
             <FaSave /> {saving ? "Saving..." : "Save Settings"}
+          </button>
+        </div>
+      </form>
+
+      {/* Password Change Form */}
+      <form
+        onSubmit={handlePasswordSubmit(onPasswordSubmit)}
+        className="bg-white rounded-lg shadow p-6 space-y-6 mt-6"
+      >
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">
+          Change Password
+        </h3>
+        <div className="space-y-3">
+          <div>
+            <input
+              type="password"
+              {...registerPassword("oldPassword")}
+              placeholder="Current password"
+              className="w-full border rounded px-3 py-2 text-sm"
+            />
+            {passwordErrors.oldPassword && (
+              <p className="text-red-500 text-xs mt-1">
+                {passwordErrors.oldPassword.message}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <input
+              type="password"
+              {...registerPassword("newPassword")}
+              placeholder="New password"
+              className="w-full border rounded px-3 py-2 text-sm"
+            />
+            {passwordErrors.newPassword && (
+              <p className="text-red-500 text-xs mt-1">
+                {passwordErrors.newPassword.message}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <input
+              type="password"
+              {...registerPassword("confirmPassword")}
+              placeholder="Confirm new password"
+              className="w-full border rounded px-3 py-2 text-sm"
+            />
+            {passwordErrors.confirmPassword && (
+              <p className="text-red-500 text-xs mt-1">
+                {passwordErrors.confirmPassword.message}
+              </p>
+            )}
+          </div>
+        </div>
+
+        <div className="text-right">
+          <button
+            type="submit"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-orange-600 text-white rounded shadow hover:bg-orange-700 disabled:opacity-50"
+            disabled={saving}
+          >
+            <FaSave /> {saving ? "Updating..." : "Update Password"}
           </button>
         </div>
       </form>
@@ -332,43 +405,61 @@ export default function SettingsPage() {
                   <Dialog.Title className="text-lg font-bold text-orange-700 mb-4">
                     Add New Admin
                   </Dialog.Title>
-                  <div className="space-y-3">
-                    <input
-                      type="text"
-                      placeholder="Name"
-                      value={newAdmin.name}
-                      onChange={(e) =>
-                        setNewAdmin({ ...newAdmin, name: e.target.value })
-                      }
-                      className="w-full border rounded px-3 py-2 text-sm"
-                    />
-                    <input
-                      type="email"
-                      placeholder="Email"
-                      value={newAdmin.email}
-                      onChange={(e) =>
-                        setNewAdmin({ ...newAdmin, email: e.target.value })
-                      }
-                      className="w-full border rounded px-3 py-2 text-sm"
-                    />
-                    <input
-                      type="password"
-                      placeholder="Password"
-                      value={newAdmin.password}
-                      onChange={(e) =>
-                        setNewAdmin({ ...newAdmin, password: e.target.value })
-                      }
-                      className="w-full border rounded px-3 py-2 text-sm"
-                    />
-                  </div>
-                  <div className="mt-6 text-right">
-                    <button
-                      onClick={handleAddAdmin}
-                      className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"
-                    >
-                      Add Admin
-                    </button>
-                  </div>
+                  <form
+                    onSubmit={handleNewAdminSubmit(onNewAdminSubmit)}
+                    className="space-y-3"
+                  >
+                    <div>
+                      <input
+                        type="text"
+                        placeholder="Name"
+                        {...registerNewAdmin("name")}
+                        className="w-full border rounded px-3 py-2 text-sm"
+                      />
+                      {newAdminErrors.name && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {newAdminErrors.name.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <input
+                        type="email"
+                        placeholder="Email"
+                        {...registerNewAdmin("email")}
+                        className="w-full border rounded px-3 py-2 text-sm"
+                      />
+                      {newAdminErrors.email && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {newAdminErrors.email.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <input
+                        type="password"
+                        placeholder="Password"
+                        {...registerNewAdmin("password")}
+                        className="w-full border rounded px-3 py-2 text-sm"
+                      />
+                      {newAdminErrors.password && (
+                        <p className="text-red-500 text-xs mt-1">
+                          {newAdminErrors.password.message}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="mt-6 text-right">
+                      <button
+                        type="submit"
+                        className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"
+                      >
+                        Add Admin
+                      </button>
+                    </div>
+                  </form>
                 </Dialog.Panel>
               </Transition.Child>
             </div>

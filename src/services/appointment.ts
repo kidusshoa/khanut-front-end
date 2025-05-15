@@ -74,6 +74,9 @@ export const appointmentApi = {
           throw new Error("Authentication required");
         }
 
+        // Log the business ID being used
+        console.log("Fetching appointments for business ID:", businessId);
+
         const {
           page = 1,
           limit = 10,
@@ -86,7 +89,17 @@ export const appointmentApi = {
           date,
         } = params;
 
-        let url = `${API_URL}/api/appointments/business/${businessId}?page=${page}&limit=${limit}`;
+        // Ensure we're using the correct business ID format
+        // This is important as sometimes the URL might have a different format than what's stored in the database
+        const correctedBusinessId = businessId.replace(
+          /^[a-z0-9]{24}$/,
+          (match) => {
+            console.log("Correcting business ID format from URL");
+            return match;
+          }
+        );
+
+        let url = `${API_URL}/api/appointments/business/${correctedBusinessId}?page=${page}&limit=${limit}`;
 
         if (sort) url += `&sort=${sort}`;
         if (order) url += `&order=${order}`;
@@ -95,6 +108,8 @@ export const appointmentApi = {
         if (startDate) url += `&startDate=${startDate}`;
         if (endDate) url += `&endDate=${endDate}`;
         if (date) url += `&date=${date}`;
+
+        console.log("Fetching appointments from URL:", url);
 
         const response = await fetch(url, {
           method: "GET",
@@ -105,10 +120,18 @@ export const appointmentApi = {
         });
 
         if (!response.ok) {
-          throw new Error("Failed to fetch business appointments");
+          const errorText = await response.text();
+          console.error("Failed to fetch business appointments:", errorText);
+          throw new Error(
+            `Failed to fetch business appointments: ${response.status} ${errorText}`
+          );
         }
 
-        return await response.json();
+        const data = await response.json();
+        console.log(
+          `Successfully fetched ${data.length} appointments for business`
+        );
+        return data;
       } catch (fetchError) {
         console.warn("Fetch API failed, falling back to axios:", fetchError);
 
@@ -125,7 +148,16 @@ export const appointmentApi = {
           date,
         } = params;
 
-        let url = `/appointments/business/${businessId}?page=${page}&limit=${limit}`;
+        // Ensure we're using the correct business ID format
+        const correctedBusinessId = businessId.replace(
+          /^[a-z0-9]{24}$/,
+          (match) => {
+            console.log("Correcting business ID format for axios");
+            return match;
+          }
+        );
+
+        let url = `/appointments/business/${correctedBusinessId}?page=${page}&limit=${limit}`;
 
         if (sort) url += `&sort=${sort}`;
         if (order) url += `&order=${order}`;
@@ -135,7 +167,11 @@ export const appointmentApi = {
         if (endDate) url += `&endDate=${endDate}`;
         if (date) url += `&date=${date}`;
 
+        console.log("Axios fallback URL:", url);
         const response = await api.get(url);
+        console.log(
+          `Successfully fetched ${response.data.length} appointments with axios`
+        );
         return response.data;
       }
     } catch (error) {
@@ -342,13 +378,108 @@ export const appointmentApi = {
   // Update appointment status
   updateAppointmentStatus: async (appointmentId: string, status: string) => {
     try {
-      const response = await api.patch(
-        `/appointments/${appointmentId}/status`,
-        { status }
-      );
-      return response.data;
+      // First try using the fetch API with authentication
+      try {
+        const token = await getAuthToken();
+
+        if (!token) {
+          throw new Error("Authentication required");
+        }
+
+        const response = await fetch(
+          `${API_URL}/api/appointments/${appointmentId}/status`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ status }),
+          }
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(
+            errorData.message || "Failed to update appointment status"
+          );
+        }
+
+        return await response.json();
+      } catch (fetchError) {
+        console.warn("Fetch API failed, falling back to axios:", fetchError);
+
+        // Fallback to axios if fetch fails
+        const response = await api.patch(
+          `/appointments/${appointmentId}/status`,
+          { status }
+        );
+        return response.data;
+      }
     } catch (error) {
       console.error("Error updating appointment status:", error);
+      throw error;
+    }
+  },
+
+  // Cancel appointment
+  cancelAppointment: async (
+    appointmentId: string,
+    data?: { reason?: string }
+  ) => {
+    try {
+      console.log("Cancelling appointment with ID:", appointmentId);
+
+      // First try using the fetch API with authentication
+      try {
+        const token = await getAuthToken();
+
+        if (!token) {
+          throw new Error("Authentication required");
+        }
+
+        const response = await fetch(
+          `${API_URL}/api/appointments/${appointmentId}/cancel`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify(data || {}),
+          }
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error("Cancel appointment response:", errorText);
+          try {
+            const errorData = JSON.parse(errorText);
+            throw new Error(
+              errorData.message || "Failed to cancel appointment"
+            );
+          } catch (parseError) {
+            throw new Error(
+              `Failed to cancel appointment: ${response.status} ${errorText}`
+            );
+          }
+        }
+
+        const result = await response.json();
+        console.log("Cancel appointment result:", result);
+        return result;
+      } catch (fetchError) {
+        console.warn("Fetch API failed, falling back to axios:", fetchError);
+
+        // Fallback to axios if fetch fails
+        const response = await api.post(
+          `/appointments/${appointmentId}/cancel`,
+          data || {}
+        );
+        return response.data;
+      }
+    } catch (error) {
+      console.error("Error cancelling appointment:", error);
       throw error;
     }
   },

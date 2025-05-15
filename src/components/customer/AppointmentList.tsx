@@ -110,7 +110,7 @@ export function AppointmentList({ customerId }: AppointmentListProps) {
       if (dayjs(date).isToday()) {
         return "Today";
       }
-      return dayjs(date).format("PPP");
+      return dayjs(date).format("MMMM D, YYYY");
     } catch (error) {
       return "Invalid date";
     }
