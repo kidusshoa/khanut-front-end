@@ -2,33 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StaffManagement } from "@/components/business/StaffManagement";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 
-export default function BusinessStaffPage({
-  params,
-}: {
-  params: Promise<{ businessId: string }>;
-}) {
-  const [businessId, setBusinessId] = useState<string>("");
-
-  // Resolve params
-  useEffect(() => {
-    const resolveParams = async () => {
-      try {
-        const resolvedParams = await params;
-        setBusinessId(resolvedParams.businessId);
-      } catch (error) {
-        console.error("Error resolving params:", error);
-      }
-    };
-
-    resolveParams();
-  }, [params]);
+export default function BusinessStaffPage() {
   const router = useRouter();
+  const params = useParams();
+  const businessId = params.businessId as string;
   const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);

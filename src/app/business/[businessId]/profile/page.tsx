@@ -1,17 +1,12 @@
+"use client";
+
+import { useParams } from "next/navigation";
 import ProfileContent from "./ProfileContent";
 
-// Define the params type
-interface PageParams {
-  businessId: string;
-}
-
-export default function BusinessProfilePage({
-  params,
-}: {
-  params: PageParams;
-}) {
-  // Use the businessId directly without awaiting
-  const businessId = params.businessId;
+export default function BusinessProfilePage() {
+  // Use the useParams hook to get the businessId
+  const params = useParams();
+  const businessId = params.businessId as string;
 
   return <ProfileContent businessId={businessId} />;
 }

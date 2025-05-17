@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import {
   ArrowLeft,
   Calendar,
@@ -31,16 +31,11 @@ import { EditServiceModal } from "@/components/business/EditServiceModal";
 import { toast } from "react-hot-toast";
 import dayjs from "dayjs";
 
-interface ServiceDetailPageProps {
-  params: {
-    businessId: string;
-    serviceId: string;
-  };
-}
-
-export default function ServiceDetailPage({ params }: ServiceDetailPageProps) {
+export default function ServiceDetailPage() {
   const router = useRouter();
-  const { businessId, serviceId } = params;
+  const params = useParams();
+  const businessId = params.businessId as string;
+  const serviceId = params.serviceId as string;
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Fetch service details

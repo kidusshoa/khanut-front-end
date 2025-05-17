@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import {
   User,
   Mail,
@@ -34,14 +34,11 @@ import { ProfilePictureUpload } from "@/components/customer/ProfilePictureUpload
 import { userService, CustomerProfile } from "@/services/user";
 import { toast } from "react-hot-toast";
 
-export default function CustomerProfilePage({
-  params,
-}: {
-  params: Promise<{ customerId: string }>;
-}) {
+export default function CustomerProfilePage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [customerId, setCustomerId] = useState<string>("");
+  const params = useParams();
+  const customerId = params.customerId as string;
   const [profile, setProfile] = useState<CustomerProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
@@ -50,20 +47,6 @@ export default function CustomerProfilePage({
     phone: "",
     location: "",
   });
-
-  // Resolve params
-  useEffect(() => {
-    const resolveParams = async () => {
-      try {
-        const resolvedParams = await params;
-        setCustomerId(resolvedParams.customerId);
-      } catch (error) {
-        console.error("Error resolving params:", error);
-      }
-    };
-
-    resolveParams();
-  }, [params]);
 
   useEffect(() => {
     // Redirect if not authenticated

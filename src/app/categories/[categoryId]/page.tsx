@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { Layers, ArrowLeft, Loader2, Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,33 +15,16 @@ import { ServiceCard } from "@/components/business/ServiceCard";
 import { categoryApi } from "@/services/category";
 import { toast } from "react-hot-toast";
 
-export default function CategoryDetailPage({
-  params,
-}: {
-  params: Promise<{ categoryId: string }>;
-}) {
+export default function CategoryDetailPage() {
   const router = useRouter();
-  const [categoryId, setCategoryId] = useState<string>("");
+  const params = useParams();
+  const categoryId = params.categoryId as string;
   const [category, setCategory] = useState<any>(null);
   const [services, setServices] = useState<any[]>([]);
   const [filteredServices, setFilteredServices] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [serviceType, setServiceType] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
-
-  // Resolve params
-  useEffect(() => {
-    const resolveParams = async () => {
-      try {
-        const resolvedParams = await params;
-        setCategoryId(resolvedParams.categoryId);
-      } catch (error) {
-        console.error("Error resolving params:", error);
-      }
-    };
-
-    resolveParams();
-  }, [params]);
 
   useEffect(() => {
     const fetchCategoryDetails = async () => {

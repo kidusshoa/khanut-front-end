@@ -172,7 +172,9 @@ export default function MessagesContent({ businessId }: MessagesContentProps) {
   const { data: session } = useSession();
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
-  const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
+  const [selectedConversation, setSelectedConversation] = useState<
+    string | null
+  >(null);
   const [conversations, setConversations] = useState(mockConversations);
   const [messages, setMessages] = useState(mockMessages);
   const [newMessage, setNewMessage] = useState("");
@@ -198,7 +200,9 @@ export default function MessagesContent({ businessId }: MessagesContentProps) {
   // Filter conversations based on search query
   const searchedConversations = filteredConversations.filter((conversation) => {
     if (!searchQuery) return true;
-    return conversation.customer.name.toLowerCase().includes(searchQuery.toLowerCase());
+    return conversation.customer.name
+      .toLowerCase()
+      .includes(searchQuery.toLowerCase());
   });
 
   // Get messages for selected conversation
@@ -220,7 +224,7 @@ export default function MessagesContent({ businessId }: MessagesContentProps) {
     };
 
     setMessages([...messages, newMessageObj]);
-    
+
     // Update last message in conversation
     setConversations(
       conversations.map((conv) => {
@@ -245,7 +249,7 @@ export default function MessagesContent({ businessId }: MessagesContentProps) {
   // Mark conversation as read when selected
   const handleSelectConversation = (conversationId: string) => {
     setSelectedConversation(conversationId);
-    
+
     // Mark as read
     setConversations(
       conversations.map((conv) => {
@@ -291,17 +295,27 @@ export default function MessagesContent({ businessId }: MessagesContentProps) {
               <div className="flex items-center justify-between">
                 <CardTitle>Conversations</CardTitle>
                 <Badge variant="outline" className="font-normal">
-                  {conversations.reduce((acc, conv) => acc + conv.unreadCount, 0)} unread
+                  {conversations.reduce(
+                    (acc, conv) => acc + conv.unreadCount,
+                    0
+                  )}{" "}
+                  unread
                 </Badge>
               </div>
-              <Input
-                placeholder="Search conversations..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full"
-                prefix={<Search className="h-4 w-4 text-muted-foreground" />}
-              />
-              <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab}>
+              <div className="relative w-full">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search conversations..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-9"
+                />
+              </div>
+              <Tabs
+                defaultValue="all"
+                value={activeTab}
+                onValueChange={setActiveTab}
+              >
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="all">All</TabsTrigger>
                   <TabsTrigger value="unread">Unread</TabsTrigger>
@@ -320,10 +334,14 @@ export default function MessagesContent({ businessId }: MessagesContentProps) {
                             ? "bg-orange-100 dark:bg-orange-900/20"
                             : "hover:bg-muted"
                         }`}
-                        onClick={() => handleSelectConversation(conversation.id)}
+                        onClick={() =>
+                          handleSelectConversation(conversation.id)
+                        }
                       >
                         <Avatar className="h-10 w-10">
-                          <AvatarImage src={conversation.customer.avatar || ""} />
+                          <AvatarImage
+                            src={conversation.customer.avatar || ""}
+                          />
                           <AvatarFallback className="bg-orange-100 text-orange-600">
                             {conversation.customer.name
                               .split(" ")
@@ -337,12 +355,15 @@ export default function MessagesContent({ businessId }: MessagesContentProps) {
                               {conversation.customer.name}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {dayjs(conversation.lastMessage.timestamp).fromNow()}
+                              {dayjs(
+                                conversation.lastMessage.timestamp
+                              ).fromNow()}
                             </p>
                           </div>
                           <div className="flex items-center gap-1">
                             <p className="text-sm text-muted-foreground truncate">
-                              {conversation.lastMessage.sender === "business" && "You: "}
+                              {conversation.lastMessage.sender === "business" &&
+                                "You: "}
                               {conversation.lastMessage.text}
                             </p>
                             {conversation.unreadCount > 0 && (
@@ -398,8 +419,9 @@ export default function MessagesContent({ businessId }: MessagesContentProps) {
                       <div>
                         <CardTitle>
                           {
-                            conversations.find((c) => c.id === selectedConversation)
-                              ?.customer.name
+                            conversations.find(
+                              (c) => c.id === selectedConversation
+                            )?.customer.name
                           }
                         </CardTitle>
                         <CardDescription>Customer</CardDescription>
@@ -412,7 +434,9 @@ export default function MessagesContent({ businessId }: MessagesContentProps) {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>View Customer Profile</DropdownMenuItem>
+                        <DropdownMenuItem>
+                          View Customer Profile
+                        </DropdownMenuItem>
                         <DropdownMenuItem>Mark as Unread</DropdownMenuItem>
                         <DropdownMenuItem className="text-red-600">
                           Delete Conversation
@@ -428,7 +452,9 @@ export default function MessagesContent({ businessId }: MessagesContentProps) {
                         <div
                           key={message.id}
                           className={`flex ${
-                            message.sender === "business" ? "justify-end" : "justify-start"
+                            message.sender === "business"
+                              ? "justify-end"
+                              : "justify-start"
                           }`}
                         >
                           <div
@@ -447,7 +473,9 @@ export default function MessagesContent({ businessId }: MessagesContentProps) {
                               }`}
                             >
                               <Clock className="h-3 w-3" />
-                              <span>{dayjs(message.timestamp).format("h:mm A")}</span>
+                              <span>
+                                {dayjs(message.timestamp).format("h:mm A")}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -482,10 +510,12 @@ export default function MessagesContent({ businessId }: MessagesContentProps) {
             ) : (
               <div className="flex flex-col items-center justify-center h-full p-6 text-center">
                 <User className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-medium mb-2">No conversation selected</h3>
+                <h3 className="text-lg font-medium mb-2">
+                  No conversation selected
+                </h3>
                 <p className="text-muted-foreground max-w-md">
-                  Select a conversation from the list to view messages and respond to your
-                  customers.
+                  Select a conversation from the list to view messages and
+                  respond to your customers.
                 </p>
               </div>
             )}

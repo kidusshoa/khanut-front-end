@@ -275,11 +275,13 @@ export const getBusinessAnalytics = async (
           thisWeek: 0, // Not available from current endpoints
           thisMonth: dashboardStats?.totalOrders || 0,
           pending:
-            recentOrders?.filter((order) => order.status === "pending")
-              ?.length || 0,
+            recentOrders?.filter(
+              (order: { status: string }) => order.status === "pending"
+            )?.length || 0,
           completed:
-            recentOrders?.filter((order) => order.status === "completed")
-              ?.length || 0,
+            recentOrders?.filter(
+              (order: { status: string }) => order.status === "completed"
+            )?.length || 0,
         },
         customers: {
           total: dashboardStats?.totalCustomers || 0,

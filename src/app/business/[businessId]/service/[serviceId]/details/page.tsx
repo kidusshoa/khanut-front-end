@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import {
   Loader2,
   MapPin,
@@ -213,29 +213,11 @@ interface Review {
   createdAt: string;
 }
 
-export default function ServiceDetailsPage({
-  params,
-}: {
-  params: Promise<{ businessId: string; serviceId: string }>;
-}) {
-  const [businessId, setBusinessId] = useState<string>("");
-  const [serviceId, setServiceId] = useState<string>("");
-
-  // Resolve params
-  useEffect(() => {
-    const resolveParams = async () => {
-      try {
-        const resolvedParams = await params;
-        setBusinessId(resolvedParams.businessId);
-        setServiceId(resolvedParams.serviceId);
-      } catch (error) {
-        console.error("Error resolving params:", error);
-      }
-    };
-
-    resolveParams();
-  }, [params]);
+export default function ServiceDetailsPage() {
   const router = useRouter();
+  const params = useParams();
+  const businessId = params.businessId as string;
+  const serviceId = params.serviceId as string;
   const [activeTab, setActiveTab] = useState("details");
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 

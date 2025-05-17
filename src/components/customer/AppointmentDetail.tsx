@@ -149,10 +149,7 @@ export function AppointmentDetail({
       console.log("Payment initialization response:", response);
 
       // Check for checkout_url in different possible response formats
-      const checkoutUrl =
-        response.checkoutUrl ||
-        response.data?.checkout_url ||
-        response.data?.checkoutUrl;
+      const checkoutUrl = response.data?.checkout_url;
 
       if (checkoutUrl) {
         console.log("Redirecting to checkout URL:", checkoutUrl);

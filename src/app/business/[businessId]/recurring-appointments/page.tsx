@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import {
   Loader2,
   ArrowLeft,
@@ -30,26 +30,10 @@ import dayjs from "dayjs";
 import { cn } from "@/lib/utils";
 import { toast } from "@/components/ui/use-toast";
 
-export default function RecurringAppointmentsPage({
-  params,
-}: {
-  params: Promise<{ businessId: string }>;
-}) {
-  const [businessId, setBusinessId] = useState<string>("");
-
-  useEffect(() => {
-    const resolveParams = async () => {
-      try {
-        const resolvedParams = await params;
-        setBusinessId(resolvedParams.businessId);
-      } catch (error) {
-        console.error("Error resolving params:", error);
-      }
-    };
-
-    resolveParams();
-  }, [params]);
+export default function RecurringAppointmentsPage() {
   const router = useRouter();
+  const params = useParams();
+  const businessId = params.businessId as string;
   const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);

@@ -47,10 +47,10 @@ export default function PaymentButton({
 
       // If onSuccess callback is provided, call it with the checkout URL
       if (onSuccess) {
-        onSuccess(paymentResult.checkoutUrl);
+        onSuccess(paymentResult.data.checkout_url);
       } else {
         // Otherwise, redirect to the checkout URL
-        window.location.href = paymentResult.checkoutUrl;
+        window.location.href = paymentResult.data.checkout_url;
       }
     } catch (error) {
       console.error("Payment initialization error:", error);

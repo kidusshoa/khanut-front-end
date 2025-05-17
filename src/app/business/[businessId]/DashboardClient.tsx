@@ -63,21 +63,36 @@ import {
   Appointment,
 } from "@/services/analyticsApi";
 
-interface Order {
-  id: string;
+// Extend the Order and Appointment types for UI compatibility
+interface UIOrder extends Order {
   customer: string;
-  date: string | Date;
-  amount: number;
-  status: string;
 }
 
-interface Appointment {
-  id: string;
+interface UIAppointment extends Appointment {
   customer: string;
   service: string;
-  date: string | Date;
-  duration: number;
 }
+
+// Create wrapper functions to handle null returns and map properties
+const fetchRecentOrders = async (businessId: string): Promise<UIOrder[]> => {
+  const result = await getRecentOrders(businessId);
+  if (!result) return [];
+
+  // The result is already in the format { id, customer, date, amount, status }
+  // We just need to cast it to our UIOrder type
+  return result as unknown as UIOrder[];
+};
+
+const fetchUpcomingAppointments = async (
+  businessId: string
+): Promise<UIAppointment[]> => {
+  const result = await getUpcomingAppointments(businessId);
+  if (!result) return [];
+
+  // The result is already in the format { id, customer, service, date, duration }
+  // We just need to cast it to our UIAppointment type
+  return result as unknown as UIAppointment[];
+};
 
 // Create a simple date formatter function
 const formatDate = (date: string | Date, format: string) => {
@@ -151,9 +166,9 @@ export default function DashboardClient({
     data: recentOrders,
     isLoading: isOrdersLoading,
     error: ordersError,
-  } = useQuery<Order[]>({
+  } = useQuery<UIOrder[]>({
     queryKey: ["recentOrders", businessId],
-    queryFn: () => getRecentOrders(businessId),
+    queryFn: () => fetchRecentOrders(businessId),
     retry: 1,
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
@@ -163,9 +178,9 @@ export default function DashboardClient({
     data: upcomingAppointments,
     isLoading: isAppointmentsLoading,
     error: appointmentsError,
-  } = useQuery<Appointment[]>({
+  } = useQuery<UIAppointment[]>({
     queryKey: ["upcomingAppointments", businessId],
-    queryFn: () => getUpcomingAppointments(businessId),
+    queryFn: () => fetchUpcomingAppointments(businessId),
     retry: 1,
     staleTime: 2 * 60 * 1000, // 2 minutes
   });

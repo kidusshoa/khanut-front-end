@@ -74,7 +74,7 @@ export default function CheckoutForm({
       const paymentResult = await paymentApi.initializeOrderPayment(orderId);
 
       // Redirect to payment page
-      window.location.href = paymentResult.checkoutUrl;
+      window.location.href = paymentResult.data.checkout_url;
     } catch (error) {
       console.error("Payment initialization error:", error);
       toast.error(

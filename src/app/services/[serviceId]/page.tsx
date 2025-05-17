@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
@@ -27,33 +27,16 @@ import { Card, CardContent } from "@/components/ui/card";
 import { businessDetailApi } from "@/services/businessDetail";
 import { toast } from "react-hot-toast";
 
-export default function ServiceDetailPage({
-  params,
-}: {
-  params: Promise<{ serviceId: string }>;
-}) {
+export default function ServiceDetailPage() {
   const router = useRouter();
+  const params = useParams();
+  const serviceId = params.serviceId as string;
   const { data: session } = useSession();
-  const [serviceId, setServiceId] = useState<string>("");
   const [service, setService] = useState<any>(null);
   const [business, setBusiness] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isBookModalOpen, setIsBookModalOpen] = useState(false);
   const [isCartModalOpen, setIsCartModalOpen] = useState(false);
-
-  // Resolve params
-  useEffect(() => {
-    const resolveParams = async () => {
-      try {
-        const resolvedParams = await params;
-        setServiceId(resolvedParams.serviceId);
-      } catch (error) {
-        console.error("Error resolving params:", error);
-      }
-    };
-
-    resolveParams();
-  }, [params]);
 
   useEffect(() => {
     const fetchServiceDetails = async () => {

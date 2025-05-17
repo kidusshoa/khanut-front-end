@@ -1,19 +1,12 @@
+"use client";
 import { Suspense } from "react";
+import { useParams } from "next/navigation";
 import RecommendationsClient from "./RecommendationsClient";
 
-// Define the params type
-interface PageParams {
-  adminId: string;
-}
-
-// Use the PageParams type for the component props
-export default async function RecommendationsPage({
-  params,
-}: {
-  params: PageParams;
-}) {
-  // Await the params to ensure they're fully resolved
-  const adminId = await Promise.resolve(params.adminId);
+export default function RecommendationsPage() {
+  // Use the useParams hook to get the adminId
+  const params = useParams();
+  const adminId = params.adminId as string;
 
   return (
     <Suspense fallback={<div>Loading...</div>}>

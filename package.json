@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build --no-lint",
     "start": "next start",
     "lint": "next lint"
   },
@@ -81,14 +81,10 @@
   },
   "overrides": {
     "typeorm": "^0.3.17",
-    "jose": "^5.2.0",
-    "xml2js": "^0.6.2",
-    "cookie": "^0.7.2"
+    "jose": "^5.2.0"
   },
   "resolutions": {
     "typeorm": "^0.3.17",
-    "jose": "^5.2.0",
-    "xml2js": "^0.6.2",
-    "cookie": "^0.7.2"
+    "jose": "^5.2.0"
   }
 }

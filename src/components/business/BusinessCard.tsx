@@ -29,11 +29,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { toast } from "react-hot-toast";
 
-// Add toast to window for global access
-if (typeof window !== "undefined") {
-  window.toast = toast;
-}
-
 interface BusinessCardProps {
   business: {
     _id: string;
@@ -68,14 +63,9 @@ export function BusinessCard({ business }: BusinessCardProps) {
 
     // Show toast notification
     if (!isFavorite) {
-      // Using window.toast since we don't have direct access to toast here
-      if (typeof window !== "undefined" && window.toast) {
-        window.toast.success(`Added ${business.name} to favorites`);
-      }
+      toast.success(`Added ${business.name} to favorites`);
     } else {
-      if (typeof window !== "undefined" && window.toast) {
-        window.toast.success(`Removed ${business.name} from favorites`);
-      }
+      toast.success(`Removed ${business.name} from favorites`);
     }
 
     // TODO: Implement API call to save favorite status

@@ -255,7 +255,11 @@ export default function BusinessAnalyticsContent({
         // In a real implementation, we would pass the custom date range to the API
         return fetchBusinessAnalytics(businessId, "month");
       }
-      return fetchBusinessAnalytics(businessId, dateRange);
+      // Filter out "custom" from dateRange before passing to fetchBusinessAnalytics
+      return fetchBusinessAnalytics(
+        businessId,
+        dateRange === "custom" ? "month" : dateRange
+      );
     },
     refetchInterval: 300000, // Refetch every 5 minutes
     enabled: !!business && (dateRange !== "custom" || !!customDateRange),
@@ -485,7 +489,9 @@ export default function BusinessAnalyticsContent({
         </div>
 
         {/* Revenue Chart */}
-        <RevenueChart dateRange={dateRange} />
+        <RevenueChart
+          dateRange={dateRange === "custom" ? "month" : dateRange}
+        />
 
         {/* Order and Appointment Stats */}
         <div className="grid gap-4 md:grid-cols-2">

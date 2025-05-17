@@ -162,8 +162,8 @@ export function BookAppointmentModal({
         );
 
         // Redirect to payment page
-        if (paymentResponse.checkoutUrl) {
-          window.location.href = paymentResponse.checkoutUrl;
+        if (paymentResponse.data?.checkout_url) {
+          window.location.href = paymentResponse.data.checkout_url;
         } else {
           // If no checkout URL, redirect to appointments page
           router.push(`/customer/${data.customerId}/appointments`);

@@ -29,7 +29,7 @@ export default function BusinessRegistrationForm() {
     const file = event.target.files?.[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        setError("businessImage", {
+        setError("profilePicture", {
           type: "manual",
           message: "Image size should be less than 5MB",
         });
@@ -39,7 +39,7 @@ export default function BusinessRegistrationForm() {
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result as string);
-        setValue("businessImage", file);
+        setValue("profilePicture", file);
       };
       reader.readAsDataURL(file);
     }
@@ -313,9 +313,9 @@ export default function BusinessRegistrationForm() {
             />
           </label>
         </div>
-        {errors.businessImage && (
+        {errors.profilePicture && (
           <p className="mt-1 text-sm text-red-600">
-            {errors.businessImage.message?.toString()}
+            {errors.profilePicture.message?.toString()}
           </p>
         )}
       </div>

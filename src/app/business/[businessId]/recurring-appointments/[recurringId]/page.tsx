@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import {
   Loader2,
   ArrowLeft,
@@ -48,31 +48,11 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export default function RecurringAppointmentDetailsPage({
-  params,
-}: {
-  params: Promise<{ businessId: string; recurringId: string }>;
-}) {
-  // Handle both Promise and non-Promise cases
-  const [businessId, setBusinessId] = useState<string>("");
-  const [recurringId, setRecurringId] = useState<string>("");
-
-  useEffect(() => {
-    const resolveParams = async () => {
-      try {
-        const resolvedParams =
-          params instanceof Promise ? await params : params;
-        setBusinessId(resolvedParams.businessId);
-        setRecurringId(resolvedParams.recurringId);
-      } catch (error) {
-        console.error("Error resolving params:", error);
-      }
-    };
-
-    resolveParams();
-  }, [params]);
-
+export default function RecurringAppointmentDetailsPage() {
   const router = useRouter();
+  const params = useParams();
+  const businessId = params.businessId as string;
+  const recurringId = params.recurringId as string;
   const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);

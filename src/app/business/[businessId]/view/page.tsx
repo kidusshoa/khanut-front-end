@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Image from "next/image";
 
 // Fetch business details
@@ -84,27 +84,10 @@ const fetchBusinessDetails = async (businessId: string) => {
   }
 };
 
-export default function BusinessViewPage({
-  params,
-}: {
-  params: Promise<{ businessId: string }>;
-}) {
-  const [businessId, setBusinessId] = useState<string>("");
-
-  // Resolve params
-  useEffect(() => {
-    const resolveParams = async () => {
-      try {
-        const resolvedParams = await params;
-        setBusinessId(resolvedParams.businessId);
-      } catch (error) {
-        console.error("Error resolving params:", error);
-      }
-    };
-
-    resolveParams();
-  }, [params]);
+export default function BusinessViewPage() {
   const router = useRouter();
+  const params = useParams();
+  const businessId = params.businessId as string;
   const [isLoading, setIsLoading] = useState(true);
 
   console.log("Rendering BusinessViewPage with ID:", businessId);

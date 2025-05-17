@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { CalendarIcon } from "lucide-react";
-import { addDays, format } from "date-fns";
+import dayjs from "dayjs";
 import { DateRange } from "react-day-picker";
 
 import { cn } from "@/lib/utils";
@@ -41,11 +41,11 @@ export function DateRangePicker({
             {dateRange?.from ? (
               dateRange.to ? (
                 <>
-                  {format(dateRange.from, "LLL dd, y")} -{" "}
-                  {format(dateRange.to, "LLL dd, y")}
+                  {dayjs(dateRange.from).format("MMM DD, YYYY")} -{" "}
+                  {dayjs(dateRange.to).format("MMM DD, YYYY")}
                 </>
               ) : (
-                format(dateRange.from, "LLL dd, y")
+                dayjs(dateRange.from).format("MMM DD, YYYY")
               )
             ) : (
               <span>Pick a date range</span>
@@ -73,23 +73,23 @@ export const dateRangePresets = {
     to: new Date(),
   },
   yesterday: {
-    from: addDays(new Date(), -1),
-    to: addDays(new Date(), -1),
+    from: dayjs().subtract(1, "day").toDate(),
+    to: dayjs().subtract(1, "day").toDate(),
   },
   last7Days: {
-    from: addDays(new Date(), -6),
+    from: dayjs().subtract(6, "day").toDate(),
     to: new Date(),
   },
   last30Days: {
-    from: addDays(new Date(), -29),
+    from: dayjs().subtract(29, "day").toDate(),
     to: new Date(),
   },
   thisMonth: {
-    from: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+    from: dayjs().startOf("month").toDate(),
     to: new Date(),
   },
   lastMonth: {
-    from: new Date(new Date().getFullYear(), new Date().getMonth() - 1, 1),
-    to: new Date(new Date().getFullYear(), new Date().getMonth(), 0),
+    from: dayjs().subtract(1, "month").startOf("month").toDate(),
+    to: dayjs().startOf("month").subtract(1, "day").toDate(),
   },
 };

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { Loader2, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StaffAvailabilityCalendar } from "@/components/business/StaffAvailabilityCalendar";
@@ -10,29 +10,11 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { staffApi } from "@/services/staff";
 import { Staff } from "@/lib/types/staff";
 
-export default function StaffAvailabilityPage({
-  params,
-}: {
-  params: Promise<{ businessId: string; staffId: string }>;
-}) {
-  const [businessId, setBusinessId] = useState<string>("");
-  const [staffId, setStaffId] = useState<string>("");
-
-  // Resolve params
-  useEffect(() => {
-    const resolveParams = async () => {
-      try {
-        const resolvedParams = await params;
-        setBusinessId(resolvedParams.businessId);
-        setStaffId(resolvedParams.staffId);
-      } catch (error) {
-        console.error("Error resolving params:", error);
-      }
-    };
-
-    resolveParams();
-  }, [params]);
+export default function StaffAvailabilityPage() {
   const router = useRouter();
+  const params = useParams();
+  const businessId = params.businessId as string;
+  const staffId = params.staffId as string;
   const { data: session, status } = useSession();
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);

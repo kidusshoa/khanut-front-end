@@ -12,7 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import Image from "next/image";
@@ -135,27 +135,10 @@ interface Service {
   };
 }
 
-export default function BusinessServicesPublicPage({
-  params,
-}: {
-  params: Promise<{ businessId: string }>;
-}) {
-  const [businessId, setBusinessId] = useState<string>("");
-
-  // Resolve params
-  useEffect(() => {
-    const resolveParams = async () => {
-      try {
-        const resolvedParams = await params;
-        setBusinessId(resolvedParams.businessId);
-      } catch (error) {
-        console.error("Error resolving params:", error);
-      }
-    };
-
-    resolveParams();
-  }, [params]);
+export default function BusinessServicesPublicPage() {
   const router = useRouter();
+  const params = useParams();
+  const businessId = params.businessId as string;
   const [activeTab, setActiveTab] = useState("all");
 
   console.log("Rendering BusinessServicesPublicPage with ID:", businessId);

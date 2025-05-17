@@ -108,8 +108,8 @@ export function CheckoutModal({
         clearCart();
 
         // Redirect to Chapa payment page
-        if (paymentResponse.checkoutUrl) {
-          window.location.href = paymentResponse.checkoutUrl;
+        if (paymentResponse.data?.checkout_url) {
+          window.location.href = paymentResponse.data.checkout_url;
         } else {
           // If no checkout URL, redirect to orders page
           router.push(`/customer/${customerId}/orders`);

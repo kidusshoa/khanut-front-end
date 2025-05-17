@@ -164,7 +164,8 @@ export default function LoginPage() {
         } catch (roleError) {
           console.error("Error getting user role:", roleError);
           // If we can't determine the role, use the generic verification page
-          setTempRole("unknown");
+          // Use a valid role as fallback
+          setTempRole("customer");
           router.push("/verify");
           return;
         }
