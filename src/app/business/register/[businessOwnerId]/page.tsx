@@ -118,7 +118,10 @@ export default function BusinessRegistrationPage() {
       console.log("- phone:", data.phone);
       console.log("- address:", data.address);
 
-      await businessService.register(formData);
+      const response = await businessService.register(formData);
+      console.log("Business registration successful:", response);
+
+      // Redirect to the pending page
       router.push("/business/pending");
     } catch (error: any) {
       console.error("Business registration error:", error);
@@ -130,6 +133,45 @@ export default function BusinessRegistrationPage() {
           type: "manual",
           message: error.message,
         });
+      } else if (
+        error.name === "BusinessAlreadyRegisteredError" ||
+        (error.message &&
+          error.message.includes("already have a registered business"))
+      ) {
+        // Handle the case where the user already has a registered business
+        setError("root", {
+          type: "manual",
+          message: "You already have a registered business",
+        });
+
+        // Show a more user-friendly error
+        const errorDiv = document.createElement("div");
+        errorDiv.className =
+          "fixed inset-0 flex items-center justify-center z-50 bg-black bg-opacity-50";
+        errorDiv.innerHTML = `
+          <div class="bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
+            <div class="flex items-center justify-center text-red-500 mb-4">
+              <svg class="h-12 w-12" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+              </svg>
+            </div>
+            <h3 class="text-lg font-bold text-center mb-2">Registration Error</h3>
+            <p class="text-center mb-4">You already have a registered business</p>
+            <div class="flex justify-center">
+              <button id="closeErrorModal" class="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700">OK</button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(errorDiv);
+
+        // Add event listener to close button
+        document
+          .getElementById("closeErrorModal")
+          ?.addEventListener("click", () => {
+            document.body.removeChild(errorDiv);
+            // Redirect to pending page or dashboard
+            router.push("/business/pending");
+          });
       } else if (error.response?.data) {
         // Handle API error response
         const errorMessage =

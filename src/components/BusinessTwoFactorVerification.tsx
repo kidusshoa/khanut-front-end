@@ -109,13 +109,6 @@ export function BusinessTwoFactorVerification() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-center">Verify Your Account</h2>
-        <p className="text-sm text-gray-600 text-center mt-2">
-          Please enter the verification code sent to your email
-        </p>
-      </div>
-
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
           <label

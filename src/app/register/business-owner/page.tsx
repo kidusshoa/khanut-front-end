@@ -41,8 +41,8 @@ export default function BusinessOwnerRegistrationPage() {
       setTempEmail(data.email);
       setTempRole("business");
 
-      // Force navigation to verification page
-      window.location.href = "/verify/business";
+      // Use Next.js router for navigation to preserve state
+      router.push("/verify/business");
     } catch (error: any) {
       setError(
         error.response?.data?.message ||

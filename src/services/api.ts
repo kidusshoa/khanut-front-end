@@ -37,6 +37,13 @@ api.interceptors.request.use(
         headers: config.headers,
         data: Object.fromEntries(config.data.entries()),
       });
+
+      // Ensure we're not setting any conflicting headers
+      if (config.headers) {
+        // Make sure we're not setting any conflicting headers for multipart/form-data
+        delete config.headers["content-type"];
+        delete config.headers["Content-type"];
+      }
     }
 
     return config;

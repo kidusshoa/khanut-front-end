@@ -11,11 +11,9 @@ export const businessService = {
     try {
       // Make sure we're not overriding the Content-Type header
       // Let the browser set it automatically with the boundary
+      // When sending FormData, don't set Content-Type at all
+      // Let the browser set it automatically with the correct boundary
       const response = await api.post(`/businesses/register`, formData, {
-        headers: {
-          // Remove Content-Type header to let browser set it with correct boundary
-          "Content-Type": undefined,
-        },
         // Add timeout to prevent hanging requests
         timeout: 30000,
       });
@@ -31,7 +29,24 @@ export const businessService = {
         // that falls out of the range of 2xx
         console.error("Error response data:", error.response.data);
         console.error("Error response status:", error.response.status);
-        console.error("Error response headers:", error.response.headers);
+
+        // Check for specific error messages
+        if (
+          error.response.data?.message?.includes(
+            "already have a registered business"
+          )
+        ) {
+          console.error("API Error Message:", error.response.data.message);
+          console.error("API Error Response:", error.response);
+
+          // Create a custom error with the specific message
+          const customError = new Error(
+            error.response.data.message ||
+              "You already have a registered business"
+          );
+          customError.name = "BusinessAlreadyRegisteredError";
+          throw customError;
+        }
       } else if (error.request) {
         // The request was made but no response was received
         console.error("Error request:", error.request);
