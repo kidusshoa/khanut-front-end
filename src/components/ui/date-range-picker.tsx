@@ -14,17 +14,28 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 
-interface DateRangePickerProps {
+export interface DateRangePickerProps {
   className?: string;
-  dateRange: DateRange | undefined;
-  onDateRangeChange: (range: DateRange | undefined) => void;
+  value?: { from: Date; to: Date } | null;
+  onChange: (range: { from: Date; to: Date } | null) => void;
 }
 
 export function DateRangePicker({
   className,
-  dateRange,
-  onDateRangeChange,
+  value,
+  onChange,
 }: DateRangePickerProps) {
+  const dateRange = value as DateRange | undefined;
+
+  const handleSelect = (range: DateRange | undefined) => {
+    if (range?.from && range?.to) {
+      onChange({ from: range.from, to: range.to });
+    } else if (range?.from) {
+      onChange({ from: range.from, to: range.from });
+    } else {
+      onChange(null);
+    }
+  };
   return (
     <div className={cn("grid gap-2", className)}>
       <Popover>
@@ -57,7 +68,7 @@ export function DateRangePicker({
             mode="range"
             defaultMonth={dateRange?.from}
             selected={dateRange}
-            onSelect={onDateRangeChange}
+            onSelect={handleSelect}
             numberOfMonths={2}
           />
         </PopoverContent>

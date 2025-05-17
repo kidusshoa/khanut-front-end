@@ -374,9 +374,15 @@ export default function BusinessAnalyticsContent({
 
                 {dateRange === "custom" && (
                   <DateRangePicker
-                    dateRange={customDateRange}
-                    onDateRangeChange={(range) => {
-                      setCustomDateRange(range);
+                    value={
+                      customDateRange &&
+                      customDateRange.from &&
+                      customDateRange.to
+                        ? { from: customDateRange.from, to: customDateRange.to }
+                        : null
+                    }
+                    onChange={(range) => {
+                      setCustomDateRange(range ?? undefined);
                     }}
                   />
                 )}

@@ -23,6 +23,12 @@ import {
   Clock,
   MapPin,
   CreditCard,
+  BarChart,
+  Users,
+  Package,
+  MessageSquare,
+  Briefcase,
+  Store,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,124 +47,55 @@ import { signOut } from "next-auth/react";
 import { authService } from "@/services/auth";
 import { userService } from "@/services/user";
 import { Badge } from "@/components/ui/badge";
-import { NotificationDropdown } from "@/components/customer/NotificationDropdown";
 
-interface CustomerDashboardLayoutProps {
+interface BusinessDashboardLayoutProps {
   children: React.ReactNode;
-  customerId?: string;
+  businessId?: string;
 }
 
-export default function CustomerDashboardLayout({
+export default function BusinessDashboardLayout({
   children,
-  customerId,
-}: CustomerDashboardLayoutProps) {
+  businessId,
+}: BusinessDashboardLayoutProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [cartCount, setCartCount] = useState(0);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [businessProfile, setBusinessProfile] = useState<any>(null);
 
-  // Get customerId from session if not provided
-  const userId = customerId || session?.user?.id;
-
-  // Check if we're on a business details page
-  const isBusinessPage = pathname.includes("/businesses/");
-  const businessId = isBusinessPage ? pathname.split("/").pop() : null;
-
-  // State to store business name
-  const [businessName, setBusinessName] = useState<string>("");
-
-  // Fetch business name if on a business page
-  useEffect(() => {
-    if (isBusinessPage && businessId) {
-      const fetchBusinessName = async () => {
-        try {
-          const API_URL =
-            process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
-          console.log("Fetching business name for ID:", businessId);
-          console.log("API URL:", `${API_URL}/api/businesses/${businessId}`);
-
-          // Use the API service instead of direct fetch
-          const response = await fetch(
-            `${API_URL}/api/businesses/${businessId}`
-          );
-
-          // If the response is not ok, try the alternative endpoint
-          if (!response.ok) {
-            console.log("First endpoint failed, trying alternative endpoint");
-            const altResponse = await fetch(
-              `${API_URL}/api/business/${businessId}`
-            );
-            if (altResponse.ok) {
-              return await altResponse.json();
-            }
-          }
-          const data = await response.json();
-          console.log("Business data received:", data);
-
-          if (data && data.name) {
-            console.log("Setting business name to:", data.name);
-            setBusinessName(data.name);
-          } else {
-            console.log("No business name found in data");
-            setBusinessName("Business Details");
-          }
-        } catch (error) {
-          console.error("Error fetching business name:", error);
-          setBusinessName("Business Details");
-        }
-      };
-
-      fetchBusinessName();
-    }
-  }, [isBusinessPage, businessId]);
+  // Get businessId from session if not provided
+  const currentBusinessId = businessId || (session?.user as any)?.businessId;
 
   // Ensure theme component renders only after mounted on client
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Get cart count from local storage
+  // Fetch business profile
   useEffect(() => {
-    const getCartCount = () => {
-      const cart = localStorage.getItem("cart");
-      if (cart) {
+    const fetchBusinessProfile = async () => {
+      if (currentBusinessId) {
         try {
-          const cartItems = JSON.parse(cart);
-          setCartCount(cartItems.length);
+          // Replace with your actual API call to get business profile
+          const API_URL =
+            process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+          const response = await fetch(
+            `${API_URL}/api/businesses/${currentBusinessId}`
+          );
+          if (response.ok) {
+            const data = await response.json();
+            setBusinessProfile(data);
+          }
         } catch (error) {
-          console.error("Error parsing cart data:", error);
-          setCartCount(0);
+          console.error("Error fetching business profile:", error);
         }
       }
     };
 
-    getCartCount();
-    window.addEventListener("storage", getCartCount);
-
-    return () => {
-      window.removeEventListener("storage", getCartCount);
-    };
-  }, []);
-
-  // Fetch user profile
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      if (session?.user?.id) {
-        try {
-          const profile = await userService.getCustomerProfile();
-          setUserProfile(profile);
-        } catch (error) {
-          console.error("Error fetching user profile:", error);
-        }
-      }
-    };
-
-    fetchUserProfile();
-  }, [session?.user?.id]);
+    fetchBusinessProfile();
+  }, [currentBusinessId]);
 
   const getInitials = (name: string) => {
     return name
@@ -172,65 +109,70 @@ export default function CustomerDashboardLayout({
     {
       title: "Dashboard",
       icon: <Home className="h-5 w-5" />,
-      href: `/customer/${userId}`,
-      active: pathname === `/customer/${userId}`,
+      href: `/business/${currentBusinessId}`,
+      active: pathname === `/business/${currentBusinessId}`,
     },
     {
-      title: "Search",
-      icon: <Search className="h-5 w-5" />,
-      href: `/customer/${userId}/search`,
-      active:
-        pathname === `/customer/${userId}/search` ||
-        pathname.startsWith(`/customer/${userId}/businesses/`) ||
-        pathname.startsWith(`/customer/${userId}/services/`),
+      title: "Services",
+      icon: <Briefcase className="h-5 w-5" />,
+      href: `/business/${currentBusinessId}/services`,
+      active: pathname.startsWith(`/business/${currentBusinessId}/services`),
     },
     {
-      title: "Browse Services",
-      icon: <Grid className="h-5 w-5" />,
-      href: `/customer/${userId}/services`,
-      active:
-        pathname === `/customer/${userId}/services` ||
-        pathname.startsWith(`/customer/${userId}/services/`),
+      title: "Products",
+      icon: <Package className="h-5 w-5" />,
+      href: `/business/${currentBusinessId}/products`,
+      active: pathname.startsWith(`/business/${currentBusinessId}/products`),
     },
     {
       title: "Appointments",
       icon: <Calendar className="h-5 w-5" />,
-      href: `/customer/${userId}/appointments`,
-      active:
-        pathname === `/customer/${userId}/appointments` ||
-        pathname.startsWith(`/customer/${userId}/appointments/`),
+      href: `/business/${currentBusinessId}/appointments`,
+      active: pathname.startsWith(
+        `/business/${currentBusinessId}/appointments`
+      ),
     },
     {
       title: "Orders",
       icon: <ShoppingBag className="h-5 w-5" />,
-      href: `/customer/${userId}/orders`,
-      active:
-        pathname === `/customer/${userId}/orders` ||
-        pathname.startsWith(`/customer/${userId}/orders/`),
+      href: `/business/${currentBusinessId}/orders`,
+      active: pathname.startsWith(`/business/${currentBusinessId}/orders`),
     },
     {
       title: "Transactions",
       icon: <CreditCard className="h-5 w-5" />,
-      href: `/customer/${userId}/transactions`,
-      active: pathname === `/customer/${userId}/transactions`,
+      href: `/business/${currentBusinessId}/transactions`,
+      active: pathname === `/business/${currentBusinessId}/transactions`,
     },
     {
-      title: "Favorites",
-      icon: <Heart className="h-5 w-5" />,
-      href: `/customer/${userId}/favorites`,
-      active: pathname === `/customer/${userId}/favorites`,
+      title: "Customers",
+      icon: <Users className="h-5 w-5" />,
+      href: `/business/${currentBusinessId}/customers`,
+      active: pathname.startsWith(`/business/${currentBusinessId}/customers`),
     },
     {
-      title: "Nearby Services",
-      icon: <MapPin className="h-5 w-5" />,
-      href: `/customer/${userId}/nearby`,
-      active: pathname === `/customer/${userId}/nearby`,
+      title: "Analytics",
+      icon: <BarChart className="h-5 w-5" />,
+      href: `/business/${currentBusinessId}/analytics`,
+      active: pathname === `/business/${currentBusinessId}/analytics`,
+    },
+    {
+      title: "Messages",
+      icon: <MessageSquare className="h-5 w-5" />,
+      href: `/business/${currentBusinessId}/messages`,
+      active: pathname === `/business/${currentBusinessId}/messages`,
+    },
+    {
+      title: "Profile",
+      icon: <Store className="h-5 w-5" />,
+      href: `/business/${currentBusinessId}/profile`,
+      active: pathname.startsWith(`/business/${currentBusinessId}/profile`),
     },
     {
       title: "Settings",
       icon: <Settings className="h-5 w-5" />,
-      href: `/customer/${userId}/settings`,
-      active: pathname === `/customer/${userId}/settings`,
+      href: `/business/${currentBusinessId}/settings`,
+      active: pathname === `/business/${currentBusinessId}/settings`,
     },
   ];
 
@@ -255,7 +197,7 @@ export default function CustomerDashboardLayout({
               <div className="h-8 w-8 rounded-md bg-orange-500 flex items-center justify-center text-white font-bold">
                 K
               </div>
-              <span className="font-semibold text-lg">Khanut</span>
+              <span className="font-semibold text-lg">Khanut Business</span>
             </div>
           </div>
 
@@ -326,7 +268,7 @@ export default function CustomerDashboardLayout({
                   <div className="h-8 w-8 rounded-md bg-orange-500 flex items-center justify-center text-white font-bold">
                     K
                   </div>
-                  <span className="font-semibold text-lg">Khanut</span>
+                  <span className="font-semibold text-lg">Khanut Business</span>
                 </div>
                 <Button
                   variant="ghost"
@@ -400,55 +342,19 @@ export default function CustomerDashboardLayout({
           <div className="flex-1 flex items-center">
             <div className="flex flex-col">
               <h1 className="text-xl font-semibold">
-                {isBusinessPage
-                  ? businessName || "Business Details"
-                  : menuItems.find((item) => item.active)?.title || "Dashboard"}
+                {menuItems.find((item) => item.active)?.title || "Dashboard"}
               </h1>
-              {isBusinessPage ? (
+              {(businessProfile?.name ||
+                (session?.user as any)?.businessName) && (
                 <p className="text-sm text-muted-foreground">
-                  Business Profile
+                  {businessProfile?.name ||
+                    (session?.user as any)?.businessName}
                 </p>
-              ) : (
-                (userProfile?.name || session?.user?.name) && (
-                  <p className="text-sm text-muted-foreground">
-                    Welcome, {userProfile?.name || session?.user?.name}
-                  </p>
-                )
               )}
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Search */}
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => router.push(`/customer/${userId}/search`)}
-            >
-              <Search className="h-5 w-5" />
-            </Button>
-
-            {/* Cart */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="relative"
-              onClick={() => router.push(`/customer/${userId}/cart`)}
-            >
-              <ShoppingBag className="h-5 w-5" />
-              {cartCount > 0 && (
-                <Badge
-                  className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 bg-orange-500 text-white"
-                  variant="default"
-                >
-                  {cartCount}
-                </Badge>
-              )}
-            </Button>
-
-            {/* Notifications */}
-            <NotificationDropdown />
-
             {/* Theme Toggle */}
             {mounted && (
               <Button
@@ -474,18 +380,22 @@ export default function CustomerDashboardLayout({
                   <Avatar className="h-8 w-8">
                     <AvatarImage
                       src={
-                        userProfile?.profilePicture ||
+                        businessProfile?.profilePicture ||
                         session?.user?.image ||
                         ""
                       }
-                      alt={userProfile?.name || session?.user?.name || "User"}
+                      alt={
+                        businessProfile?.name ||
+                        session?.user?.name ||
+                        "Business"
+                      }
                     />
                     <AvatarFallback className="bg-orange-100 text-orange-600">
-                      {userProfile?.name
-                        ? getInitials(userProfile.name)
+                      {businessProfile?.name
+                        ? getInitials(businessProfile.name)
                         : session?.user?.name
                         ? getInitials(session.user.name)
-                        : "U"}
+                        : "B"}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -494,43 +404,48 @@ export default function CustomerDashboardLayout({
                 <DropdownMenuLabel className="font-normal">
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium leading-none">
-                      {userProfile?.name || session?.user?.name}
+                      {businessProfile?.name || session?.user?.name}
                     </p>
                     <p className="text-xs leading-none text-muted-foreground">
-                      {userProfile?.email || session?.user?.email}
+                      {businessProfile?.email || session?.user?.email}
                     </p>
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <Link href={`/customer/${userId}/settings`}>Settings</Link>
+                  <Link href={`/business/${currentBusinessId}/profile`}>
+                    Profile
+                  </Link>
                 </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href={`/business/${currentBusinessId}/settings`}>
+                    Settings
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                 <DropdownMenuItem
+                  className="text-red-500"
                   onClick={async () => {
                     try {
-                      // Call the logout API
                       if (session?.refreshToken) {
                         await authService.logout(session.refreshToken);
                       }
-                      // Then sign out from NextAuth
                       await signOut({ callbackUrl: "/login" });
                     } catch (error) {
                       console.error("Logout error:", error);
-                      // If API call fails, still try to sign out from NextAuth
                       await signOut({ callbackUrl: "/login" });
                     }
                   }}
                 >
-                  Log out
+                  Logout
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </header>
 
-        <main className="flex-1 pt-16 transition-all duration-300 md:ml-64">
-          <div className="container mx-auto p-6">{children}</div>
-        </main>
+        {/* Main Content */}
+        <main className="flex-1 pt-16 md:pl-64 p-4 md:p-6">{children}</main>
       </div>
     </div>
   );
