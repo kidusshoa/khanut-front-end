@@ -4,9 +4,18 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import { Loader2, Mail, AlertCircle, ArrowLeft, CheckCircle } from "lucide-react";
+import {
+  Loader2,
+  Mail,
+  AlertCircle,
+  ArrowLeft,
+  CheckCircle,
+} from "lucide-react";
 import Link from "next/link";
-import { forgotPasswordSchema, ForgotPasswordInput } from "@/lib/validations/auth";
+import {
+  forgotPasswordSchema,
+  ForgotPasswordInput,
+} from "@/lib/validations/auth";
 import { authService } from "@/services/auth";
 
 export default function ForgotPasswordPage() {
@@ -14,6 +23,8 @@ export default function ForgotPasswordPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [email, setEmail] = useState("");
+  const [resendAttempted, setResendAttempted] = useState(false);
+  const [resendCountdown, setResendCountdown] = useState(0);
 
   const {
     register,
@@ -36,6 +47,32 @@ export default function ForgotPasswordPage() {
         type: "manual",
         message: "An error occurred. Please try again.",
       });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (resendCountdown > 0) return;
+
+    setIsSubmitting(true);
+    setResendAttempted(true);
+
+    try {
+      await authService.forgotPassword(email);
+      // Start a 60-second countdown for the resend button
+      setResendCountdown(60);
+      const countdownInterval = setInterval(() => {
+        setResendCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(countdownInterval);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    } catch (error: any) {
+      console.error("Resend reset link error:", error);
     } finally {
       setIsSubmitting(false);
     }
@@ -75,11 +112,29 @@ export default function ForgotPasswordPage() {
                 </h3>
                 <div className="mt-2">
                   <p className="text-sm text-gray-500">
-                    Please check your email for instructions on how to reset your password.
-                    If you don't see it in your inbox, please check your spam folder.
+                    Please check your email for instructions on how to reset
+                    your password. If you don't see it in your inbox, please
+                    check your spam folder.
                   </p>
                 </div>
-                <div className="mt-5">
+                <div className="mt-5 space-y-3">
+                  {/* Resend button */}
+                  <button
+                    type="button"
+                    onClick={handleResend}
+                    disabled={isSubmitting || resendCountdown > 0}
+                    className="inline-flex justify-center w-full rounded-md border border-orange-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-orange-600 hover:bg-orange-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500 sm:text-sm disabled:opacity-50"
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="h-5 w-5 animate-spin mr-2" />
+                    ) : resendCountdown > 0 ? (
+                      `Resend link (${resendCountdown}s)`
+                    ) : (
+                      "Didn't receive the email? Resend"
+                    )}
+                  </button>
+
+                  {/* Return to login button */}
                   <button
                     type="button"
                     onClick={() => router.push("/login")}
@@ -87,6 +142,13 @@ export default function ForgotPasswordPage() {
                   >
                     Return to login
                   </button>
+
+                  {/* Resend success message */}
+                  {resendAttempted && resendCountdown > 0 && (
+                    <p className="text-sm text-green-600 text-center mt-2">
+                      Reset link has been resent to your email.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>

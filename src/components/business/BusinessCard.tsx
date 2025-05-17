@@ -26,8 +26,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
-import { toast } from "react-hot-toast";
+import { FavoriteButton } from "./FavoriteButton";
 
 interface BusinessCardProps {
   business: {
@@ -54,22 +53,6 @@ interface BusinessCardProps {
 
 export function BusinessCard({ business }: BusinessCardProps) {
   const [imageError, setImageError] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
-
-  const toggleFavorite = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsFavorite(!isFavorite);
-
-    // Show toast notification
-    if (!isFavorite) {
-      toast.success(`Added ${business.name} to favorites`);
-    } else {
-      toast.success(`Removed ${business.name} from favorites`);
-    }
-
-    // TODO: Implement API call to save favorite status
-  };
 
   const formatAddress = (address: any) => {
     if (!address) return "Location not specified";
@@ -147,34 +130,20 @@ export function BusinessCard({ business }: BusinessCardProps) {
 
           {/* Favorite Button */}
           <div className="absolute top-3 right-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`rounded-full bg-white/80 hover:bg-white ${
-                isFavorite ? "text-red-500" : "text-gray-500"
-              }`}
-              onClick={toggleFavorite}
+            <div
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+              }}
             >
-              <Heart
-                className={`h-5 w-5 ${isFavorite ? "fill-current" : ""}`}
+              <FavoriteButton
+                businessId={business._id}
+                variant="ghost"
+                size="sm"
+                showText={false}
+                className="rounded-full bg-white/80 hover:bg-white"
               />
-            </Button>
-          </div>
-
-          {/* Favorite Button */}
-          <div className="absolute top-3 right-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className={`rounded-full bg-white/80 hover:bg-white ${
-                isFavorite ? "text-red-500" : "text-gray-500"
-              }`}
-              onClick={toggleFavorite}
-            >
-              <Heart
-                className={`h-5 w-5 ${isFavorite ? "fill-current" : ""}`}
-              />
-            </Button>
+            </div>
           </div>
 
           {business.logo && (

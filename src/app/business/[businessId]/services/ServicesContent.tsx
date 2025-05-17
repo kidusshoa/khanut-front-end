@@ -50,59 +50,143 @@ export default function ServicesContent({ businessId }: ServicesContentProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
 
-  // Fetch services with improved reliability
-  const {
-    data: services,
-    isLoading,
-    isError,
-    error,
-    refetch,
-  } = useQuery({
-    queryKey: ["services", businessId],
-    queryFn: async () => {
+  // Fetch services with improved reliability - similar to ProductsContent approach
+  const [services, setServices] = useState<Service[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isError, setIsError] = useState(false);
+  const [error, setError] = useState<any>(null);
+
+  // Function to fetch services
+  const fetchServices = async () => {
+    try {
+      setIsLoading(true);
+      setIsError(false);
+      setError(null);
+      let fetchedServices: Service[] = [];
+
+      // Get the correct business ID using our utility function
+      const correctBusinessId = await getCorrectBusinessId(businessId);
+      console.log("Using business ID for services:", correctBusinessId);
+
       try {
-        console.log("Fetching all services for business ID:", businessId);
+        // First try to fetch non-product services using the getServicesByType API for appointment type
+        console.log("Trying getServicesByType API for appointment services");
+        const appointmentServices = await serviceApi.getServicesByType(
+          correctBusinessId,
+          "appointment",
+          { limit: 100 }
+        );
 
-        // First try to get all services using the direct API
+        if (Array.isArray(appointmentServices)) {
+          fetchedServices = [...appointmentServices];
+          console.log(
+            `Found ${appointmentServices.length} appointment services`
+          );
+        }
+
+        // Then try to fetch in-person services
+        console.log("Trying getServicesByType API for in-person services");
+        const inPersonServices = await serviceApi.getServicesByType(
+          correctBusinessId,
+          "in_person",
+          { limit: 100 }
+        );
+
+        if (Array.isArray(inPersonServices)) {
+          fetchedServices = [...fetchedServices, ...inPersonServices];
+          console.log(`Found ${inPersonServices.length} in-person services`);
+        }
+
+        console.log(`Total services found: ${fetchedServices.length}`);
+      } catch (typeError) {
+        console.warn("Error fetching services by type:", typeError);
+        console.log("Falling back to getBusinessServices API...");
+
+        // Fallback to getBusinessServices API and filter out products
         try {
-          const url = `/api/services/business/${businessId}?limit=100`;
+          const allServices = await serviceApi.getBusinessServices(
+            correctBusinessId,
+            { limit: 100 }
+          );
 
-          console.log("Trying direct API call to endpoint:", url);
-          const response = await fetch(url, {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          });
+          // Filter out products
+          if (Array.isArray(allServices)) {
+            fetchedServices = allServices.filter(
+              (service: any) => service.serviceType !== "product"
+            );
+            console.log(
+              `Found ${fetchedServices.length} non-product services via getBusinessServices`
+            );
+          } else {
+            console.log("getBusinessServices did not return an array");
+          }
+        } catch (fallbackError) {
+          console.warn("Error fetching business services:", fallbackError);
+          // Continue to next fallback
+        }
+      }
+
+      // Try direct API call as a last resort if no services were found
+      if (fetchedServices.length === 0) {
+        try {
+          console.log("Trying direct API call as last resort");
+          const response = await fetch(
+            `/api/services/business/${correctBusinessId}?limit=100`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+              },
+            }
+          );
 
           if (!response.ok) {
             throw new Error(`Failed with status: ${response.status}`);
           }
 
           const data = await response.json();
-          console.log("Direct API call succeeded:", data);
-          return data;
-        } catch (directApiError) {
-          console.warn(
-            "Direct API call failed, trying serviceApi:",
-            directApiError
-          );
 
-          // Fallback to the serviceApi method
-          const params = { limit: 100 };
-          const data = await serviceApi.getBusinessServices(businessId, params);
-          console.log("serviceApi.getBusinessServices succeeded:", data);
-          return data;
+          if (Array.isArray(data)) {
+            fetchedServices = data.filter(
+              (service: any) => service.serviceType !== "product"
+            );
+            console.log(
+              `Found ${fetchedServices.length} non-product services via direct API call`
+            );
+          }
+        } catch (directError) {
+          console.warn("Error with direct API call:", directError);
+          // Continue with empty services array
         }
-      } catch (error) {
-        console.error("All service fetching methods failed:", error);
-        throw error;
       }
-    },
-    enabled: !!businessId,
-    retry: 3, // Retry up to 3 times if the request fails
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000), // Exponential backoff
-  });
+
+      setServices(fetchedServices);
+
+      // If no services were found but there was no error, set a friendly message
+      if (fetchedServices.length === 0) {
+        console.log("No services found for this business");
+      }
+    } catch (err: any) {
+      console.error("Error fetching services:", err);
+      setIsError(true);
+      setError(err.message || "Failed to load services");
+      toast.error("Failed to load services. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch services on component mount
+  useEffect(() => {
+    if (businessId) {
+      fetchServices();
+    }
+  }, [businessId]);
+
+  // Function to refetch services
+  const refetch = () => {
+    fetchServices();
+  };
 
   // Log any errors for debugging
   useEffect(() => {
@@ -124,22 +208,30 @@ export default function ServicesContent({ businessId }: ServicesContentProps) {
   const handleDeleteService = async (serviceId: string) => {
     if (confirm("Are you sure you want to delete this service?")) {
       try {
+        setIsLoading(true);
         await serviceApi.deleteService(serviceId);
+
+        // Update the local state to remove the deleted service
+        setServices(services.filter((service) => service._id !== serviceId));
+
         toast.success("Service deleted successfully");
-        refetch();
       } catch (error) {
         console.error("Error deleting service:", error);
         toast.error("Failed to delete service");
+      } finally {
+        setIsLoading(false);
       }
     }
   };
 
   const handleServiceAdded = () => {
-    refetch();
+    fetchServices();
+    toast.success("Service added successfully");
   };
 
   const handleServiceUpdated = () => {
-    refetch();
+    fetchServices();
+    toast.success("Service updated successfully");
   };
 
   const formatPrice = (price: number) => {
@@ -191,16 +283,16 @@ export default function ServicesContent({ businessId }: ServicesContentProps) {
   // State for search functionality
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Filter services based on search term
-  const filteredServices =
-    services && Array.isArray(services)
-      ? services.filter(
-          (service) =>
-            searchTerm === "" ||
-            service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            service.description.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      : [];
+  // Filter services based on search term and exclude products
+  const filteredServices = services.filter(
+    (service) =>
+      // Exclude products
+      service.serviceType !== "product" &&
+      // Apply search filter
+      (searchTerm === "" ||
+        service.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        service.description.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
   return (
     <DashboardLayout businessId={businessId}>
@@ -214,7 +306,7 @@ export default function ServicesContent({ businessId }: ServicesContentProps) {
           </div>
           <div className="flex gap-2">
             <Button
-              onClick={() => refetch()}
+              onClick={() => fetchServices()}
               variant="outline"
               className="sm:self-start"
             >
@@ -245,7 +337,7 @@ export default function ServicesContent({ businessId }: ServicesContentProps) {
                 There was a problem loading your services. Please try again.
               </p>
               <Button
-                onClick={() => refetch()}
+                onClick={() => fetchServices()}
                 className="bg-red-600 hover:bg-red-700 text-white"
               >
                 Retry

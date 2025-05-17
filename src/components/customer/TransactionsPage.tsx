@@ -41,13 +41,7 @@ import {
 } from "@/components/ui/pagination";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { paymentApi } from "@/services/payment";
-import {
-  Eye,
-  FileText,
-  CreditCard,
-  Search,
-  Download,
-} from "lucide-react";
+import { Eye, FileText, CreditCard, Search, Download } from "lucide-react";
 import Link from "next/link";
 import { toast } from "react-hot-toast";
 
@@ -62,8 +56,10 @@ export default function TransactionsPage({
   const [page, setPage] = useState(1);
   const [limit] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
-  const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | null>(null);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | null>(
+    null
+  );
   const [selectedTransaction, setSelectedTransaction] = useState<any>(null);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
 
@@ -71,18 +67,25 @@ export default function TransactionsPage({
   const queryParams = {
     page,
     limit,
-    status: statusFilter as "pending" | "completed" | "failed" | "cancelled" | undefined,
-    startDate: dateRange?.from ? dayjs(dateRange.from).format("YYYY-MM-DD") : undefined,
-    endDate: dateRange?.to ? dayjs(dateRange.to).format("YYYY-MM-DD") : undefined,
+    status:
+      statusFilter === "all"
+        ? undefined
+        : (statusFilter as
+            | "pending"
+            | "completed"
+            | "failed"
+            | "cancelled"
+            | undefined),
+    startDate: dateRange?.from
+      ? dayjs(dateRange.from).format("YYYY-MM-DD")
+      : undefined,
+    endDate: dateRange?.to
+      ? dayjs(dateRange.to).format("YYYY-MM-DD")
+      : undefined,
   };
 
   // Fetch transactions
-  const {
-    data,
-    isLoading,
-    error,
-    refetch,
-  } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: ["customerTransactions", customerId, queryParams],
     queryFn: () => paymentApi.getCustomerPayments(customerId, queryParams),
   });
@@ -144,7 +147,7 @@ export default function TransactionsPage({
   // Export transactions as CSV
   const handleExportCSV = () => {
     if (!data?.transactions) return;
-    
+
     const headers = ["Date", "Amount", "Type", "Status", "Reference"];
     const csvData = data.transactions.map((transaction: any) => [
       dayjs(transaction.createdAt).format("YYYY-MM-DD HH:mm:ss"),
@@ -153,21 +156,24 @@ export default function TransactionsPage({
       transaction.status,
       transaction.chapaReference || transaction._id,
     ]);
-    
+
     const csvContent = [
       headers.join(","),
       ...csvData.map((row: string[]) => row.join(",")),
     ].join("\n");
-    
+
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `transactions_${dayjs().format("YYYY-MM-DD")}.csv`);
+    link.setAttribute(
+      "download",
+      `transactions_${dayjs().format("YYYY-MM-DD")}.csv`
+    );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    
+
     toast.success("Transactions exported successfully");
   };
 
@@ -175,11 +181,15 @@ export default function TransactionsPage({
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold tracking-tight">Transaction History</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          Transaction History
+        </h1>
         <Card>
           <CardHeader>
             <CardTitle>Your Transactions</CardTitle>
-            <CardDescription>View your payment history and transaction details</CardDescription>
+            <CardDescription>
+              View your payment history and transaction details
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
@@ -201,11 +211,15 @@ export default function TransactionsPage({
   if (error) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold tracking-tight">Transaction History</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          Transaction History
+        </h1>
         <Card>
           <CardHeader>
             <CardTitle>Your Transactions</CardTitle>
-            <CardDescription>View your payment history and transaction details</CardDescription>
+            <CardDescription>
+              View your payment history and transaction details
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-center py-4">
@@ -213,8 +227,8 @@ export default function TransactionsPage({
               <p className="text-sm text-muted-foreground">
                 {error instanceof Error ? error.message : "An error occurred"}
               </p>
-              <Button 
-                onClick={() => refetch()} 
+              <Button
+                onClick={() => refetch()}
                 className="mt-4 bg-orange-600 hover:bg-orange-700"
               >
                 Try Again
@@ -230,29 +244,33 @@ export default function TransactionsPage({
   if (!data?.transactions || data.transactions.length === 0) {
     return (
       <div className="space-y-4">
-        <h1 className="text-2xl font-bold tracking-tight">Transaction History</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          Transaction History
+        </h1>
         <Card>
           <CardHeader>
             <CardTitle>Your Transactions</CardTitle>
-            <CardDescription>View your payment history and transaction details</CardDescription>
+            <CardDescription>
+              View your payment history and transaction details
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="text-center py-8">
               <CreditCard className="mx-auto h-12 w-12 text-muted-foreground opacity-50 mb-4" />
               <p className="text-lg font-medium">No transactions found</p>
               <p className="text-sm text-muted-foreground">
-                {statusFilter || dateRange 
+                {statusFilter || dateRange
                   ? "No transactions match your current filters. Try adjusting your search criteria."
                   : "You haven't made any payments yet"}
               </p>
               {(statusFilter || dateRange) && (
-                <Button 
+                <Button
                   onClick={() => {
-                    setStatusFilter("");
+                    setStatusFilter("all");
                     setDateRange(null);
                     refetch();
-                  }} 
-                  variant="outline" 
+                  }}
+                  variant="outline"
                   className="mt-4"
                 >
                   Clear Filters
@@ -268,11 +286,13 @@ export default function TransactionsPage({
   return (
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl font-bold tracking-tight">Transaction History</h1>
-        <Button 
-          onClick={handleExportCSV} 
-          variant="outline" 
-          size="sm" 
+        <h1 className="text-2xl font-bold tracking-tight">
+          Transaction History
+        </h1>
+        <Button
+          onClick={handleExportCSV}
+          variant="outline"
+          size="sm"
           className="flex items-center gap-2"
         >
           <Download className="h-4 w-4" />
@@ -283,7 +303,9 @@ export default function TransactionsPage({
       <Card>
         <CardHeader>
           <CardTitle>Your Transactions</CardTitle>
-          <CardDescription>View your payment history and transaction details</CardDescription>
+          <CardDescription>
+            View your payment history and transaction details
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           {/* Filters */}
@@ -301,12 +323,15 @@ export default function TransactionsPage({
               </form>
             </div>
             <div className="flex flex-1 gap-2">
-              <Select value={statusFilter} onValueChange={handleStatusFilterChange}>
+              <Select
+                value={statusFilter}
+                onValueChange={handleStatusFilterChange}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Filter by status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Statuses</SelectItem>
+                  <SelectItem value="all">All Statuses</SelectItem>
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="failed">Failed</SelectItem>

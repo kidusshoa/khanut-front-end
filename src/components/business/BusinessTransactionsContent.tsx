@@ -67,7 +67,7 @@ export default function BusinessTransactionsContent({
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [dateRange, setDateRange] = useState<{ from: Date; to: Date } | null>(
     null
   );
@@ -78,12 +78,15 @@ export default function BusinessTransactionsContent({
   const queryParams = {
     page,
     limit,
-    status: statusFilter as
-      | "pending"
-      | "completed"
-      | "failed"
-      | "cancelled"
-      | undefined,
+    status:
+      statusFilter === "all"
+        ? undefined
+        : (statusFilter as
+            | "pending"
+            | "completed"
+            | "failed"
+            | "cancelled"
+            | undefined),
     startDate: dateRange?.from
       ? dayjs(dateRange.from).format("YYYY-MM-DD")
       : undefined,
@@ -313,7 +316,7 @@ export default function BusinessTransactionsContent({
                 {(statusFilter || dateRange) && (
                   <Button
                     onClick={() => {
-                      setStatusFilter("");
+                      setStatusFilter("all");
                       setDateRange(null);
                       refetch();
                     }}
@@ -442,7 +445,7 @@ export default function BusinessTransactionsContent({
                     <SelectValue placeholder="Filter by status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Statuses</SelectItem>
+                    <SelectItem value="all">All Statuses</SelectItem>
                     <SelectItem value="pending">Pending</SelectItem>
                     <SelectItem value="completed">Completed</SelectItem>
                     <SelectItem value="failed">Failed</SelectItem>

@@ -15,6 +15,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { FallbackImage } from "@/components/ui/fallback-image";
+import { FavoriteButton } from "./FavoriteButton";
 
 interface ServiceCardProps {
   service: {
@@ -46,23 +47,11 @@ export function ServiceCard({
   onEdit,
   showActions = true,
 }: ServiceCardProps) {
-  const [isFavorite, setIsFavorite] = useState(false);
-
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "ETB",
     }).format(price);
-  };
-
-  const toggleFavorite = () => {
-    setIsFavorite(!isFavorite);
-    if (!isFavorite) {
-      toast.success(`Added ${service.name} to favorites`);
-    } else {
-      toast.success(`Removed ${service.name} from favorites`);
-    }
-    // TODO: Implement API call to save favorite status
   };
 
   const getServiceTypeIcon = (type: string) => {
@@ -115,20 +104,25 @@ export function ServiceCard({
           </Badge>
         </div>
         <div className="absolute top-2 left-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            className={`rounded-full bg-white/80 hover:bg-white ${
-              isFavorite ? "text-red-500" : "text-gray-500"
-            }`}
+          <div
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              toggleFavorite();
             }}
           >
-            <Heart className={`h-5 w-5 ${isFavorite ? "fill-current" : ""}`} />
-          </Button>
+            {/* Make sure businessId is a string */}
+            <FavoriteButton
+              businessId={
+                typeof service.businessId === "object"
+                  ? service.businessId._id
+                  : service.businessId
+              }
+              variant="ghost"
+              size="sm"
+              showText={false}
+              className="rounded-full bg-white/80 hover:bg-white"
+            />
+          </div>
         </div>
       </div>
       <CardContent className="p-4">

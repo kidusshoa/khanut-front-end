@@ -34,7 +34,16 @@ export function FavoriteButton({
   useEffect(() => {
     const checkFavoriteStatus = async () => {
       try {
-        const isFav = await favoritesApi.isFavorite(businessId);
+        // Ensure businessId is a string
+        const id =
+          typeof businessId === "object" && businessId._id
+            ? businessId._id
+            : businessId;
+
+        // Log the ID being checked
+        console.log("Checking favorite status for business ID:", id);
+
+        const isFav = await favoritesApi.isFavorite(id);
         setIsFavorite(isFav);
       } catch (error) {
         console.error("Error checking favorite status:", error);
@@ -50,7 +59,16 @@ export function FavoriteButton({
     try {
       setIsLoading(true);
 
-      const result = await favoritesApi.toggleFavorite(businessId);
+      // Ensure businessId is a string
+      const id =
+        typeof businessId === "object" && businessId._id
+          ? businessId._id
+          : businessId;
+
+      // Log the ID being used
+      console.log("Toggling favorite for business ID:", id);
+
+      const result = await favoritesApi.toggleFavorite(id);
 
       if (isFavorite) {
         toast({
