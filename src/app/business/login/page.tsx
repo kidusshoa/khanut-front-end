@@ -65,10 +65,34 @@ export default function BusinessLoginPage() {
         return;
       }
 
-      // Store tokens in cookies if remember me is checked
-      if (rememberMe) {
-        Cookies.set("refreshToken", refreshToken, { expires: 30 });
-      }
+      // Store tokens in cookies - always use 30 days to prevent logout on refresh
+      const expirationDays = 30;
+
+      console.log(
+        "Setting business auth cookies with expiration:",
+        expirationDays,
+        "days"
+      );
+
+      // Set cookies with consistent options
+      const cookieOptions = {
+        expires: expirationDays,
+        sameSite: "lax", // Changed from strict to lax to allow cross-site navigation
+        secure: process.env.NODE_ENV === "production",
+        path: "/", // Ensure cookies are available across the site
+      };
+
+      // Set all required cookies
+      Cookies.set("client-token", accessToken, cookieOptions);
+      Cookies.set("refresh-token", refreshToken, cookieOptions);
+      Cookies.set("user-role", role, cookieOptions);
+      Cookies.set("user-id", userId, cookieOptions);
+
+      // Also store in localStorage as backup
+      localStorage.setItem("accessToken", accessToken);
+      localStorage.setItem("refreshToken", refreshToken);
+      localStorage.setItem("userRole", role);
+      localStorage.setItem("userId", userId);
 
       // Now use NextAuth to establish a session
       const result = await signIn("credentials", {

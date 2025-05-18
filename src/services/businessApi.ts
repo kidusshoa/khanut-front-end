@@ -3,6 +3,19 @@ import { getAuthToken } from "@/lib/auth";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 /**
+ * Get token from cookies
+ * @returns The token from cookies or empty string
+ */
+const getTokenFromCookies = (): string => {
+  return (
+    document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("client-token="))
+      ?.split("=")[1] || ""
+  );
+};
+
+/**
  * Update business profile
  */
 export const updateBusinessProfile = async (profileData: any) => {
@@ -55,15 +68,17 @@ export const getBusinessDetails = async (businessId: string) => {
   try {
     console.log("Fetching business details for ID:", businessId);
 
-    const url = `${API_URL}/api/business/${businessId}`;
+    const url = `${API_URL}/api/businesses/${businessId}`;
     console.log("Business details URL:", url);
+
+    const token = getTokenFromCookies();
 
     const response = await fetch(url, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        Authorization: token ? `Bearer ${token}` : "",
       },
-      credentials: "include",
     });
 
     if (!response.ok) {
@@ -118,12 +133,14 @@ export const getBusinessReviews = async (businessId: string) => {
     const url = `${API_URL}/api/reviews/business/${businessId}`;
     console.log("Reviews URL:", url);
 
+    const token = getTokenFromCookies();
+
     const response = await fetch(url, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
+        Authorization: token ? `Bearer ${token}` : "",
       },
-      credentials: "include",
     });
 
     if (!response.ok) {
@@ -158,12 +175,14 @@ export const getBusinessServices = async (businessId: string) => {
       const url = `${API_URL}/api/services/business/${businessId}`;
       console.log("Primary services URL:", url);
 
+      const token = getTokenFromCookies();
+
       const response = await fetch(url, {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
         },
-        credentials: "include",
       });
 
       if (!response.ok) {
@@ -186,12 +205,14 @@ export const getBusinessServices = async (businessId: string) => {
         const fallbackUrl = `${API_URL}/api/businesses/${businessId}/services`;
         console.log("Fallback services URL:", fallbackUrl);
 
+        const token = getTokenFromCookies();
+
         const fallbackResponse = await fetch(fallbackUrl, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
+            Authorization: token ? `Bearer ${token}` : "",
           },
-          credentials: "include",
         });
 
         if (!fallbackResponse.ok) {

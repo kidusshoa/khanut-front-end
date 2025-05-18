@@ -42,22 +42,32 @@ export default function LoginPage() {
       // If API login is successful, store the token in cookies
       if (apiResponse && apiResponse.accessToken) {
         // Store tokens in cookies with expiration based on "Remember me"
-        const expirationDays = rememberMe ? 30 : 1;
-        Cookies.set("client-token", apiResponse.accessToken, {
+        // Always use 30 days to prevent logout on refresh
+        const expirationDays = 30;
+
+        console.log(
+          "Setting auth cookies with expiration:",
+          expirationDays,
+          "days"
+        );
+
+        // Set cookies with consistent options
+        const cookieOptions = {
           expires: expirationDays,
-          sameSite: "strict",
+          sameSite: "lax", // Changed from strict to lax to allow cross-site navigation
           secure: process.env.NODE_ENV === "production",
-        });
-        Cookies.set("user-role", apiResponse.role, {
-          expires: expirationDays,
-          sameSite: "strict",
-          secure: process.env.NODE_ENV === "production",
-        });
-        Cookies.set("user-id", apiResponse.userId, {
-          expires: expirationDays,
-          sameSite: "strict",
-          secure: process.env.NODE_ENV === "production",
-        });
+          path: "/", // Ensure cookies are available across the site
+        };
+
+        // Set all required cookies
+        Cookies.set("client-token", apiResponse.accessToken, cookieOptions);
+        Cookies.set("user-role", apiResponse.role, cookieOptions);
+        Cookies.set("user-id", apiResponse.userId, cookieOptions);
+
+        // Also store in localStorage as backup
+        localStorage.setItem("accessToken", apiResponse.accessToken);
+        localStorage.setItem("userRole", apiResponse.role);
+        localStorage.setItem("userId", apiResponse.userId);
 
         // Get user info from API response
         const role = apiResponse.role;

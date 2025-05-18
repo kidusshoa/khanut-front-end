@@ -25,6 +25,7 @@ import {
   Sun,
   Moon,
   Brain,
+  DollarSign,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -97,6 +98,7 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
     },
     { name: "Users", icon: Users, path: `/admin/${adminId}/users` },
     { name: "Reviews", icon: MessageSquare, path: `/admin/${adminId}/reviews` },
+    { name: "Revenue", icon: DollarSign, path: `/admin/${adminId}/revenue` },
     { name: "Reports", icon: FileBarChart, path: `/admin/${adminId}/reports` },
     {
       name: "Recommendations",

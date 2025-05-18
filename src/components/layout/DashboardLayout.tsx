@@ -28,6 +28,7 @@ export default function DashboardLayout({
   useEffect(() => {
     // Check if user is authenticated and has access to this business
     if (status === "unauthenticated") {
+      console.log("User is unauthenticated, redirecting to login");
       router.push("/login");
       return;
     } else if (status === "authenticated") {
@@ -45,10 +46,21 @@ export default function DashboardLayout({
             return;
           }
 
-          // Store token in both places to ensure consistency
+          // Store token in both places to ensure consistency and prevent logout on refresh
           localStorage.setItem("accessToken", accessToken);
+
+          // Set cookies with longer expiration (30 days)
           if (!Cookies.get("client-token")) {
-            Cookies.set("client-token", accessToken, { expires: 7 });
+            Cookies.set("client-token", accessToken, { expires: 30 });
+          }
+
+          // Also set user role and ID cookies if they don't exist
+          if (!Cookies.get("user-role") && session?.user?.role) {
+            Cookies.set("user-role", session.user.role, { expires: 30 });
+          }
+
+          if (!Cookies.get("user-id") && session?.user?.id) {
+            Cookies.set("user-id", session.user.id, { expires: 30 });
           }
 
           const response = await fetch(

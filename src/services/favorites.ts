@@ -34,8 +34,8 @@ export const favoritesApi = {
           "Content-Type": "application/json",
           Accept: "application/json",
         },
-        // Add credentials to handle CORS
-        credentials: "include",
+        // Remove credentials to avoid CORS issues
+        mode: "cors",
       });
 
       if (!response.ok) {
@@ -85,8 +85,8 @@ export const favoritesApi = {
             "Content-Type": "application/json",
             Accept: "application/json",
           },
-          // Add credentials to handle CORS
-          credentials: "include",
+          // Remove credentials to avoid CORS issues
+          mode: "cors",
         }
       );
 

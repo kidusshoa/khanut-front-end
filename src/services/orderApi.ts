@@ -1,6 +1,19 @@
 // API functions for order-related operations
 
 /**
+ * Get token from cookies
+ * @returns The token from cookies or empty string
+ */
+const getTokenFromCookies = (): string => {
+  return (
+    document.cookie
+      .split("; ")
+      .find((row) => row.startsWith("client-token="))
+      ?.split("=")[1] || ""
+  );
+};
+
+/**
  * Get orders for a specific business
  * @param businessId The ID of the business
  * @param options Optional parameters for filtering orders
@@ -23,16 +36,20 @@ export const getBusinessOrders = async (
     if (options?.startDate) queryParams.append("startDate", options.startDate);
     if (options?.endDate) queryParams.append("endDate", options.endDate);
 
-    const queryString = queryParams.toString() ? `?${queryParams.toString()}` : "";
-    
+    const queryString = queryParams.toString()
+      ? `?${queryParams.toString()}`
+      : "";
+
+    const token = getTokenFromCookies();
+
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/businesses/${businessId}/orders${queryString}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/orders/business/${businessId}${queryString}`,
       {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
         },
-        credentials: "include",
       }
     );
 
@@ -56,15 +73,17 @@ export const getBusinessOrders = async (
  */
 export const updateOrderStatus = async (orderId: string, status: string) => {
   try {
+    const token = getTokenFromCookies();
+
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/orders/${orderId}/status`,
       {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
         },
         body: JSON.stringify({ status }),
-        credentials: "include",
       }
     );
 
@@ -87,14 +106,17 @@ export const updateOrderStatus = async (orderId: string, status: string) => {
  */
 export const getOrderDetails = async (orderId: string) => {
   try {
+    // Get the token from cookies
+    const token = getTokenFromCookies();
+
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/api/orders/${orderId}`,
       {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
         },
-        credentials: "include",
       }
     );
 
@@ -117,14 +139,16 @@ export const getOrderDetails = async (orderId: string) => {
  */
 export const getCustomerOrders = async (customerId: string) => {
   try {
+    const token = getTokenFromCookies();
+
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}/api/customers/${customerId}/orders`,
+      `${process.env.NEXT_PUBLIC_API_URL}/api/orders/customer/${customerId}`,
       {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
+          Authorization: token ? `Bearer ${token}` : "",
         },
-        credentials: "include",
       }
     );
 

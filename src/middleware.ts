@@ -3,7 +3,20 @@ import type { NextRequest } from "next/server";
 import { getToken } from "next-auth/jwt";
 
 export async function middleware(request: NextRequest) {
+  // Try to get token from NextAuth
   const token = await getToken({ req: request });
+
+  // Also check for client-token cookie as fallback
+  const clientToken = request.cookies.get("client-token")?.value;
+  const userRole = request.cookies.get("user-role")?.value;
+
+  // For debugging
+  console.log("Middleware token check:", {
+    hasNextAuthToken: !!token,
+    hasClientToken: !!clientToken,
+    userRole: userRole || (token?.role as string),
+  });
+
   const path = request.nextUrl.pathname;
   const search = request.nextUrl.search;
 
@@ -22,6 +35,16 @@ export async function middleware(request: NextRequest) {
   // Check if this is a pending page
   const isPendingPage = path.match(/^\/business\/[^\/]+\/pending\/?$/);
 
+  // Check if user is authenticated using either NextAuth token or client-token cookie
+  const isAuthenticated = !!token || !!clientToken;
+
+  // Create a combined token object for use in the middleware
+  const effectiveToken = token || {
+    role: userRole,
+    id: request.cookies.get("user-id")?.value,
+    accessToken: clientToken,
+  };
+
   // Check if the path starts with any of the public paths, is a public business view, or is a pending page
   if (
     publicPaths.some((publicPath) => path.startsWith(publicPath)) ||
@@ -36,7 +59,11 @@ export async function middleware(request: NextRequest) {
   if (path.match(/^\/business\/[^\/]+\/?$/) && !path.includes("/register/")) {
     const businessId = path.split("/")[2];
     // If not authenticated as business, redirect to view page
-    if (!token || token.role !== "business") {
+    if (
+      !isAuthenticated ||
+      (userRole !== "business" && token?.role !== "business")
+    ) {
+      console.log("Not authenticated as business, redirecting to view page");
       return NextResponse.redirect(
         new URL(`/business/${businessId}/view`, request.url)
       );
@@ -45,34 +72,39 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check if user is authenticated
-  if (!token) {
+  // If not authenticated for protected routes, redirect to login
+  if (!isAuthenticated) {
+    console.log("User not authenticated, redirecting to login");
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
   // Handle search redirects for customers
-  if (path === "/search" && token?.role === "customer" && token?.customerId) {
+  if (
+    path === "/search" &&
+    effectiveToken?.role === "customer" &&
+    effectiveToken?.id
+  ) {
     return NextResponse.redirect(
-      new URL(`/customer/${token.customerId}/search${search}`, request.url)
+      new URL(`/customer/${effectiveToken.id}/search${search}`, request.url)
     );
   }
 
   // Customer route protection
   if (path.startsWith("/customer")) {
-    if (token.role !== "customer") {
+    if (effectiveToken.role !== "customer") {
       return NextResponse.redirect(new URL("/login", request.url));
     }
-
-    // Extract customerId from path
-    const pathParts = path.split("/");
-    const pathCustomerId = pathParts[2];
 
     // For development, we'll skip the customer ID check
     // In production, you would want to check if the user is trying to access another customer's data
     /*
-    if (pathCustomerId && pathCustomerId !== token.id) {
+    // Extract customerId from path
+    const pathParts = path.split("/");
+    const pathCustomerId = pathParts[2];
+
+    if (pathCustomerId && pathCustomerId !== effectiveToken.id) {
       return NextResponse.redirect(
-        new URL(`/customer/${token.id}`, request.url)
+        new URL(`/customer/${effectiveToken.id}`, request.url)
       );
     }
     */
@@ -85,7 +117,7 @@ export async function middleware(request: NextRequest) {
       return NextResponse.next();
     }
 
-    if (token?.role !== "business") {
+    if (effectiveToken?.role !== "business") {
       return NextResponse.redirect(new URL("/business/login", request.url));
     }
 
@@ -96,7 +128,7 @@ export async function middleware(request: NextRequest) {
           `${process.env.NEXT_PUBLIC_API_URL}/api/business/status`,
           {
             headers: {
-              Authorization: `Bearer ${token.accessToken}`,
+              Authorization: `Bearer ${effectiveToken.accessToken}`,
             },
           }
         );
@@ -121,6 +153,7 @@ export async function middleware(request: NextRequest) {
           );
         }
       } catch (error) {
+        console.error("Error checking business status:", error);
         const businessId = path.split("/")[2];
         return NextResponse.redirect(
           new URL(`/business/${businessId}/pending`, request.url)

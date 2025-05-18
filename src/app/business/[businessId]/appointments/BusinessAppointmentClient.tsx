@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import {
@@ -14,6 +14,9 @@ import {
   Eye,
   CalendarDays,
   Plus,
+  Mail,
+  Phone,
+  CalendarClock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +39,15 @@ import {
 } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { AddAppointmentModal } from "@/components/business/AddAppointmentModal";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Separator } from "@/components/ui/separator";
 
 // Extend dayjs plugins
 dayjs.extend(isToday);
@@ -75,32 +87,68 @@ export default function BusinessAppointmentsClient({ businessId }: Props) {
   const [activeTab, setActiveTab] = useState("all");
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] =
+    useState<Appointment | null>(null);
 
   const {
     data: appointments,
     isLoading,
     refetch,
+    error,
   } = useQuery({
     queryKey: ["appointments", businessId, activeTab, selectedDate],
-    queryFn: () => {
+    queryFn: async () => {
+      console.log("Fetching appointments for business:", businessId);
       const params: any = {};
       if (activeTab !== "all") params.status = activeTab;
       if (selectedDate) params.date = dayjs(selectedDate).format("YYYY-MM-DD");
-      return appointmentApi.getBusinessAppointments(businessId, params);
+
+      try {
+        const result = await appointmentApi.getBusinessAppointments(
+          businessId,
+          params
+        );
+        console.log("Appointments fetched successfully:", result);
+        return result;
+      } catch (err) {
+        console.error("Error fetching appointments:", err);
+        throw err;
+      }
     },
+    retry: 1,
   });
+
+  // Log any errors
+  useEffect(() => {
+    if (error) {
+      console.error("Query error:", error);
+      toast.error("Failed to load appointments. Please try again.");
+    }
+  }, [error]);
 
   const handleStatusChange = async (
     appointmentId: string,
     newStatus: string
   ) => {
     try {
-      await appointmentApi.updateAppointmentStatus(appointmentId, newStatus);
+      console.log(
+        `Updating appointment ${appointmentId} status to ${newStatus}`
+      );
+      const result = await appointmentApi.updateAppointmentStatus(
+        appointmentId,
+        newStatus
+      );
+      console.log("Status update result:", result);
       toast.success(`Appointment ${newStatus} successfully`);
-      refetch();
+
+      // Refresh the appointments list
+      await refetch();
     } catch (error) {
       console.error("Error updating appointment status:", error);
-      toast.error("Failed to update appointment status");
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      toast.error(`Failed to update appointment status: ${errorMessage}`);
     }
   };
 
@@ -248,7 +296,10 @@ export default function BusinessAppointmentsClient({ businessId }: Props) {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => router.push(`/appointments/${appointment._id}`)}
+              onClick={() => {
+                setSelectedAppointment(appointment);
+                setIsViewModalOpen(true);
+              }}
             >
               <Eye className="h-4 w-4" />
             </Button>
@@ -386,6 +437,24 @@ export default function BusinessAppointmentsClient({ businessId }: Props) {
               <div className="flex justify-center items-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
               </div>
+            ) : error ? (
+              <div className="text-center py-12 bg-red-50 rounded-lg">
+                <XCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-red-800 mb-2">
+                  Error loading appointments
+                </h3>
+                <p className="text-red-600 mb-6">
+                  {error instanceof Error
+                    ? error.message
+                    : "An unknown error occurred"}
+                </p>
+                <Button
+                  onClick={() => refetch()}
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                >
+                  Try Again
+                </Button>
+              </div>
             ) : filteredAppointments.length > 0 ? (
               <DataTable
                 columns={columns}
@@ -426,12 +495,195 @@ export default function BusinessAppointmentsClient({ businessId }: Props) {
         isOpen={isAddModalOpen}
         onClose={() => setIsAddModalOpen(false)}
         businessId={businessId}
-        onAppointmentAdded={(appointment) => {
+        onAppointmentAdded={() => {
           toast.success("Appointment added successfully!");
           refetch(); // Refresh the appointments list
           setIsAddModalOpen(false);
         }}
       />
+
+      {/* View Appointment Modal */}
+      {selectedAppointment && (
+        <Dialog open={isViewModalOpen} onOpenChange={setIsViewModalOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex justify-between items-center">
+                <span>Appointment Details</span>
+                <Badge
+                  className={getStatusColor(selectedAppointment.status)}
+                  variant="outline"
+                >
+                  <div className="flex items-center">
+                    {getStatusIcon(selectedAppointment.status)}
+                    {selectedAppointment.status.charAt(0).toUpperCase() +
+                      selectedAppointment.status.slice(1)}
+                  </div>
+                </Badge>
+              </DialogTitle>
+              <DialogDescription>
+                Appointment #{selectedAppointment._id.substring(0, 8)}
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-6 mt-4">
+              {/* Appointment Time */}
+              <div className="space-y-2">
+                <h3 className="font-medium text-sm text-muted-foreground">
+                  Date & Time
+                </h3>
+                <div className="flex items-center gap-2">
+                  <CalendarClock className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <div className="font-medium">
+                      {dayjs(selectedAppointment.date).format(
+                        "dddd, MMMM D, YYYY"
+                      )}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      {formatTime(selectedAppointment.startTime)} -{" "}
+                      {formatTime(selectedAppointment.endTime)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Customer Information */}
+              <div className="space-y-2">
+                <h3 className="font-medium text-sm text-muted-foreground">
+                  Customer
+                </h3>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-muted-foreground" />
+                    <span>{selectedAppointment.customerId.name}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-muted-foreground" />
+                    <span>{selectedAppointment.customerId.email}</span>
+                  </div>
+                  {selectedAppointment.customerId.phone && (
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4 text-muted-foreground" />
+                      <span>{selectedAppointment.customerId.phone}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Service Information */}
+              <div className="space-y-2">
+                <h3 className="font-medium text-sm text-muted-foreground">
+                  Service
+                </h3>
+                <div className="flex items-center gap-2">
+                  <div>
+                    <div className="font-medium">
+                      {selectedAppointment.serviceId.name}
+                    </div>
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="text-sm text-muted-foreground">
+                        {formatTime(selectedAppointment.startTime)} -{" "}
+                        {formatTime(selectedAppointment.endTime)}
+                      </span>
+                      <span className="font-medium">
+                        {new Intl.NumberFormat("en-US", {
+                          style: "currency",
+                          currency: "ETB",
+                        }).format(selectedAppointment.serviceId.price)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {selectedAppointment.notes && (
+                <>
+                  <Separator />
+                  <div className="space-y-2">
+                    <h3 className="font-medium text-sm text-muted-foreground">
+                      Notes
+                    </h3>
+                    <p className="text-sm">{selectedAppointment.notes}</p>
+                  </div>
+                </>
+              )}
+
+              <Separator />
+
+              {/* Booking Information */}
+              <div className="space-y-2">
+                <h3 className="font-medium text-sm text-muted-foreground">
+                  Booking Information
+                </h3>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  <div className="text-muted-foreground">Booked on:</div>
+                  <div>
+                    {dayjs(selectedAppointment.createdAt).format("MMM D, YYYY")}
+                  </div>
+
+                  <div className="text-muted-foreground">Last updated:</div>
+                  <div>
+                    {dayjs(selectedAppointment.updatedAt).format("MMM D, YYYY")}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter className="mt-6 flex flex-col sm:flex-row gap-2">
+              {selectedAppointment.status === "pending" && (
+                <Button
+                  className="text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700"
+                  variant="outline"
+                  onClick={() => {
+                    handleStatusChange(selectedAppointment._id, "confirmed");
+                    setIsViewModalOpen(false);
+                  }}
+                >
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Confirm
+                </Button>
+              )}
+
+              {selectedAppointment.status === "confirmed" && (
+                <Button
+                  className="text-blue-600 border-blue-200 hover:bg-blue-50 hover:text-blue-700"
+                  variant="outline"
+                  onClick={() => {
+                    handleStatusChange(selectedAppointment._id, "completed");
+                    setIsViewModalOpen(false);
+                  }}
+                >
+                  <CheckCircle className="h-4 w-4 mr-1" />
+                  Complete
+                </Button>
+              )}
+
+              {(selectedAppointment.status === "pending" ||
+                selectedAppointment.status === "confirmed") && (
+                <Button
+                  className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700"
+                  variant="outline"
+                  onClick={() => {
+                    handleStatusChange(selectedAppointment._id, "cancelled");
+                    setIsViewModalOpen(false);
+                  }}
+                >
+                  <XCircle className="h-4 w-4 mr-1" />
+                  Cancel
+                </Button>
+              )}
+
+              <Button variant="ghost" onClick={() => setIsViewModalOpen(false)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </DashboardLayout>
   );
 }

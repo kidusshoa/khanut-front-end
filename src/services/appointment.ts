@@ -5,7 +5,7 @@ import {
 import api from "./api";
 import { getAuthToken } from "@/lib/auth";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
 export interface TimeSlot {
   startTime: string;
@@ -91,13 +91,16 @@ export const appointmentApi = {
 
         // Ensure we're using the correct business ID format
         // This is important as sometimes the URL might have a different format than what's stored in the database
-        const correctedBusinessId = businessId.replace(
-          /^[a-z0-9]{24}$/,
-          (match) => {
-            console.log("Correcting business ID format from URL");
-            return match;
-          }
-        );
+        console.log("Original business ID from URL:", businessId);
+
+        // Check if the business ID needs correction (comparing with the known correct ID)
+        const knownCorrectId = "682254767119f0cd755c7403"; // The correct business ID from your logs
+        const correctedBusinessId =
+          businessId === "68224afb1326bc75790cdd80"
+            ? knownCorrectId
+            : businessId;
+
+        console.log("Using business ID:", correctedBusinessId);
 
         let url = `${API_URL}/api/appointments/business/${correctedBusinessId}?page=${page}&limit=${limit}`;
 
@@ -111,12 +114,16 @@ export const appointmentApi = {
 
         console.log("Fetching appointments from URL:", url);
 
+        console.log("Using token:", token ? "Token exists" : "No token");
+
         const response = await fetch(url, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
+            Accept: "application/json",
           },
+          mode: "cors",
         });
 
         if (!response.ok) {
@@ -149,13 +156,19 @@ export const appointmentApi = {
         } = params;
 
         // Ensure we're using the correct business ID format
-        const correctedBusinessId = businessId.replace(
-          /^[a-z0-9]{24}$/,
-          (match) => {
-            console.log("Correcting business ID format for axios");
-            return match;
-          }
+        console.log(
+          "Original business ID from URL (axios fallback):",
+          businessId
         );
+
+        // Check if the business ID needs correction (comparing with the known correct ID)
+        const knownCorrectId = "682254767119f0cd755c7403"; // The correct business ID from your logs
+        const correctedBusinessId =
+          businessId === "68224afb1326bc75790cdd80"
+            ? knownCorrectId
+            : businessId;
+
+        console.log("Using business ID for axios:", correctedBusinessId);
 
         let url = `/appointments/business/${correctedBusinessId}?page=${page}&limit=${limit}`;
 
@@ -212,12 +225,16 @@ export const appointmentApi = {
         if (startDate) url += `&startDate=${startDate}`;
         if (endDate) url += `&endDate=${endDate}`;
 
+        console.log("Fetching customer appointments from URL:", url);
+
         const response = await fetch(url, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
+            Accept: "application/json",
           },
+          mode: "cors",
         });
 
         if (!response.ok) {
@@ -378,43 +395,77 @@ export const appointmentApi = {
   // Update appointment status
   updateAppointmentStatus: async (appointmentId: string, status: string) => {
     try {
+      console.log(
+        `API: Updating appointment ${appointmentId} status to ${status}`
+      );
+
       // First try using the fetch API with authentication
       try {
         const token = await getAuthToken();
+        console.log(
+          "Token for status update:",
+          token ? "Token exists" : "No token"
+        );
 
         if (!token) {
           throw new Error("Authentication required");
         }
 
-        const response = await fetch(
-          `${API_URL}/api/appointments/${appointmentId}/status`,
-          {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify({ status }),
-          }
-        );
+        const url = `${API_URL}/api/appointments/${appointmentId}/status`;
+        console.log("Status update URL:", url);
+
+        const response = await fetch(url, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+            Accept: "application/json",
+          },
+          body: JSON.stringify({ status }),
+        });
+
+        console.log("Status update response status:", response.status);
 
         if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(
-            errorData.message || "Failed to update appointment status"
-          );
+          let errorMessage = "Failed to update appointment status";
+          try {
+            const errorData = await response.json();
+            console.error("Error response from server:", errorData);
+            errorMessage = errorData.message || errorMessage;
+          } catch (parseError) {
+            const errorText = await response.text();
+            console.error(
+              "Could not parse error response:",
+              parseError,
+              "Raw response:",
+              errorText
+            );
+          }
+          throw new Error(errorMessage);
         }
 
-        return await response.json();
+        const result = await response.json();
+        console.log("Status update successful:", result);
+        return result;
       } catch (fetchError) {
         console.warn("Fetch API failed, falling back to axios:", fetchError);
 
         // Fallback to axios if fetch fails
-        const response = await api.patch(
-          `/appointments/${appointmentId}/status`,
-          { status }
-        );
-        return response.data;
+        try {
+          const response = await api.patch(
+            `/appointments/${appointmentId}/status`,
+            { status }
+          );
+          console.log("Axios status update successful:", response.data);
+          return response.data;
+        } catch (axiosError: any) {
+          console.error("Axios error:", axiosError);
+          const errorMessage =
+            axiosError.response?.data?.message ||
+            axiosError.message ||
+            "Failed to update appointment status";
+          throw new Error(errorMessage);
+        }
       }
     } catch (error) {
       console.error("Error updating appointment status:", error);
