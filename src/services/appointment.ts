@@ -40,6 +40,9 @@ export interface Appointment {
   startTime: string;
   endTime: string;
   status: "pending" | "confirmed" | "cancelled" | "completed";
+  paymentStatus?: "unpaid" | "paid" | "refunded" | "failed";
+  paymentId?: string;
+  price?: number;
   notes?: string;
   isRecurring?: boolean;
   recurringId?: string;

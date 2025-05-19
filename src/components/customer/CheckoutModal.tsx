@@ -79,9 +79,15 @@ export function CheckoutModal({
       // Create orders for each business
       const orderPromises = Object.entries(itemsByBusiness).map(
         async ([businessId, items]) => {
+          // Ensure businessId is a string
+          const businessIdStr =
+            typeof businessId === "object" && businessId._id
+              ? businessId._id.toString()
+              : businessId.toString();
+
           const orderData = {
             customerId,
-            businessId,
+            businessId: businessIdStr,
             items: items.map((item) => ({
               serviceId: item.serviceId,
               quantity: item.quantity,
@@ -133,6 +139,11 @@ export function CheckoutModal({
     }).format(price);
   };
 
+  // Helper function to get business name from cart item
+  const getBusinessName = (item: CartItem) => {
+    return item.businessName || "Business";
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-md">
@@ -147,7 +158,9 @@ export function CheckoutModal({
               <div className="space-y-2">
                 {Object.entries(itemsByBusiness).map(([businessId, items]) => (
                   <div key={businessId}>
-                    <p className="font-medium">Business ID: {businessId}</p>
+                    <p className="font-medium">
+                      Seller: {getBusinessName(items[0])}
+                    </p>
                     <ul className="pl-4 space-y-1">
                       {items.map((item) => (
                         <li

@@ -56,9 +56,15 @@ const localCartService = {
         cart[existingItemIndex].quantity += quantity;
       } else {
         // Add new item if it doesn't exist
+        // Ensure businessId is a string
+        const businessId =
+          typeof service.businessId === "object" && service.businessId._id
+            ? service.businessId._id.toString()
+            : service.businessId.toString();
+
         cart.push({
           serviceId: service._id,
-          businessId: service.businessId,
+          businessId: businessId,
           name: service.name,
           price: service.price,
           quantity,
@@ -173,11 +179,20 @@ const localCartService = {
     const cart = localCartService.getCartItems();
 
     return cart.reduce((grouped, item) => {
-      if (!grouped[item.businessId]) {
-        grouped[item.businessId] = [];
+      // Ensure businessId is a string
+      const businessId =
+        typeof item.businessId === "object" && item.businessId._id
+          ? item.businessId._id.toString()
+          : item.businessId.toString();
+
+      if (!grouped[businessId]) {
+        grouped[businessId] = [];
       }
 
-      grouped[item.businessId].push(item);
+      grouped[businessId].push({
+        ...item,
+        businessId: businessId, // Ensure the item has the string businessId
+      });
       return grouped;
     }, {} as Record<string, CartItem[]>);
   },
@@ -399,11 +414,20 @@ export const cartApi = {
       const { items } = await cartApi.getCartItems();
 
       return items.reduce((grouped, item) => {
-        if (!grouped[item.businessId]) {
-          grouped[item.businessId] = [];
+        // Ensure businessId is a string
+        const businessId =
+          typeof item.businessId === "object" && item.businessId._id
+            ? item.businessId._id.toString()
+            : item.businessId.toString();
+
+        if (!grouped[businessId]) {
+          grouped[businessId] = [];
         }
 
-        grouped[item.businessId].push(item);
+        grouped[businessId].push({
+          ...item,
+          businessId: businessId, // Ensure the item has the string businessId
+        });
         return grouped;
       }, {} as Record<string, CartItem[]>);
     } catch (error) {

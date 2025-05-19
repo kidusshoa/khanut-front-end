@@ -8,13 +8,12 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  MapPin,
   Building,
-  User,
   CreditCard,
   MessageSquare,
   ExternalLink,
   Pencil,
+  RefreshCw,
 } from "lucide-react";
 import { ChapaPaymentButton } from "@/components/payment/ChapaPaymentButton";
 import dayjs from "dayjs";
@@ -29,7 +28,6 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import {
   Dialog,
   DialogContent,
@@ -37,12 +35,10 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "react-hot-toast";
 import { Appointment, appointmentApi } from "@/services/appointment";
-import { paymentApi } from "@/services/payment";
 
 interface AppointmentDetailProps {
   appointment: Appointment;
@@ -136,37 +132,51 @@ export function AppointmentDetail({
     }
   };
 
-  // Handle payment
-  const handlePayment = async () => {
-    try {
-      setIsLoading(true);
-      console.log("Initializing payment for appointment:", appointment._id);
-
-      const response = await paymentApi.initializeAppointmentPayment(
-        appointment._id
-      );
-
-      console.log("Payment initialization response:", response);
-
-      // Check for checkout_url in different possible response formats
-      const checkoutUrl = response.data?.checkout_url;
-
-      if (checkoutUrl) {
-        console.log("Redirecting to checkout URL:", checkoutUrl);
-        // Redirect to Chapa checkout
-        window.location.href = checkoutUrl;
-      } else {
-        console.error("No checkout URL found in response:", response);
-        toast.error("Failed to initialize payment: No checkout URL provided");
-      }
-    } catch (error) {
-      console.error("Payment error:", error);
-      toast.error(
-        "Failed to process payment: " +
-          (error instanceof Error ? error.message : "Unknown error")
-      );
-    } finally {
-      setIsLoading(false);
+  // Get payment status badge
+  const getPaymentStatusBadge = (paymentStatus: string) => {
+    switch (paymentStatus) {
+      case "paid":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400"
+          >
+            <CreditCard className="mr-1 h-3 w-3" />
+            Paid
+          </Badge>
+        );
+      case "unpaid":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400"
+          >
+            <CreditCard className="mr-1 h-3 w-3" />
+            Unpaid
+          </Badge>
+        );
+      case "refunded":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400"
+          >
+            <RefreshCw className="mr-1 h-3 w-3" />
+            Refunded
+          </Badge>
+        );
+      case "failed":
+        return (
+          <Badge
+            variant="outline"
+            className="bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400"
+          >
+            <XCircle className="mr-1 h-3 w-3" />
+            Payment Failed
+          </Badge>
+        );
+      default:
+        return null;
     }
   };
 
@@ -294,7 +304,11 @@ export function AppointmentDetail({
               Booked for {formatDate(appointment.date)}
             </CardDescription>
           </div>
-          {getStatusBadge(appointment.status)}
+          <div className="flex flex-col md:flex-row gap-2">
+            {getStatusBadge(appointment.status)}
+            {appointment.paymentStatus &&
+              getPaymentStatusBadge(appointment.paymentStatus)}
+          </div>
         </div>
       </CardHeader>
 
