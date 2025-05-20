@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
 import Cookies from "js-cookie";
+import { Info, HelpCircle, Mail } from "lucide-react";
 
 export default function LandingPage() {
   const router = useRouter();
@@ -109,6 +110,8 @@ export default function LandingPage() {
         </div>
       </div>
 
+
+
       {/* Features Section */}
       <div className="py-12 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -149,7 +152,7 @@ export default function LandingPage() {
                 <div key={index} className="relative">
                   <dt>
                     <div className="absolute flex items-center justify-center h-12 w-12 rounded-md bg-orange-500 text-white">
-                      {/* You can add icons here */}
+                     
                       {index + 1}
                     </div>
                     <p className="ml-16 text-lg leading-6 font-medium text-gray-900">
@@ -162,6 +165,61 @@ export default function LandingPage() {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Explore More Section */}
+      <div className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center">
+            <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
+              Explore More
+            </h2>
+            <p className="mt-4 max-w-2xl text-xl text-gray-600 mx-auto">
+              Discover more about our platform and how we can help you
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-8 md:grid-cols-3">
+            {/* About Card */}
+            <Link href="/about" className="group">
+              <div className="h-full bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-300">
+                <div className="p-6">
+                  <div className="flex items-center justify-center h-16 w-16 rounded-full bg-orange-100 text-orange-600 mx-auto mb-4 group-hover:bg-orange-200 transition-colors">
+                    <Info className="h-8 w-8" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">About Us</h3>
+                  <p className="text-gray-600 text-center">Learn about our mission, vision, and the team behind Khanut</p>
+                </div>
+              </div>
+            </Link>
+
+            {/* Help Card */}
+            <Link href="/help" className="group">
+              <div className="h-full bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-300">
+                <div className="p-6">
+                  <div className="flex items-center justify-center h-16 w-16 rounded-full bg-orange-100 text-orange-600 mx-auto mb-4 group-hover:bg-orange-200 transition-colors">
+                    <HelpCircle className="h-8 w-8" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">Help Center</h3>
+                  <p className="text-gray-600 text-center">Find answers to common questions and get support</p>
+                </div>
+              </div>
+            </Link>
+
+            {/* Contact Card */}
+            <Link href="/contact" className="group">
+              <div className="h-full bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-300">
+                <div className="p-6">
+                  <div className="flex items-center justify-center h-16 w-16 rounded-full bg-orange-100 text-orange-600 mx-auto mb-4 group-hover:bg-orange-200 transition-colors">
+                    <Mail className="h-8 w-8" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">Contact Us</h3>
+                  <p className="text-gray-600 text-center">Get in touch with our team for any inquiries</p>
+                </div>
+              </div>
+            </Link>
           </div>
         </div>
       </div>
