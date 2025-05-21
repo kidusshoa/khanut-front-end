@@ -1,5 +1,6 @@
 import { ReactNode, Suspense } from "react";
 import { Metadata } from "next";
+import ChatBotWrapper from "@/components/customer/ChatBotWrapper";
 
 export const metadata: Metadata = {
   title: "Khanut - Customer Dashboard",
@@ -20,6 +21,7 @@ export default async function CustomerLayout({
       }
     >
       {children}
+      <ChatBotWrapper />
     </Suspense>
   );
 }
