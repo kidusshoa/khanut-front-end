@@ -10,7 +10,7 @@ export async function middleware(request: NextRequest) {
   }
 
   const accessToken = request.cookies.get("access-token")?.value;
-  console.log(accessToken);
+ 
   if (!accessToken) {
     return NextResponse.redirect(new URL("/login", request.nextUrl));
   }

@@ -110,24 +110,23 @@ const ChatBot: React.FC = () => {
     }
   };
 
-  if (!isChatbotAvailable) {
-    return null; // Don't render anything if chatbot is not available
-  }
+  // Always show the chat button, but display a message if the service is unavailable
+  console.log('ChatBot rendering, isChatbotAvailable:', isChatbotAvailable);
 
   return (
-    <div className="fixed bottom-4 right-4 z-50">
+    <div className="fixed bottom-24 right-6 z-50">
       {/* Chat button */}
       <button
         onClick={toggleChat}
-        className="bg-primary text-white rounded-full p-3 shadow-lg hover:bg-primary-dark transition-all duration-300"
+        className="bg-primary text-white rounded-full p-4 shadow-lg hover:bg-primary-dark transition-all duration-300"
         aria-label={isOpen ? 'Close chat' : 'Open chat'}
       >
-        {isOpen ? <X size={24} /> : <MessageSquare size={24} />}
+        {isOpen ? <X size={28} /> : <MessageSquare size={28} />}
       </button>
 
       {/* Chat window */}
       {isOpen && (
-        <div className="absolute bottom-16 right-0 w-80 sm:w-96 h-96 bg-white rounded-lg shadow-xl flex flex-col overflow-hidden border border-gray-200">
+        <div className="absolute bottom-16 right-0 w-80 sm:w-96 h-[450px] bg-white rounded-lg shadow-xl flex flex-col overflow-hidden border border-gray-200">
           {/* Chat header */}
           <div className="bg-primary text-white p-3 flex justify-between items-center">
             <h3 className="font-medium">Khanut Assistant</h3>
@@ -138,25 +137,41 @@ const ChatBot: React.FC = () => {
 
           {/* Chat messages */}
           <div className="flex-1 overflow-y-auto p-3 space-y-3">
-            {messages.map((msg, index) => (
-              <div
-                key={index}
-                className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                <div
-                  className={`max-w-[80%] rounded-lg p-2 ${
-                    msg.role === 'user'
-                      ? 'bg-primary text-white rounded-tr-none'
-                      : 'bg-gray-100 text-gray-800 rounded-tl-none'
-                  }`}
-                >
-                  <p className="text-sm">{msg.content}</p>
-                  <p className="text-xs opacity-70 mt-1">
-                    {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  </p>
+            {!isChatbotAvailable && messages.length === 0 ? (
+              <div className="flex justify-center items-center h-full">
+                <div className="text-center p-4 bg-yellow-50 rounded-lg border border-yellow-200 max-w-[80%]">
+                  <p className="text-sm text-yellow-700 mb-2">Chatbot service is currently unavailable</p>
+                  <p className="text-xs text-yellow-600">Please try again later or contact support</p>
                 </div>
               </div>
-            ))}
+            ) : messages.length === 0 ? (
+              <div className="flex justify-center items-center h-full">
+                <div className="text-center p-4 bg-blue-50 rounded-lg border border-blue-200 max-w-[80%]">
+                  <p className="text-sm text-blue-700 mb-2">Welcome to Khanut Assistant!</p>
+                  <p className="text-xs text-blue-600">How can I help you today?</p>
+                </div>
+              </div>
+            ) : (
+              messages.map((msg, index) => (
+                <div
+                  key={index}
+                  className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  <div
+                    className={`max-w-[80%] rounded-lg p-2 ${
+                      msg.role === 'user'
+                        ? 'bg-primary text-white rounded-tr-none'
+                        : 'bg-gray-100 text-gray-800 rounded-tl-none'
+                    }`}
+                  >
+                    <p className="text-sm">{msg.content}</p>
+                    <p className="text-xs opacity-70 mt-1">
+                      {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
             <div ref={messagesEndRef} />
           </div>
 
@@ -166,14 +181,14 @@ const ChatBot: React.FC = () => {
               type="text"
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Type your message..."
+              placeholder={isChatbotAvailable ? "Type your message..." : "Chatbot service unavailable"}
               className="flex-1 border border-gray-300 rounded-l-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
-              disabled={isLoading}
+              disabled={isLoading || !isChatbotAvailable}
             />
             <button
               type="submit"
               className="bg-primary text-white rounded-r-lg px-3 py-2 disabled:bg-gray-400"
-              disabled={isLoading || !message.trim()}
+              disabled={isLoading || !message.trim() || !isChatbotAvailable}
             >
               {isLoading ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
             </button>

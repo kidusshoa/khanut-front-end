@@ -11,6 +11,7 @@
   "dependencies": {
     "@auth/core": "^0.39.1",
     "@headlessui/react": "^2.2.0",
+    "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^5.0.1",
     "@radix-ui/react-accordion": "^1.2.7",
     "@radix-ui/react-alert-dialog": "^1.1.13",

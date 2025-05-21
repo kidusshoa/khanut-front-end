@@ -16,6 +16,7 @@ interface ChapaPaymentButtonProps {
   onError?: (error: any) => void;
   className?: string;
   variant?: "default" | "destructive" | "outline" | "secondary" | "ghost" | "link";
+  children?: React.ReactNode;
 }
 
 export function ChapaPaymentButton({
@@ -28,6 +29,7 @@ export function ChapaPaymentButton({
   onError,
   className,
   variant = "default",
+  children,
 }: ChapaPaymentButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
@@ -108,7 +110,7 @@ export function ChapaPaymentButton({
           Processing...
         </>
       ) : (
-        "Pay with Chapa"
+        children || "Pay with Chapa"
       )}
     </Button>
   );
