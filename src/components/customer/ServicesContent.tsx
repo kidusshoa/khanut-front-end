@@ -37,6 +37,19 @@ interface ServicesContentProps {
   customerId: string;
 }
 
+interface Service {
+  _id: string;
+  name: string;
+  description: string;
+  price: number;
+  serviceType: "appointment" | "product" | "in_person";
+  images: string[];
+  businessName?: string;
+  duration?: number;
+  inventory?: number;
+  businessId: string;
+}
+
 export default function ServicesContent({ customerId }: ServicesContentProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -99,15 +112,11 @@ export default function ServicesContent({ customerId }: ServicesContentProps) {
   });
 
   // Filter services by search query
-  const filteredServices = services.filter((service: any) => {
-    if (!searchQuery) return true;
-    
-    const query = searchQuery.toLowerCase();
-    return (
-      service.name.toLowerCase().includes(query) ||
-      service.description.toLowerCase().includes(query) ||
-      service.businessName?.toLowerCase().includes(query)
-    );
+  const filteredServices = services.filter((service: Service) => {
+    const matchesSearch = service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      service.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType = activeTab === "all" || service.serviceType === activeTab;
+    return matchesSearch && matchesType;
   });
 
   const handleSearch = (e: React.FormEvent) => {
@@ -376,9 +385,24 @@ export default function ServicesContent({ customerId }: ServicesContentProps) {
               <div className="flex justify-center py-12">
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
-            ) : filteredServices.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {filteredServices.map((service: any) => (
+            ) : services.length === 0 ? (
+              <div className="text-center py-12 bg-muted/50 rounded-lg">
+                {getServiceTypeIcon(activeTab)}
+                <h3 className="text-lg font-medium mb-1">No services found</h3>
+                <p className="text-muted-foreground mb-6">
+                  {searchQuery
+                    ? `No services found matching "${searchQuery}"`
+                    : `No ${
+                        activeTab === "all" ? "" : activeTab + " "
+                      }services found with the selected filters.`}
+                </p>
+                <Button onClick={clearFilters} className="bg-orange-600 hover:bg-orange-700">
+                  Clear Filters
+                </Button>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {services.map((service: Service) => (
                   <ServiceCard
                     key={service._id}
                     service={service}
@@ -387,21 +411,6 @@ export default function ServicesContent({ customerId }: ServicesContentProps) {
                     showActions={false}
                   />
                 ))}
-              </div>
-            ) : (
-              <div className="text-center py-12 bg-muted/50 rounded-lg">
-                {getServiceTypeIcon(activeTab)}
-                <h3 className="text-lg font-medium mb-1">No services found</h3>
-                <p className="text-muted-foreground mb-6">
-                  {searchQuery
-                    ? `No services matching "${searchQuery}" with the selected filters.`
-                    : `No ${
-                        activeTab === "all" ? "" : activeTab + " "
-                      }services found with the selected filters.`}
-                </p>
-                <Button onClick={clearFilters} className="bg-orange-600 hover:bg-orange-700">
-                  Clear Filters
-                </Button>
               </div>
             )}
           </TabsContent>

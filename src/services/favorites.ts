@@ -1,5 +1,5 @@
 import api from "./api";
-import { getAuthToken } from "@/lib/auth";
+import { getAuthToken, getUserId } from "@/lib/auth";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
 
@@ -19,16 +19,28 @@ export interface FavoriteItem {
   updatedAt: string;
 }
 
+const cache = {
+  favorites: null,
+  lastUpdated: 0,
+  cacheDuration: 5 * 60 * 1000, // 5 minutes
+};
+
 export const favoritesApi = {
-  // Get all favorites for a customer
-  getFavorites: async () => {
+  // Get all favorites for a specific customer
+  getFavorites: async (customerId?: string) => {
     try {
+      // Check if we have cached data that's still valid
+      if (cache.favorites && Date.now() - cache.lastUpdated < cache.cacheDuration) {
+        return cache.favorites;
+      }
+
       const token = await getAuthToken();
+      const userId = customerId || await getAuthToken();
 
       // Log the URL for debugging
-      console.log(`Sending request to: ${API_URL}/api/customer/favorites`);
+      console.log(`Sending request to: ${API_URL}/api/customer/${userId}/favorites`);
 
-      const response = await fetch(`${API_URL}/api/customer/favorites`, {
+      const response = await fetch(`${API_URL}/api/customer/${userId}/favorites`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -49,7 +61,10 @@ export const favoritesApi = {
         throw new Error(errorMessage);
       }
 
-      return response.json();
+      const data = await response.json();
+      cache.favorites = data;
+      cache.lastUpdated = Date.now();
+      return data;
     } catch (error) {
       console.error("Error fetching favorites:", error);
       throw error;
@@ -57,9 +72,10 @@ export const favoritesApi = {
   },
 
   // Toggle favorite status for a business
-  toggleFavorite: async (businessId: string) => {
+  toggleFavorite: async (businessId: string, customerId?: string) => {
     try {
       const token = await getAuthToken();
+      const userId = customerId || await getAuthToken();
 
       // Log the URL and businessId for debugging
       console.log(
@@ -109,7 +125,7 @@ export const favoritesApi = {
   },
 
   // Check if a business is favorited
-  isFavorite: async (businessId: string) => {
+  isFavorite: async (businessId: string, customerId?: string) => {
     try {
       // Make sure businessId is a string
       if (typeof businessId !== "string") {
@@ -121,7 +137,7 @@ export const favoritesApi = {
         throw new Error("BusinessId must be a string");
       }
 
-      const favorites = await favoritesApi.getFavorites();
+      const favorites = await favoritesApi.getFavorites(customerId);
 
       // Log for debugging
       console.log("Checking if business is in favorites:", businessId);

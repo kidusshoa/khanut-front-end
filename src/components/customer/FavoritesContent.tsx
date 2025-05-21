@@ -31,8 +31,8 @@ export default function FavoritesContent({
     isError,
     refetch,
   } = useQuery({
-    queryKey: ["favorites"],
-    queryFn: favoritesApi.getFavorites,
+    queryKey: ["favorites", customerId],
+    queryFn: () => favoritesApi.getFavorites(customerId),
     enabled: !!session?.user?.id,
   });
 

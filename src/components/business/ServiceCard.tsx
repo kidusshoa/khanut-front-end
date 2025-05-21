@@ -12,7 +12,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { ServiceActions } from "./ServiceActions";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { toast } from "react-hot-toast";
 import { FallbackImage } from "@/components/ui/fallback-image";
 import { FavoriteButton } from "./FavoriteButton";
@@ -47,6 +47,23 @@ export function ServiceCard({
   onEdit,
   showActions = true,
 }: ServiceCardProps) {
+  // Memoize the empty functions to prevent unnecessary re-renders
+  const emptyFn = useCallback(() => {}, []);
+  const actualOnDelete = onDelete || emptyFn;
+  const actualOnEdit = onEdit || emptyFn;
+
+  // Add customerId to props if it exists
+  const favoriteButtonProps = {
+    customerId: service.customerId,
+    businessId: service.businessId,
+    initialIsFavorite: false,
+    size: "sm",
+    variant: "ghost",
+    showText: false,
+    className: "rounded-full bg-white/80 hover:bg-white",
+    onToggle: undefined,
+  } as const;
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat("en-US", {
       style: "currency",
@@ -110,13 +127,9 @@ export function ServiceCard({
               e.stopPropagation();
             }}
           >
-            {/* Make sure businessId is a string */}
             <FavoriteButton
-              businessId={
-                typeof service.businessId === "object"
-                  ? service.businessId._id
-                  : service.businessId
-              }
+              {...favoriteButtonProps}
+              businessId={service.businessId}
               variant="ghost"
               size="sm"
               showText={false}
@@ -156,7 +169,7 @@ export function ServiceCard({
             <Button
               variant="outline"
               size="sm"
-              onClick={onEdit}
+              onClick={actualOnEdit}
               className="text-gray-600 hover:text-orange-600"
             >
               <Edit className="h-4 w-4 mr-1" />
@@ -165,7 +178,7 @@ export function ServiceCard({
             <Button
               variant="outline"
               size="sm"
-              onClick={onDelete}
+              onClick={actualOnDelete}
               className="text-red-600 hover:bg-red-50"
             >
               <Trash2 className="h-4 w-4 mr-1" />

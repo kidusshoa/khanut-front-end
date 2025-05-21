@@ -8,7 +8,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 
 interface FavoriteButtonProps {
-  businessId: string;
+  businessId: string | { _id: string };
+  customerId?: string;
   initialIsFavorite?: boolean;
   size?: "sm" | "md" | "lg";
   variant?: "default" | "outline" | "ghost";
@@ -19,6 +20,7 @@ interface FavoriteButtonProps {
 
 export function FavoriteButton({
   businessId,
+  customerId,
   initialIsFavorite = false,
   size = "md",
   variant = "outline",
@@ -28,47 +30,52 @@ export function FavoriteButton({
 }: FavoriteButtonProps) {
   const [isFavorite, setIsFavorite] = useState(initialIsFavorite);
   const [isLoading, setIsLoading] = useState(false);
+  const [prevBusinessId, setPrevBusinessId] = useState<string | null>(null);
   const { toast } = useToast();
 
   // Check if business is in favorites on mount
   useEffect(() => {
     const checkFavoriteStatus = async () => {
       try {
-        // Ensure businessId is a string
-        const id =
-          typeof businessId === "object" && businessId._id
-            ? businessId._id
-            : businessId;
-
+        const id = typeof businessId === 'string' ? businessId : businessId._id;
+        
         // Log the ID being checked
         console.log("Checking favorite status for business ID:", id);
 
-        const isFav = await favoritesApi.isFavorite(id);
+        const isFav = await favoritesApi.isFavorite(id, customerId);
         setIsFavorite(isFav);
       } catch (error) {
         console.error("Error checking favorite status:", error);
       }
     };
 
-    if (!initialIsFavorite) {
+    // Only check if we don't have an initial value or if businessId changed
+    if (!initialIsFavorite || (typeof businessId === 'object' && businessId._id !== prevBusinessId)) {
       checkFavoriteStatus();
     }
-  }, [businessId, initialIsFavorite]);
+  }, [businessId]);
+
+  // Store previous businessId for comparison
+  useEffect(() => {
+    if (typeof businessId === 'object') {
+      setPrevBusinessId(businessId._id);
+    }
+  }, [businessId]);
 
   const toggleFavorite = async () => {
     try {
       setIsLoading(true);
 
       // Ensure businessId is a string
-      const id =
-        typeof businessId === "object" && businessId._id
-          ? businessId._id
-          : businessId;
+      const id = 
+        typeof businessId === 'string' 
+          ? businessId 
+          : businessId._id;
 
       // Log the ID being used
       console.log("Toggling favorite for business ID:", id);
 
-      const result = await favoritesApi.toggleFavorite(id);
+      const result = await favoritesApi.toggleFavorite(id, customerId);
 
       if (isFavorite) {
         toast({
