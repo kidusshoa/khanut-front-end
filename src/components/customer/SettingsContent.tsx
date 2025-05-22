@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession, signOut } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -56,9 +55,21 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "react-hot-toast";
 import CustomerDashboardLayout from "@/components/layout/CustomerDashboardLayout";
-import api from "@/services/api";
+import { useCustomerProfile } from "@/hooks/useCustomerProfile";
+import { ProfileUpdateData } from "@/services/customer";
 
 // Validation schemas
 const profileFormSchema = z.object({
@@ -99,14 +110,28 @@ interface SettingsContentProps {
 export default function SettingsContent({ customerId }: SettingsContentProps) {
   const router = useRouter();
   const { data: session } = useSession();
-  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("profile");
-  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  
+
+  // Use our custom hook for profile management with React Query
+  const {
+    profile,
+    isLoading: isLoadingProfile,
+    updateProfile,
+    isUpdatingProfile,
+    uploadProfilePicture,
+    isUploadingPicture,
+    notificationSettings,
+    isLoadingNotifications,
+    updateNotificationSettings,
+    isUpdatingNotifications,
+    updatePassword,
+    isUpdatingPassword
+  } = useCustomerProfile(customerId);
+
   // Profile form with validation
   const { 
     register: profileRegister, 
@@ -139,217 +164,128 @@ export default function SettingsContent({ customerId }: SettingsContentProps) {
       confirmPassword: "",
     },
   });
-  
+
   // Notification form with validation
-  const {
-    register: notificationRegister,
+  const { 
+    register: notificationRegister, 
     handleSubmit: handleNotificationSubmit,
     formState: { errors: notificationErrors },
     setValue: setNotificationValue,
-    watch: watchNotification
   } = useForm<NotificationFormValues>({
     resolver: zodResolver(notificationFormSchema),
     defaultValues: {
-      emailNotifications: true,
-      pushNotifications: true,
+      emailNotifications: false,
+      pushNotifications: false,
       marketingEmails: false,
     },
   });
 
-  // Fetch user profile data
-  const { data: userData, isLoading: isUserLoading } = useQuery({
-    queryKey: ["userProfile", customerId],
-    queryFn: async () => {
-      try {
-        // This would be a real API call in production
-        // const response = await api.get(`/users/${customerId}`);
-        // return response.data;
-        
-        // Mock data for development
-        return {
-          name: "John Doe",
-          email: "john.doe@example.com",
-          phone: "+251 91 234 5678",
-          city: "Addis Ababa",
-          profilePicture: "",
-          emailNotifications: true,
-          pushNotifications: true,
-          marketingEmails: false,
-        };
-      } catch (error) {
-        console.error("Error fetching user profile:", error);
-        toast.error("Failed to load user profile");
-        return null;
-      }
-    },
-  });
+  // File input ref for profile picture upload
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Update form data when user data is loaded
-  useEffect(() => {
-    if (userData) {
-      // Update profile form
-      setProfileValue("name", userData.name || "");
-      setProfileValue("email", userData.email || "");
-      setProfileValue("phone", userData.phone || "");
-      setProfileValue("city", userData.city || "");
-      setProfileValue("profilePicture", userData.profilePicture || "");
-      
-      // Update notification form
-      setNotificationValue("emailNotifications", userData.emailNotifications || false);
-      setNotificationValue("pushNotifications", userData.pushNotifications || false);
-      setNotificationValue("marketingEmails", userData.marketingEmails || false);
-    }
-  }, [userData, setProfileValue, setNotificationValue]);
-
-  // Update profile mutation
-  const updateProfileMutation = useMutation({
-    mutationFn: async (data: ProfileFormValues) => {
-      setIsLoading(true);
-      try {
-        // This would be a real API call in production
-        // const response = await api.put(`/users/${customerId}/profile`, data);
-        // return response.data;
-        
-        // Mock response for development
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        return {
-          success: true,
-          message: "Profile updated successfully",
-        };
-      } catch (error) {
-        throw error;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["userProfile", customerId] });
-      toast.success("Profile updated successfully");
-    },
-    onError: (error) => {
-      toast.error("Failed to update profile");
-    },
-  });
-  
-  // Update password mutation
-  const updatePasswordMutation = useMutation({
-    mutationFn: async (data: PasswordFormValues) => {
-      setIsLoading(true);
-      try {
-        // This would be a real API call in production
-        // const response = await api.put(`/users/${customerId}/password`, {
-        //   currentPassword: data.currentPassword,
-        //   newPassword: data.newPassword,
-        // });
-        // return response.data;
-        
-        // Mock response for development
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Validate current password (mock validation)
-        if (data.currentPassword !== "password123") {
-          throw new Error("Current password is incorrect");
-        }
-        
-        return {
-          success: true,
-          message: "Password updated successfully",
-        };
-      } catch (error) {
-        throw error;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    onSuccess: () => {
-      resetPassword();
-      toast.success("Password updated successfully");
-    },
-    onError: (error: any) => {
-      toast.error(error.message || "Failed to update password");
-    },
-  });
-  
-  // Update notification settings mutation
-  const updateNotificationsMutation = useMutation({
-    mutationFn: async (data: NotificationFormValues) => {
-      setIsLoading(true);
-      try {
-        // This would be a real API call in production
-        // const response = await api.put(`/users/${customerId}/notifications`, data);
-        // return response.data;
-        
-        // Mock response for development
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        return {
-          success: true,
-          data: {
-            emailNotifications: data.emailNotifications,
-            pushNotifications: data.pushNotifications,
-            marketingEmails: data.marketingEmails,
-          },
-        };
-      } catch (error) {
-        throw error;
-      } finally {
-        setIsLoading(false);
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["userProfile", customerId] });
-      toast.success("Notification preferences updated successfully");
-    },
-    onError: (error) => {
-      toast.error("Failed to update notification preferences");
-    },
-  });
-  
   // Form submission handlers
   const onProfileSubmit = (data: ProfileFormValues) => {
-    updateProfileMutation.mutate(data);
+    const profileData: ProfileUpdateData = {
+      name: data.name,
+      email: data.email,
+      phone: data.phone,
+      city: data.city,
+      profilePicture: data.profilePicture
+    };
+    updateProfile(profileData);
   };
-  
+
   const onPasswordSubmit = (data: PasswordFormValues) => {
-    updatePasswordMutation.mutate(data);
+    updatePassword({
+      currentPassword: data.currentPassword,
+      newPassword: data.newPassword
+    });
+    resetPassword(); // Reset the form after submission
   };
-  
+
   const onNotificationSubmit = (data: NotificationFormValues) => {
-    updateNotificationsMutation.mutate(data);
+    updateNotificationSettings(data);
   };
 
   // Handle logout
   const handleLogout = async () => {
     try {
-      await signOut({ redirect: false });
-      router.push("/login");
+      await signOut();
       toast.success("Logged out successfully");
+      router.push("/");
     } catch (error) {
       console.error("Error logging out:", error);
-      toast.error("Failed to log out");
+      toast.error(`Error logging out: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
   // Handle account deletion
   const handleDeleteAccount = async () => {
-    setIsLoading(true);
     try {
-      // This would be a real API call in production
-      // await api.delete(`/users/${customerId}`);
-      
-      // Mock deletion for development
+      // Implementation would depend on your API
+      // This is a placeholder for the actual implementation
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      await signOut({ redirect: false });
-      router.push("/login");
       toast.success("Account deleted successfully");
+      router.push("/"); // Redirect to home page after account deletion
     } catch (error) {
       console.error("Error deleting account:", error);
-      toast.error("Failed to delete account");
+      toast.error(`Error deleting account: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
-      setIsLoading(false);
       setDeleteDialogOpen(false);
     }
   };
+
+  // Handle profile picture upload
+  const handleProfilePictureUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      uploadProfilePicture(file);
+    } catch (error) {
+      console.error("Error uploading profile picture:", error);
+      toast.error(`Error uploading profile picture: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  };
+
+  // Trigger file input click
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
+
+  // Update form values when profile data is loaded
+  useEffect(() => {
+    if (profile) {
+      setProfileValue("name", profile.name || "");
+      setProfileValue("email", profile.email || "");
+      setProfileValue("phone", profile.phone || "");
+      setProfileValue("city", profile.city || "");
+      setProfileValue("profilePicture", profile.profilePicture || "");
+    }
+  }, [profile, setProfileValue]);
+
+  // Update notification form values when notification settings are loaded
+  useEffect(() => {
+    if (notificationSettings) {
+      setNotificationValue("emailNotifications", notificationSettings.emailNotifications);
+      setNotificationValue("pushNotifications", notificationSettings.pushNotifications);
+      setNotificationValue("marketingEmails", notificationSettings.marketingEmails);
+    }
+  }, [notificationSettings, setNotificationValue]);
+
+  // Verify that the customer ID matches the logged-in user's ID
+  if (session && session.user && session.user.id !== customerId) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
+        <p className="text-muted-foreground mb-6">You don't have permission to access this page.</p>
+        <Button onClick={() => router.push("/")} variant="default">
+          Go Home
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <CustomerDashboardLayout customerId={customerId}>
@@ -378,32 +314,55 @@ export default function SettingsContent({ customerId }: SettingsContentProps) {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {isUserLoading ? (
+                {isLoadingProfile ? (
                   <div className="flex justify-center py-8">
                     <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
                   </div>
                 ) : (
                   <form onSubmit={handleProfileSubmit(onProfileSubmit)} className="space-y-6">
                     <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6">
-                      <div className="relative">
-                        <Avatar className="h-24 w-24">
-                          {watchProfile("profilePicture") ? (
-                            <AvatarImage src={watchProfile("profilePicture")} alt={watchProfile("name")} />
+                      <div className="flex items-center gap-4">
+                        <Avatar className="h-20 w-20 cursor-pointer" onClick={triggerFileInput}>
+                          {profile?.profilePicture ? (
+                            <AvatarImage src={profile.profilePicture} alt="Profile Picture" />
                           ) : (
-                            <AvatarFallback className="text-2xl">
-                              {watchProfile("name")?.charAt(0) || "U"}
+                            <AvatarFallback>
+                              <User className="h-10 w-10 text-muted-foreground" />
                             </AvatarFallback>
                           )}
                         </Avatar>
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="outline"
-                          className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-background"
-                        >
-                          <Camera className="h-4 w-4" />
-                          <span className="sr-only">Upload profile picture</span>
-                        </Button>
+                        <div className="flex flex-col gap-1">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-fit"
+                            onClick={triggerFileInput}
+                            disabled={isUploadingPicture}
+                          >
+                            {isUploadingPicture ? (
+                              <>
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                Uploading...
+                              </>
+                            ) : (
+                              <>
+                                <Camera className="mr-2 h-4 w-4" />
+                                Change Photo
+                              </>
+                            )}
+                          </Button>
+                          <input
+                            type="file"
+                            ref={fileInputRef}
+                            className="hidden"
+                            accept="image/*"
+                            onChange={handleProfilePictureUpload}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            JPG, PNG or GIF. Max size 2MB.
+                          </p>
+                        </div>
                       </div>
                       <div className="flex-1 space-y-4">
                         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -471,9 +430,9 @@ export default function SettingsContent({ customerId }: SettingsContentProps) {
                       <Button
                         type="submit"
                         className="bg-orange-600 hover:bg-orange-700"
-                        disabled={isLoading}
+                        disabled={isUpdatingProfile}
                       >
-                        {isLoading ? (
+                        {isUpdatingProfile ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             Saving...
@@ -507,14 +466,13 @@ export default function SettingsContent({ customerId }: SettingsContentProps) {
                     <div className="space-y-2">
                       <Label htmlFor="currentPassword">Current Password</Label>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Input
                           id="currentPassword"
                           type={showPassword ? "text" : "password"}
-                          placeholder="Enter current password"
                           className="pl-10 pr-10"
                           {...passwordRegister("currentPassword")}
                         />
+                        <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Button
                           type="button"
                           variant="ghost"
@@ -539,14 +497,13 @@ export default function SettingsContent({ customerId }: SettingsContentProps) {
                     <div className="space-y-2">
                       <Label htmlFor="newPassword">New Password</Label>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Input
                           id="newPassword"
                           type={showNewPassword ? "text" : "password"}
-                          placeholder="Enter new password"
                           className="pl-10 pr-10"
                           {...passwordRegister("newPassword")}
                         />
+                        <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Button
                           type="button"
                           variant="ghost"
@@ -571,14 +528,13 @@ export default function SettingsContent({ customerId }: SettingsContentProps) {
                     <div className="space-y-2">
                       <Label htmlFor="confirmPassword">Confirm New Password</Label>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Input
                           id="confirmPassword"
                           type={showConfirmPassword ? "text" : "password"}
-                          placeholder="Confirm new password"
                           className="pl-10 pr-10"
                           {...passwordRegister("confirmPassword")}
                         />
+                        <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                         <Button
                           type="button"
                           variant="ghost"
@@ -604,16 +560,16 @@ export default function SettingsContent({ customerId }: SettingsContentProps) {
                       <Button
                         type="submit"
                         className="bg-orange-600 hover:bg-orange-700"
-                        disabled={isLoading}
+                        disabled={isUpdatingPassword}
                       >
-                        {isLoading ? (
+                        {isUpdatingPassword ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             Updating...
                           </>
                         ) : (
                           <>
-                            <Shield className="mr-2 h-4 w-4" />
+                            <Lock className="mr-2 h-4 w-4" />
                             Update Password
                           </>
                         )}
@@ -655,8 +611,8 @@ export default function SettingsContent({ customerId }: SettingsContentProps) {
                         Permanently delete your account and all your data
                       </p>
                     </div>
-                    <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                      <DialogTrigger asChild>
+                    <AlertDialog open={deleteDialogOpen}>
+                      <AlertDialogTrigger asChild>
                         <Button
                           variant="outline"
                           className="border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
@@ -664,27 +620,23 @@ export default function SettingsContent({ customerId }: SettingsContentProps) {
                           <Trash2 className="mr-2 h-4 w-4" />
                           Delete Account
                         </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Delete Account</DialogTitle>
-                          <DialogDescription>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Account</AlertDialogTitle>
+                          <AlertDialogDescription>
                             Are you sure you want to delete your account? This action cannot be undone and all your data will be permanently deleted.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <DialogFooter>
-                          <Button
-                            variant="outline"
-                            onClick={() => setDeleteDialogOpen(false)}
-                          >
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel onClick={() => setDeleteDialogOpen(false)}>
                             Cancel
-                          </Button>
-                          <Button
-                            variant="destructive"
+                          </AlertDialogCancel>
+                          <AlertDialogAction 
                             onClick={handleDeleteAccount}
-                            disabled={isLoading}
+                            className="bg-destructive hover:bg-destructive/90"
                           >
-                            {isLoading ? (
+                            {isUpdatingProfile ? (
                               <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                                 Deleting...
@@ -695,10 +647,10 @@ export default function SettingsContent({ customerId }: SettingsContentProps) {
                                 Delete Account
                               </>
                             )}
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </CardContent>
               </Card>
@@ -760,9 +712,9 @@ export default function SettingsContent({ customerId }: SettingsContentProps) {
                     <Button
                       type="submit"
                       className="bg-orange-600 hover:bg-orange-700"
-                      disabled={isLoading}
+                      disabled={isUpdatingNotifications}
                     >
-                      {isLoading ? (
+                      {isUpdatingNotifications ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Saving...

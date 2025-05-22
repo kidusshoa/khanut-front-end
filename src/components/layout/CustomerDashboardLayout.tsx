@@ -42,6 +42,7 @@ import { authService } from "@/services/auth";
 import { userService } from "@/services/user";
 import { Badge } from "@/components/ui/badge";
 import { NotificationDropdown } from "@/components/customer/NotificationDropdown";
+import Image from "next/image";
 
 interface CustomerDashboardLayoutProps {
   children: React.ReactNode;
@@ -252,8 +253,8 @@ export default function CustomerDashboardLayout({
         <div className="h-screen w-64 bg-card border-r border-border flex flex-col fixed left-0 top-0 z-30">
           <div className="p-4 flex items-center justify-between border-b border-border">
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-md bg-orange-500 flex items-center justify-center text-white font-bold">
-                K
+              <div className="h-8 w-8 rounded-md  flex items-center justify-center text-white font-bold">
+                <Image src="/logo.png" alt="Logo" width={24} height={24} />
               </div>
               <span className="font-semibold text-lg">Khanut</span>
             </div>
