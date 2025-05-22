@@ -5,6 +5,33 @@ import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { toast } from "react-hot-toast";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+
+// Validation schemas
+const accountFormSchema = z.object({
+  email: z.string().email("Please enter a valid email address"),
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  phone: z.string().regex(/^\+?[0-9\s]{10,15}$/, "Please enter a valid phone number"),
+  notificationsEnabled: z.boolean(),
+});
+
+const passwordFormSchema = z.object({
+  currentPassword: z.string().min(8, "Current password must be at least 8 characters"),
+  newPassword: z.string()
+    .min(8, "New password must be at least 8 characters")
+    .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+    .regex(/[0-9]/, "Password must contain at least one number")
+    .regex(/[!@#$%^&*]/, "Password must contain at least one special character"),
+  confirmPassword: z.string(),
+}).refine(data => data.newPassword === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
+
+type AccountFormValues = z.infer<typeof accountFormSchema>;
+type PasswordFormValues = z.infer<typeof passwordFormSchema>;
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Card,
@@ -18,6 +45,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Separator } from "@/components/ui/separator";
 import { Loader2, Save, AlertTriangle, LogOut } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
@@ -35,19 +63,36 @@ export default function SettingsContent({ businessId }: SettingsContentProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-  // Account settings form
-  const [accountForm, setAccountForm] = useState({
-    email: "",
-    name: "",
-    phone: "",
-    notificationsEnabled: true,
+  // Account settings form with validation
+  const { 
+    register: accountRegister, 
+    handleSubmit: handleAccountSubmit,
+    formState: { errors: accountErrors },
+    setValue: setAccountValue,
+    watch: watchAccount
+  } = useForm<AccountFormValues>({
+    resolver: zodResolver(accountFormSchema),
+    defaultValues: {
+      email: "",
+      name: "",
+      phone: "",
+      notificationsEnabled: true,
+    },
   });
 
-  // Password form
-  const [passwordForm, setPasswordForm] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
+  // Password form with validation
+  const { 
+    register: passwordRegister, 
+    handleSubmit: handlePasswordSubmit,
+    formState: { errors: passwordErrors },
+    reset: resetPassword
+  } = useForm<PasswordFormValues>({
+    resolver: zodResolver(passwordFormSchema),
+    defaultValues: {
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    },
   });
 
   // Notification settings
@@ -72,34 +117,14 @@ export default function SettingsContent({ businessId }: SettingsContentProps) {
   // Initialize form with business data
   useEffect(() => {
     if (business && session?.user) {
-      setAccountForm({
-        email: session.user.email || "",
-        name: session.user.name || "",
-        phone: business.phone || "",
-        notificationsEnabled: true,
-      });
+      setAccountValue("email", session.user.email || "");
+      setAccountValue("name", session.user.name || "");
+      setAccountValue("phone", business.phone || "");
+      setAccountValue("notificationsEnabled", true);
     }
-  }, [business, session]);
+  }, [business, session, setAccountValue]);
 
-  // Handle account form input change
-  const handleAccountInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setAccountForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
-
-  // Handle password form input change
-  const handlePasswordInputChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const { name, value } = e.target;
-    setPasswordForm((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-  };
+  // We don't need these handlers anymore as React Hook Form handles the input changes
 
   // Handle notification toggle
   const handleNotificationToggle = (setting: string) => {
@@ -110,10 +135,11 @@ export default function SettingsContent({ businessId }: SettingsContentProps) {
   };
 
   // Save account settings
-  const handleSaveAccountSettings = async () => {
+  const onAccountSubmit = async (data: AccountFormValues) => {
     setIsSaving(true);
     try {
       // API call would go here
+      console.log("Saving account settings:", data);
       await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
       toast.success("Account settings saved successfully");
     } catch (error) {
@@ -125,28 +151,14 @@ export default function SettingsContent({ businessId }: SettingsContentProps) {
   };
 
   // Change password
-  const handleChangePassword = async () => {
-    // Validate passwords
-    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      toast.error("New passwords do not match");
-      return;
-    }
-
-    if (passwordForm.newPassword.length < 8) {
-      toast.error("Password must be at least 8 characters");
-      return;
-    }
-
+  const onPasswordSubmit = async (data: PasswordFormValues) => {
     setIsChangingPassword(true);
     try {
       // API call would go here
+      console.log("Changing password:", data);
       await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
       toast.success("Password changed successfully");
-      setPasswordForm({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
+      resetPassword(); // Reset form after successful submission
     } catch (error) {
       console.error("Error changing password:", error);
       toast.error("Failed to change password");
@@ -240,79 +252,78 @@ export default function SettingsContent({ businessId }: SettingsContentProps) {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Name</Label>
-                  <Input
-                    id="name"
-                    name="name"
-                    value={accountForm.name}
-                    onChange={handleAccountInputChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    value={accountForm.email}
-                    onChange={handleAccountInputChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    value={accountForm.phone}
-                    onChange={handleAccountInputChange}
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <Switch
-                    id="notifications"
-                    checked={accountForm.notificationsEnabled}
-                    onCheckedChange={(checked) =>
-                      setAccountForm((prev) => ({
-                        ...prev,
-                        notificationsEnabled: checked,
-                      }))
-                    }
-                  />
-                  <Label htmlFor="notifications">
-                    Enable email notifications
-                  </Label>
-                </div>
+                <form className="space-y-6" onSubmit={handleAccountSubmit(onAccountSubmit)}>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        {...accountRegister("email")}
+                        type="email"
+                        placeholder="Enter your email"
+                      />
+                      {accountErrors.email && (
+                        <p className="text-sm text-red-500">{accountErrors.email.message}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="name">Name</Label>
+                      <Input
+                        id="name"
+                        {...accountRegister("name")}
+                        type="text"
+                        placeholder="Enter your name"
+                      />
+                      {accountErrors.name && (
+                        <p className="text-sm text-red-500">{accountErrors.name.message}</p>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="phone">Phone</Label>
+                      <Input
+                        id="phone"
+                        {...accountRegister("phone")}
+                        type="tel"
+                        placeholder="Enter your phone number"
+                      />
+                      {accountErrors.phone && (
+                        <p className="text-sm text-red-500">{accountErrors.phone.message}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="notifications"
+                        {...accountRegister("notificationsEnabled")}
+                        checked={watchAccount("notificationsEnabled")}
+                        onCheckedChange={(checked) => {
+                          setAccountValue("notificationsEnabled", checked === true);
+                        }}
+                      />
+                      <label
+                        htmlFor="notifications"
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        Enable notifications
+                      </label>
+                    </div>
+                  </div>
+                  <Button
+                    type="submit"
+                    disabled={isSaving}
+                    className="w-full"
+                  >
+                    {isSaving ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      "Save Changes"
+                    )}
+                  </Button>
+                </form>
               </CardContent>
               <CardFooter>
-                <Button
-                  onClick={handleSaveAccountSettings}
-                  disabled={isSaving}
-                  className="bg-orange-600 hover:bg-orange-700"
-                >
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Saving...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="mr-2 h-4 w-4" />
-                      Save Changes
-                    </>
-                  )}
-                </Button>
-              </CardFooter>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Logout</CardTitle>
-                <CardDescription>
-                  Sign out of your account on this device
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
                 <Button
                   variant="destructive"
                   onClick={handleLogout}
@@ -321,7 +332,7 @@ export default function SettingsContent({ businessId }: SettingsContentProps) {
                   <LogOut className="mr-2 h-4 w-4" />
                   Logout
                 </Button>
-              </CardContent>
+              </CardFooter>
             </Card>
           </TabsContent>
 
@@ -334,53 +345,59 @@ export default function SettingsContent({ businessId }: SettingsContentProps) {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="currentPassword">Current Password</Label>
-                  <Input
-                    id="currentPassword"
-                    name="currentPassword"
-                    type="password"
-                    value={passwordForm.currentPassword}
-                    onChange={handlePasswordInputChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="newPassword">New Password</Label>
-                  <Input
-                    id="newPassword"
-                    name="newPassword"
-                    type="password"
-                    value={passwordForm.newPassword}
-                    onChange={handlePasswordInputChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                  <Input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type="password"
-                    value={passwordForm.confirmPassword}
-                    onChange={handlePasswordInputChange}
-                  />
-                </div>
+                <form onSubmit={handlePasswordSubmit(onPasswordSubmit)} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="currentPassword">Current Password</Label>
+                    <Input
+                      id="currentPassword"
+                      {...passwordRegister("currentPassword")}
+                      type="password"
+                      placeholder="Enter your current password"
+                    />
+                    {passwordErrors.currentPassword && (
+                      <p className="text-sm text-red-500">{passwordErrors.currentPassword.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">New Password</Label>
+                    <Input
+                      id="newPassword"
+                      {...passwordRegister("newPassword")}
+                      type="password"
+                      placeholder="Enter your new password"
+                    />
+                    {passwordErrors.newPassword && (
+                      <p className="text-sm text-red-500">{passwordErrors.newPassword.message}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                    <Input
+                      id="confirmPassword"
+                      {...passwordRegister("confirmPassword")}
+                      type="password"
+                      placeholder="Confirm your new password"
+                    />
+                    {passwordErrors.confirmPassword && (
+                      <p className="text-sm text-red-500">{passwordErrors.confirmPassword.message}</p>
+                    )}
+                  </div>
+                  <Button
+                    type="submit"
+                    disabled={isChangingPassword}
+                    className="w-full mt-4"
+                  >
+                    {isChangingPassword ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Changing...
+                      </>
+                    ) : (
+                      "Change Password"
+                    )}
+                  </Button>
+                </form>
               </CardContent>
-              <CardFooter>
-                <Button
-                  onClick={handleChangePassword}
-                  disabled={isChangingPassword}
-                  className="bg-orange-600 hover:bg-orange-700"
-                >
-                  {isChangingPassword ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Changing...
-                    </>
-                  ) : (
-                    "Change Password"
-                  )}
-                </Button>
-              </CardFooter>
             </Card>
           </TabsContent>
 

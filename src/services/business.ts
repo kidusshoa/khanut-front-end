@@ -1,7 +1,24 @@
 // Business API service
 import api from "./api";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
 export const businessService = {
+  // Get business details by ID
+  async getBusinessById(businessId: string) {
+    try {
+      const response = await fetch(`${API_URL}/api/businesses/${businessId}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch business: ${response.statusText}`);
+      }
+      
+      return await response.json();
+    } catch (error) {
+      console.error(`Error fetching business ${businessId}:`, error);
+      throw error;
+    }
+  },
   async register(formData: FormData) {
     console.log(
       "Submitting business registration with data:",

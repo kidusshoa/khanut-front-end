@@ -492,15 +492,20 @@ export const appointmentApi = {
           throw new Error("Authentication required");
         }
 
+        // Use the status update endpoint with 'cancelled' status
         const response = await fetch(
-          `${API_URL}/api/appointments/${appointmentId}/cancel`,
+          `${API_URL}/api/appointments/${appointmentId}/status`,
           {
-            method: "POST",
+            method: "PATCH",
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify(data || {}),
+            // Include both the status and the reason
+            body: JSON.stringify({
+              status: "cancelled",
+              ...data
+            }),
           }
         );
 
@@ -521,16 +526,19 @@ export const appointmentApi = {
 
         const result = await response.json();
         console.log("Cancel appointment result:", result);
-        return result;
+        return { success: true, ...result };
       } catch (fetchError) {
         console.warn("Fetch API failed, falling back to axios:", fetchError);
 
         // Fallback to axios if fetch fails
-        const response = await api.post(
-          `/appointments/${appointmentId}/cancel`,
-          data || {}
+        const response = await api.patch(
+          `/appointments/${appointmentId}/status`,
+          { 
+            status: "cancelled",
+            ...data 
+          }
         );
-        return response.data;
+        return { success: true, ...response.data };
       }
     } catch (error) {
       console.error("Error cancelling appointment:", error);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Calendar,
@@ -45,7 +45,7 @@ interface AppointmentDetailProps {
   onAppointmentUpdate?: () => void;
 }
 
-export function AppointmentDetailFixed({
+export function AppointmentDetail({
   appointment,
   customerId,
   onAppointmentUpdate,
@@ -200,9 +200,27 @@ export function AppointmentDetailFixed({
     }
   };
 
+  // State for validation errors
+  const [reasonError, setReasonError] = useState("");
+  
+  // Calculate time difference for validation
+  const appointmentDate = new Date(appointment.date);
+  const now = new Date();
+  const timeDiff = appointmentDate.getTime() - now.getTime();
+  const hoursDiff = timeDiff / (1000 * 3600);
+  const isWithin24Hours = hoursDiff < 24;
+
   // Handle appointment cancellation
   const handleCancelAppointment = async () => {
     try {
+      // Validate reason if appointment is within 24 hours
+      if (isWithin24Hours && !cancelReason.trim()) {
+        setReasonError("Please provide a reason for cancellation when cancelling within 24 hours of the appointment");
+        return;
+      }
+      
+      // Clear any previous errors
+      setReasonError("");
       setIsLoading(true);
       
       const response = await appointmentApi.cancelAppointment(
@@ -228,6 +246,13 @@ export function AppointmentDetailFixed({
       setIsLoading(false);
     }
   };
+  
+  // Reset error when reason changes
+  useEffect(() => {
+    if (reasonError && cancelReason.trim()) {
+      setReasonError("");
+    }
+  }, [cancelReason, reasonError]);
 
   // Get service name
   const getServiceName = () => {
@@ -520,13 +545,17 @@ export function AppointmentDetailFixed({
 
                   <div className="py-4">
                     <label className="text-sm font-medium mb-2 block">
-                      Reason for cancellation (optional)
+                      Reason for cancellation {isWithin24Hours ? "(required)" : "(optional)"}
                     </label>
                     <Textarea
                       placeholder="Please provide a reason for cancellation"
                       value={cancelReason}
                       onChange={(e) => setCancelReason(e.target.value)}
+                      className={reasonError ? "border-red-500 focus-visible:ring-red-500" : ""}
                     />
+                    {reasonError && (
+                      <p className="text-sm text-red-500 mt-1">{reasonError}</p>
+                    )}
                   </div>
 
                   <DialogFooter>
@@ -542,7 +571,14 @@ export function AppointmentDetailFixed({
                       onClick={handleCancelAppointment}
                       disabled={isLoading}
                     >
-                      {isLoading ? "Cancelling..." : "Cancel Appointment"}
+                      {isLoading ? (
+                        <>
+                          <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                          Cancelling...
+                        </>
+                      ) : (
+                        "Cancel Appointment"
+                      )}
                     </Button>
                   </DialogFooter>
                 </DialogContent>

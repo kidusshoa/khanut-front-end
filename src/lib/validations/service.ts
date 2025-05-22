@@ -62,24 +62,87 @@ export const serviceSchema = z.discriminatedUnion("serviceType", [
 
 // Appointment booking schema
 export const appointmentBookingSchema = z.object({
-  serviceId: z.string(),
-  businessId: z.string(),
-  customerId: z.string(),
+  serviceId: z.string().nonempty("Service is required"),
+  businessId: z.string().nonempty("Business is required"),
+  customerId: z.string().nonempty("Customer is required"),
   staffId: z.string().optional(),
-  date: z.string(),
+  date: z.string().nonempty("Date is required").refine(
+    (date) => {
+      try {
+        const selectedDate = new Date(date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return selectedDate >= today;
+      } catch {
+        return false;
+      }
+    },
+    { message: "Date cannot be in the past" }
+  ),
   startTime: z
     .string()
+    .nonempty("Start time is required")
     .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
   endTime: z
     .string()
+    .nonempty("End time is required")
     .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Invalid time format"),
   notes: z.string().optional(),
   isRecurring: z.boolean().optional().default(false),
   recurrencePattern: z
     .enum(["daily", "weekly", "biweekly", "monthly"])
-    .optional(),
-  recurrenceEndDate: z.string().optional(),
-  recurrenceCount: z.number().optional(),
+    .optional()
+    .superRefine((pattern, ctx) => {
+      // Only required if isRecurring is true
+      if (ctx.path && ctx.path.length > 0) {
+        const obj = ctx.path[0];
+        if (typeof obj === "object" && obj && "isRecurring" in obj) {
+          const isRecurring = (obj as { isRecurring: boolean }).isRecurring;
+          if (isRecurring && !pattern) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "Recurrence pattern is required for recurring appointments"
+            });
+          }
+        }
+      }
+    }),
+  recurrenceEndDate: z
+    .string()
+    .optional()
+    .superRefine((date, ctx) => {
+      // Only required if isRecurring is true
+      if (ctx.path && ctx.path.length > 0) {
+        const obj = ctx.path[0];
+        if (typeof obj === "object" && obj && "isRecurring" in obj) {
+          const isRecurring = (obj as { isRecurring: boolean }).isRecurring;
+          if (isRecurring && !date) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "End date is required for recurring appointments"
+            });
+          }
+        }
+      }
+    }),
+  recurrenceCount: z
+    .number()
+    .optional()
+    .superRefine((count, ctx) => {
+      // Only validate if isRecurring is true
+      if (ctx.path && ctx.path.length > 0) {
+        const obj = ctx.path[0];
+        if (typeof obj === "object" && obj && "isRecurring" in obj) {
+          const isRecurring = (obj as { isRecurring: boolean }).isRecurring;
+          if (isRecurring && (count === undefined || count < 1 || count > 52)) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: "Recurrence count must be between 1 and 52"
+            });
+          }
+        }
+      }
+    }),
 });
 
 // Recurring appointment schema

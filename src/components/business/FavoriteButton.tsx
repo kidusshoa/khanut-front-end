@@ -3,9 +3,9 @@
 import { useState, useEffect } from "react";
 import { Heart } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { favoritesApi } from "@/services/favorites";
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
+import { useFavorites } from "@/hooks/useFavorites";
 
 interface FavoriteButtonProps {
   businessId: string | { _id: string };
@@ -18,6 +18,12 @@ interface FavoriteButtonProps {
   onToggle?: (isFavorite: boolean) => void;
 }
 
+const sizeClasses = {
+  sm: "h-8 min-w-8",
+  md: "h-10 min-w-10",
+  lg: "h-12 min-w-12",
+};
+
 export function FavoriteButton({
   businessId,
   customerId,
@@ -28,71 +34,48 @@ export function FavoriteButton({
   className,
   onToggle,
 }: FavoriteButtonProps) {
-  const [isFavorite, setIsFavorite] = useState(initialIsFavorite);
-  const [isLoading, setIsLoading] = useState(false);
-  const [prevBusinessId, setPrevBusinessId] = useState<string | null>(null);
+  // Extract the business ID string
+  const id = typeof businessId === 'string' ? businessId : businessId._id;
+  
+  // Use our custom hook for favorites management
+  const { isFavorite, addFavorite, removeFavorite, isToggling } = useFavorites(customerId);
+  
+  // Check if this business is favorited
+  const isFav = isFavorite(id) || initialIsFavorite;
+  
+  // Toast hook for notifications
   const { toast } = useToast();
-
-  // Check if business is in favorites on mount
-  useEffect(() => {
-    const checkFavoriteStatus = async () => {
-      try {
-        const id = typeof businessId === 'string' ? businessId : businessId._id;
-        
-        // Log the ID being checked
-        console.log("Checking favorite status for business ID:", id);
-
-        const isFav = await favoritesApi.isFavorite(id, customerId);
-        setIsFavorite(isFav);
-      } catch (error) {
-        console.error("Error checking favorite status:", error);
-      }
-    };
-
-    // Only check if we don't have an initial value or if businessId changed
-    if (!initialIsFavorite || (typeof businessId === 'object' && businessId._id !== prevBusinessId)) {
-      checkFavoriteStatus();
-    }
-  }, [businessId]);
-
-  // Store previous businessId for comparison
-  useEffect(() => {
-    if (typeof businessId === 'object') {
-      setPrevBusinessId(businessId._id);
-    }
-  }, [businessId]);
 
   const toggleFavorite = async () => {
     try {
-      setIsLoading(true);
-
-      // Ensure businessId is a string
-      const id = 
-        typeof businessId === 'string' 
-          ? businessId 
-          : businessId._id;
-
-      // Log the ID being used
-      console.log("Toggling favorite for business ID:", id);
-
-      const result = await favoritesApi.toggleFavorite(id, customerId);
-
-      if (isFavorite) {
+      // Clean the ID to ensure it's a valid MongoDB ObjectId
+      const cleanId = id.replace(/[^a-f0-9]/gi, '').substring(0, 24);
+      
+      // Add debugging info
+      console.log("Business ID:", id);
+      console.log("Clean business ID for API call:", cleanId);
+      console.log("Customer ID:", customerId);
+      console.log("Current favorite status:", isFav);
+      
+      // Toggle the favorite status
+      if (isFav) {
+        removeFavorite(cleanId);
         toast({
           title: "Removed from favorites",
           description: "Business has been removed from your favorites",
           variant: "default",
         });
       } else {
+        addFavorite(cleanId);
         toast({
           title: "Added to favorites",
           description: "Business has been added to your favorites",
           variant: "default",
         });
       }
-
-      setIsFavorite(!isFavorite);
-      if (onToggle) onToggle(!isFavorite);
+      
+      // Call the onToggle callback if provided
+      if (onToggle) onToggle(!isFav);
     } catch (error) {
       console.error("Error toggling favorite:", error);
       toast({
@@ -100,15 +83,7 @@ export function FavoriteButton({
         description: "Failed to update favorites. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
-  };
-
-  const sizeClasses = {
-    sm: "h-8 px-3",
-    md: "h-10 px-4",
-    lg: "h-12 px-6",
   };
 
   const iconSizes = {
@@ -123,22 +98,22 @@ export function FavoriteButton({
       size={size === "lg" ? "lg" : "default"}
       className={cn(
         sizeClasses[size],
-        isFavorite && "text-red-500 hover:text-red-600",
+        isFav && "text-red-500 hover:text-red-600",
         !showText && "px-0 w-10",
         className
       )}
       onClick={toggleFavorite}
-      disabled={isLoading}
+      disabled={isToggling}
     >
       <Heart
         className={cn(
           iconSizes[size],
           "transition-colors",
-          isFavorite ? "fill-current" : "fill-none"
+          isFav ? "fill-current" : "fill-none"
         )}
       />
       {showText && (
-        <span className="ml-2">{isFavorite ? "Favorited" : "Favorite"}</span>
+        <span className="ml-2">{isFav ? "Favorited" : "Favorite"}</span>
       )}
     </Button>
   );
