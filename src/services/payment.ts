@@ -88,7 +88,7 @@ export const paymentApi = {
       }
 
       const response = await fetch(
-        `${API_URL}/api/payments/appointment/${appointmentId}/initialize`,
+        `${API_URL}/api/payments/appointment/${appointmentId}/pay`,
         {
           method: "POST",
           headers: {

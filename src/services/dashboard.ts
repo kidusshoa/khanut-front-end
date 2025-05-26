@@ -63,7 +63,7 @@ export const dashboardApi = {
       const endpoints = [
         `/api/customer/dashboard/recommended?limit=${limit}&method=${method}`,
         `/api/customer/recommended?limit=${limit}&method=${method}`
-        
+      
       ];
 
       for (const endpoint of endpoints) {
